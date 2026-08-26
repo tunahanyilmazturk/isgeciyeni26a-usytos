@@ -2,9 +2,13 @@ import { ArrowLeft, Construction } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui'
 
-export function DashboardPlaceholderPage() {
+interface DashboardPlaceholderPageProps {
+  title?: string
+}
+
+export function DashboardPlaceholderPage({ title }: DashboardPlaceholderPageProps) {
   const location = useLocation()
-  const section = location.pathname.split('/').filter(Boolean).pop() ?? 'sayfa'
+  const section = title ?? location.pathname.split('/').filter(Boolean).pop() ?? 'sayfa'
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">

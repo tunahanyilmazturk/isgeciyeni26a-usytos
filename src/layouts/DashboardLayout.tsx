@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   BookOpen,
@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/features/auth'
 
 interface NavigationItem {
   label: string
@@ -58,10 +59,11 @@ const osgbNavigation: NavigationItem[] = [
   { label: 'Faturalar', to: '/dashboard/osgb-bilgileri/faturalar', icon: <FileCheck2 /> },
 ]
 
-export function DashboardLayout() {
+export function DashboardLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const isDashboard = location.pathname === '/dashboard'
 
   function closeMobileMenu() {
@@ -69,6 +71,7 @@ export function DashboardLayout() {
   }
 
   function handleLogout() {
+    logout()
     navigate('/giris')
   }
 
@@ -119,11 +122,11 @@ export function DashboardLayout() {
             className="flex w-full items-center gap-3 rounded-xl border border-ink-200 bg-ink-50/60 p-3 text-left transition-colors hover:border-ink-300 hover:bg-ink-50"
           >
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm font-bold text-brand-700">
-              Ç
+              {user?.company?.[0] ?? 'H'}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-ink-800">Çetka OSGB</span>
-              <span className="mt-0.5 block truncate text-[11px] text-ink-400">Yönetici hesabı</span>
+              <span className="block truncate text-sm font-semibold text-ink-800">{user?.company ?? 'HanTech'}</span>
+              <span className="mt-0.5 block truncate text-[11px] text-ink-400">{user?.role ?? 'Kullanıcı'} hesabı</span>
             </span>
             <ChevronDown className="h-4 w-4 shrink-0 text-ink-400" />
           </button>
@@ -258,11 +261,11 @@ export function DashboardLayout() {
         <div className="border-t border-ink-200/80 p-4">
           <div className="mb-3 flex items-center gap-3 rounded-xl bg-ink-50/70 p-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-ink-200 text-xs font-bold text-ink-600">
-              SA
+              {user?.initials ?? 'K'}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-ink-800">Savaş Akay</span>
-              <span className="block truncate text-[11px] text-ink-400">Yönetici</span>
+              <span className="block truncate text-sm font-semibold text-ink-800">{user?.name ?? 'Kullanıcı'}</span>
+              <span className="block truncate text-[11px] text-ink-400">{user?.role ?? 'Kullanıcı'}</span>
             </span>
             <button
               type="button"
@@ -315,10 +318,10 @@ export function DashboardLayout() {
             </button>
             <div className="ml-1 h-7 w-px bg-ink-200" />
             <button type="button" className="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-ink-50">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600">SA</span>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600">{user?.initials ?? 'K'}</span>
               <span className="hidden text-left md:block">
-                <span className="block text-xs font-semibold text-ink-800">Savaş Akay</span>
-                <span className="block text-[10px] text-ink-400">Yönetici</span>
+                <span className="block text-xs font-semibold text-ink-800">{user?.name ?? 'Kullanıcı'}</span>
+                <span className="block text-[10px] text-ink-400">{user?.role ?? 'Kullanıcı'}</span>
               </span>
               <ChevronDown className="hidden h-4 w-4 text-ink-400 md:block" />
             </button>
@@ -326,7 +329,7 @@ export function DashboardLayout() {
         </header>
 
         <main className="mx-auto max-w-[1440px] p-5 sm:p-8">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>

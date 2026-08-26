@@ -16,6 +16,15 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
+import { useAuth, type AuthUser } from '../AuthContext'
+
+const DEMO_USER: AuthUser = {
+  name: 'Savaş Akay',
+  email: 'demo@hantech.com',
+  role: 'Yönetici',
+  company: 'Çetka OSGB',
+  initials: 'SA',
+}
 
 const loginSchema = z.object({
   login: z
@@ -38,6 +47,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const {
     register,
@@ -62,6 +72,7 @@ export function LoginPage() {
     setSubmitting(true)
     // TODO: backend bağlanınca API çağrısı buraya
     setTimeout(() => {
+      login(DEMO_USER)
       setSubmitting(false)
       toast.success('Giriş başarılı', {
         description: 'Yönetim paneline yönlendiriliyorsunuz…',
@@ -164,7 +175,8 @@ export function LoginPage() {
               </Button>
             </form>
 
-            {/* Demo erişimi */}
+            {/* Demo erişimi — yalnızca geliştirme ortamında */}
+            {import.meta.env.DEV && (
             <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 px-4 py-3.5">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
@@ -183,6 +195,7 @@ export function LoginPage() {
                 Doldur
               </button>
             </div>
+            )}
           </section>
 
           {/* Kayıt ve güvenlik */}

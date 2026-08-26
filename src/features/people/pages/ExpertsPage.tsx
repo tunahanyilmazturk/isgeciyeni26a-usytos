@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { type Expert, type ExpertTitle, readExperts, saveExperts } from '../data/people'
 
 const expertSchema = z
   .object({
@@ -48,28 +49,6 @@ const expertSchema = z
   )
 
 type ExpertForm = z.infer<typeof expertSchema>
-type ExpertTitle = 'A Sınıfı İş Güvenliği Uzmanı' | 'B Sınıfı İş Güvenliği Uzmanı' | 'C Sınıfı İş Güvenliği Uzmanı'
-
-type Expert = {
-  id: number
-  firstName: string
-  lastName: string
-  title: ExpertTitle
-  certificateNumber: string
-  maxServiceDuration: number
-  usedServiceDuration: number
-  email?: string
-  phone?: string
-  status: 'active' | 'inactive'
-}
-
-const initialExperts: Expert[] = [
-  { id: 279, firstName: 'Barış', lastName: 'Eren', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0182', maxServiceDuration: 11700, usedServiceDuration: 6240, email: 'baris.eren@hantech.com', status: 'active' },
-  { id: 278, firstName: 'Seda', lastName: 'Yalçın', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2023-0094', maxServiceDuration: 11700, usedServiceDuration: 8100, email: 'seda.yalcin@hantech.com', status: 'active' },
-  { id: 277, firstName: 'Ozan', lastName: 'Tekin', title: 'C Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'C-2025-0317', maxServiceDuration: 11700, usedServiceDuration: 2950, phone: '+90 532 000 00 00', status: 'active' },
-  { id: 276, firstName: 'Deniz', lastName: 'Kara', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0141', maxServiceDuration: 11700, usedServiceDuration: 11700, email: 'deniz.kara@hantech.com', status: 'active' },
-  { id: 275, firstName: 'Mert', lastName: 'Acar', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2022-0068', maxServiceDuration: 11700, usedServiceDuration: 0, status: 'inactive' },
-]
 
 const titleOptions: ExpertTitle[] = [
   'A Sınıfı İş Güvenliği Uzmanı',
@@ -86,10 +65,12 @@ function initials(expert: Expert) {
 }
 
 export function ExpertsPage() {
-  const [experts, setExperts] = useState(initialExperts)
+  const [experts, setExperts] = useState(() => readExperts())
   const [search, setSearch] = useState('')
   const [titleFilter, setTitleFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => saveExperts(experts), [experts])
 
   useEffect(() => {
     if (!isModalOpen) return

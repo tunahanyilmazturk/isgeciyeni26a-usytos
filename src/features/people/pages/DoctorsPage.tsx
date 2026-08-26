@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { type Doctor, type DoctorLevel, readDoctors, saveDoctors } from '../data/people'
 
 const doctorSchema = z
   .object({
@@ -50,26 +51,6 @@ const doctorSchema = z
   )
 
 type DoctorForm = z.infer<typeof doctorSchema>
-type DoctorLevel = 'Asistan' | 'Dr.' | 'Prof.'
-
-type Doctor = {
-  id: number
-  doctorLevel: DoctorLevel
-  firstName: string
-  lastName: string
-  title: 'İşyeri Hekimi'
-  certificateNumber: string
-  maxServiceDuration: number
-  usedServiceDuration: number
-  email?: string
-  phone?: string
-  status: 'active' | 'inactive'
-}
-
-const initialDoctors: Doctor[] = [
-  { id: 195, doctorLevel: 'Dr.', firstName: 'Onur', lastName: 'Polat', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2024-0108', maxServiceDuration: 11700, usedServiceDuration: 4680, email: 'onur.polat@hantech.com', status: 'active' },
-  { id: 194, doctorLevel: 'Dr.', firstName: 'Elif', lastName: 'Demir', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2023-0074', maxServiceDuration: 11700, usedServiceDuration: 7020, email: 'elif.demir@hantech.com', status: 'active' },
-]
 
 const doctorLevels: DoctorLevel[] = ['Asistan', 'Dr.', 'Prof.']
 
@@ -82,10 +63,12 @@ function initials(doctor: Doctor) {
 }
 
 export function DoctorsPage() {
-  const [doctors, setDoctors] = useState(initialDoctors)
+  const [doctors, setDoctors] = useState(() => readDoctors())
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => saveDoctors(doctors), [doctors])
 
   useEffect(() => {
     if (!isModalOpen) return

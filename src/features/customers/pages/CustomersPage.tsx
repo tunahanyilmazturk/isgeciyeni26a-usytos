@@ -30,48 +30,12 @@ import { z } from 'zod'
 import { Button, Input } from '@/components/ui'
 import { downloadCustomerList } from '@/lib/excel'
 import { cn } from '@/lib/utils'
-
-type RiskLevel = 'Az tehlikeli' | 'Tehlikeli' | 'Çok tehlikeli'
-type ContractStatus = 'Devam ediyor' | 'Teklif aşamasında' | 'Sonlandırıldı'
-type ApprovalStatus = 'Onaylandı' | 'Onay bekliyor'
-type CompanyStatus = 'active' | 'passive'
-
-type Customer = {
-  id: number
-  name: string
-  taxNumber: string
-  sector: string
-  location: string
-  employees: number
-  riskLevel: RiskLevel
-  expert: string
-  doctor: string
-  expertMinutes: number
-  doctorMinutes: number
-  contractStatus: ContractStatus
-  approvalStatus: ApprovalStatus
-  status: CompanyStatus
-  contactName: string
-  contactEmail: string
-  contactPhone: string
-  updatedAt: string
-}
+import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus } from '../data/customers'
 
 const riskLevels: RiskLevel[] = ['Az tehlikeli', 'Tehlikeli', 'Çok tehlikeli']
 const contractStatuses: ContractStatus[] = ['Devam ediyor', 'Teklif aşamasında', 'Sonlandırıldı']
 const experts = ['Barış Eren', 'Deniz Kara', 'Mert Acar', 'Ozan Tekin', 'Seda Yalçın']
 const doctors = ['Elif Demir', 'Onur Polat']
-
-const initialCustomers: Customer[] = [
-  { id: 1, name: 'Quantis Tekstil', taxNumber: '2951167061', sector: 'Tekstil üretimi', location: 'Bursa / Nilüfer', employees: 84, riskLevel: 'Tehlikeli', expert: 'Barış Eren', doctor: 'Elif Demir', expertMinutes: 720, doctorMinutes: 360, contractStatus: 'Devam ediyor', approvalStatus: 'Onaylandı', status: 'active', contactName: 'Cem Yılmaz', contactEmail: 'cem.yilmaz@quantis.com', contactPhone: '+90 224 555 12 40', updatedAt: 'Bugün, 09:42' },
-  { id: 2, name: 'Pelion Gıda', taxNumber: '2951167054', sector: 'Gıda ve üretim', location: 'İstanbul / Tuzla', employees: 126, riskLevel: 'Az tehlikeli', expert: 'Seda Yalçın', doctor: 'Onur Polat', expertMinutes: 1080, doctorMinutes: 540, contractStatus: 'Devam ediyor', approvalStatus: 'Onaylandı', status: 'active', contactName: 'Derya Aydın', contactEmail: 'derya.aydin@pelion.com', contactPhone: '+90 216 555 08 21', updatedAt: 'Dün, 16:18' },
-  { id: 3, name: 'Vortan Metal', taxNumber: '2951167047', sector: 'Metal sanayi', location: 'Kocaeli / Gebze', employees: 58, riskLevel: 'Çok tehlikeli', expert: 'Ozan Tekin', doctor: 'Elif Demir', expertMinutes: 960, doctorMinutes: 480, contractStatus: 'Devam ediyor', approvalStatus: 'Onay bekliyor', status: 'active', contactName: 'Murat Kılıç', contactEmail: 'murat.kilic@vortan.com', contactPhone: '+90 262 555 41 90', updatedAt: '12 Haz, 14:06' },
-  { id: 4, name: 'Nexora Kimya', taxNumber: '2951167030', sector: 'Kimya', location: 'İzmir / Aliağa', employees: 43, riskLevel: 'Tehlikeli', expert: 'Deniz Kara', doctor: 'Onur Polat', expertMinutes: 600, doctorMinutes: 300, contractStatus: 'Teklif aşamasında', approvalStatus: 'Onay bekliyor', status: 'active', contactName: 'Selin Özkan', contactEmail: 'selin.ozkan@nexora.com', contactPhone: '+90 232 555 19 63', updatedAt: '11 Haz, 10:24' },
-  { id: 5, name: 'Asteria Lojistik', taxNumber: '2951167023', sector: 'Lojistik', location: 'Ankara / Sincan', employees: 72, riskLevel: 'Az tehlikeli', expert: 'Mert Acar', doctor: 'Elif Demir', expertMinutes: 720, doctorMinutes: 360, contractStatus: 'Devam ediyor', approvalStatus: 'Onaylandı', status: 'active', contactName: 'Kaan Erdem', contactEmail: 'kaan.erdem@asteria.com', contactPhone: '+90 312 555 27 11', updatedAt: '10 Haz, 18:32' },
-  { id: 6, name: 'Novatek Yapı', taxNumber: '2951167016', sector: 'Yapı ve inşaat', location: 'İstanbul / Ataşehir', employees: 31, riskLevel: 'Çok tehlikeli', expert: 'Barış Eren', doctor: 'Onur Polat', expertMinutes: 480, doctorMinutes: 240, contractStatus: 'Sonlandırıldı', approvalStatus: 'Onaylandı', status: 'passive', contactName: 'Berk Can', contactEmail: 'berk.can@novatek.com', contactPhone: '+90 216 555 31 08', updatedAt: '08 Haz, 11:55' },
-  { id: 7, name: 'Luma Elektronik', taxNumber: '2951167009', sector: 'Elektronik', location: 'Bursa / Osmangazi', employees: 14, riskLevel: 'Az tehlikeli', expert: 'Seda Yalçın', doctor: 'Onur Polat', expertMinutes: 240, doctorMinutes: 120, contractStatus: 'Devam ediyor', approvalStatus: 'Onaylandı', status: 'active', contactName: 'İrem Şen', contactEmail: 'irem.sen@luma.com', contactPhone: '+90 224 555 44 12', updatedAt: '06 Haz, 15:21' },
-  { id: 8, name: 'Arvento Enerji', taxNumber: '2951167092', sector: 'Enerji', location: 'Konya / Selçuklu', employees: 0, riskLevel: 'Çok tehlikeli', expert: '', doctor: '', expertMinutes: 0, doctorMinutes: 0, contractStatus: 'Teklif aşamasında', approvalStatus: 'Onay bekliyor', status: 'active', contactName: 'Oğuz Kaya', contactEmail: 'oguz.kaya@arvento.com', contactPhone: '+90 332 555 62 18', updatedAt: '04 Haz, 09:15' },
-]
 
 const customerSchema = z.object({
   name: z.string().trim().min(2, 'Firma adı en az 2 karakter olmalı.'),
@@ -110,8 +74,11 @@ function contractClass(status: ContractStatus) {
 }
 
 export function CustomersPage() {
-  const [customers, setCustomers] = useState(initialCustomers)
+  const [customers, setCustomers] = useState(() => readCustomers())
   const [search, setSearch] = useState('')
+  useEffect(() => {
+    saveCustomers(customers)
+  }, [customers])
   const [riskFilter, setRiskFilter] = useState('all')
   const [expertFilter, setExpertFilter] = useState('all')
   const [doctorFilter, setDoctorFilter] = useState('all')
