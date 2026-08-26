@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { ParticipantLayout } from './layouts/ParticipantLayout'
 import {
@@ -89,11 +89,43 @@ const ParticipantProfilePage = lazy(() =>
   import('./features/auth').then((m) => ({ default: m.ParticipantProfilePage })),
 )
 
-function ProtectedRoutes() {
-  const { isAuthenticated } = useAuth()
+type AdminModule = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'signatures' | 'liveTraining' | 'reports' | 'trainings' | 'companyInfo' | 'support'
 
-  if (!isAuthenticated) {
-    return <Navigate to="/giris" replace />
+const roleModules: Record<string, AdminModule[]> = {
+  Yönetici: ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'companyInfo', 'support'],
+  'İSG Uzmanı': ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'support'],
+  'İşyeri Hekimi': ['dashboard', 'participants', 'assignments', 'signatures', 'trainings', 'support'],
+  Personel: ['dashboard', 'participants', 'trainings', 'support'],
+}
+
+function moduleForPath(pathname: string): AdminModule {
+  if (pathname.startsWith('/dashboard/firmalar')) return 'companies'
+  if (pathname.startsWith('/dashboard/katilimcilar')) return 'participants'
+  if (pathname.startsWith('/dashboard/egitimler')) return 'trainings'
+  if (pathname.startsWith('/dashboard/egitim-atamalari')) return 'assignments'
+  if (pathname.startsWith('/dashboard/imza-kuyrugu')) return 'signatures'
+  if (pathname.startsWith('/dashboard/canli-egitim')) return 'liveTraining'
+  if (pathname.startsWith('/dashboard/raporlar')) return 'reports'
+  if (pathname.startsWith('/dashboard/osgb-bilgileri')) return 'companyInfo'
+  if (pathname.startsWith('/dashboard/destek')) return 'support'
+  return 'dashboard'
+}
+
+// Bu guard yalnızca frontend UX/navigation içindir; gerçek authorization backend'de yapılmalıdır.
+function hasFrontendAccess(role: string, pathname: string) {
+  return roleModules[role]?.includes(moduleForPath(pathname)) ?? false
+}
+
+function ProtectedRoutes() {
+  const { user, isAuthenticated } = useAuth()
+  const location = useLocation()
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/giris" replace state={{ from: location.pathname }} />
+  }
+
+  if (!hasFrontendAccess(user.role, location.pathname)) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return (
