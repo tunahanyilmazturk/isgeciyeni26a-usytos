@@ -31,9 +31,6 @@ const CustomerDetailPage = lazy(() =>
 const ParticipantsPage = lazy(() =>
   import('./features/participants').then((m) => ({ default: m.ParticipantsPage })),
 )
-const ParticipantCreatePage = lazy(() =>
-  import('./features/participants').then((m) => ({ default: m.ParticipantCreatePage })),
-)
 const TrainingsPage = lazy(() =>
   import('./features/trainings').then((m) => ({ default: m.TrainingsPage })),
 )
@@ -115,7 +112,7 @@ function ProtectedRoutes() {
           <Route path="firmalar/yeni" element={<CustomerCreatePage />} />
           <Route path="firmalar/:customerId" element={<CustomerDetailPage />} />
           <Route path="katilimcilar" element={<ParticipantsPage />} />
-          <Route path="katilimcilar/yeni" element={<ParticipantCreatePage />} />
+          <Route path="katilimcilar/yeni" element={<Navigate to="/dashboard/katilimcilar" replace />} />
           <Route path="egitimler" element={<TrainingsPage />} />
           <Route path="egitimler/:trainingId/katilimci-onizleme" element={<TrainingPreviewPage />} />
           <Route path="osgb-bilgileri/firma-bilgileri" element={<CompanyInfoPage />} />

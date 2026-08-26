@@ -16,7 +16,6 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { downloadParticipantList } from '../lib/excel'
@@ -26,6 +25,7 @@ import { addAssignment, bulkAssign, removeAssignment, type AssignmentOptions } f
 import { AssignmentModal, BulkAssignmentModal } from '@/features/assignments/components/AssignmentModals'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
 import { BulkParticipantModal } from '../components/BulkParticipantModal'
+import { SingleParticipantModal } from '../components/SingleParticipantModal'
 
 const trainingLabels: Record<TrainingStatus, string> = {
   not_started: 'Başlamadı',
@@ -82,6 +82,7 @@ export function ParticipantsPage() {
   const [showBulkModal, setShowBulkModal] = useState(false)
   const [bulkPreselectedIds, setBulkPreselectedIds] = useState<number[] | undefined>(undefined)
   const [showBulkParticipantModal, setShowBulkParticipantModal] = useState(false)
+  const [showSingleParticipantModal, setShowSingleParticipantModal] = useState(false)
 
   useEffect(() => {
     saveParticipants(participants)
@@ -206,8 +207,16 @@ export function ParticipantsPage() {
     toast.success(`${newParticipants.length} katılımcı eklendi`)
   }
 
+  function handleCreateParticipant(participant: Participant) {
+    setParticipants((current) => [participant, ...current])
+    setShowSingleParticipantModal(false)
+    toast.success('Katılımcı başarıyla oluşturuldu', {
+      description: `${participant.name} — kullanıcı adı: ${participant.username}, şifre: ${participant.password}`,
+    })
+  }
+
   return <div className="space-y-7">
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Ana menü</span><span>/</span><span className="text-ink-600">Katılımcılar</span></div><h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Katılımcılar</h1><p className="mt-1.5 text-sm text-ink-500">Çalışan listenizi, eğitim yetkilendirmelerini ve gelişim durumunu tek ekrandan yönetin.</p></div><div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto"><Button className="h-9 min-w-0 border-emerald-200 bg-emerald-50 px-3 text-xs text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100 sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<ArrowDownToLine className="h-4 w-4" />} onClick={exportParticipants}>Excel'e aktar</Button><Button className="h-9 min-w-0 px-3 text-xs sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<Users className="h-4 w-4" />} onClick={openBulkAssign}>Toplu eğitim ata</Button><Button className="h-9 min-w-0 px-3 text-xs sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setShowBulkParticipantModal(true)}>Toplu katılımcı</Button><Link to="/dashboard/katilimcilar/yeni" className="inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 text-xs font-semibold text-white shadow-sm shadow-brand-600/20 transition-colors hover:bg-brand-700 sm:h-10 sm:px-4 sm:text-sm"><UserPlus className="h-4 w-4 shrink-0" /> <span className="truncate">Yeni katılımcı</span></Link></div></motion.div>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end"><div><div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Ana menü</span><span>/</span><span className="text-ink-600">Katılımcılar</span></div><h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Katılımcılar</h1><p className="mt-1.5 text-sm text-ink-500">Çalışan listenizi, eğitim yetkilendirmelerini ve gelişim durumunu tek ekrandan yönetin.</p></div><div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto"><Button className="h-9 min-w-0 border-emerald-200 bg-emerald-50 px-3 text-xs text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100 sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<ArrowDownToLine className="h-4 w-4" />} onClick={exportParticipants}>Excel'e aktar</Button><Button className="h-9 min-w-0 px-3 text-xs sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<Users className="h-4 w-4" />} onClick={openBulkAssign}>Toplu eğitim ata</Button><Button className="h-9 min-w-0 px-3 text-xs sm:px-3.5 sm:text-sm" variant="outline" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setShowBulkParticipantModal(true)}>Toplu katılımcı</Button><Button className="h-9 min-w-0 px-3 text-xs sm:px-3.5 sm:text-sm" size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setShowSingleParticipantModal(true)}>Yeni katılımcı</Button></div></motion.div>
 
     <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"><div className="border-b border-ink-100 p-5 sm:p-6"><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div><div className="flex items-center gap-2"><h2 className="text-sm font-semibold text-ink-900">Katılımcı listesi</h2><span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filteredParticipants.length} kayıt</span></div><p className="mt-1 text-xs text-ink-400">Kişi, firma, eğitim ve geçerlilik durumuna göre filtreleyin.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ad, kullanıcı adı, e-posta veya TC..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-3 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-72" /></div><button type="button" onClick={() => setShowFilters((current) => !current)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold', showFilters ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}><Filter className="h-4 w-4" /> Filtreler</button></div></div>{showFilters && <div className="mt-5 grid min-w-0 gap-3 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Müşteri</span><select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)} className="h-10 min-w-0 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-medium text-ink-700 outline-none focus:border-brand-500"><option value="all">Tüm müşteriler</option>{companies.map((company) => <option key={company} value={company}>{company}</option>)}</select></label><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Katılımcı durumu</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-10 min-w-0 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-medium text-ink-700 outline-none focus:border-brand-500"><option value="all">Tümü</option><option value="active">Aktif</option><option value="passive">Pasif</option></select></label><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Eğitim durumu</span><select value={trainingFilter} onChange={(event) => setTrainingFilter(event.target.value)} className="h-10 min-w-0 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-medium text-ink-700 outline-none focus:border-brand-500"><option value="all">Tümü</option>{Object.entries(trainingLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Tamamlama başlangıç</span><input type="date" value={completionFrom} onChange={(event) => setCompletionFrom(event.target.value)} className="h-10 min-w-0 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs text-ink-700 outline-none focus:border-brand-500" /></label><label><span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Tamamlama bitiş</span><input type="date" value={completionTo} onChange={(event) => setCompletionTo(event.target.value)} className="h-10 min-w-0 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs text-ink-700 outline-none focus:border-brand-500" /></label><div className="flex items-end gap-3 sm:col-span-2 lg:col-span-3 xl:col-span-5"><label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-700"><input type="checkbox" checked={overdueOnly} onChange={(event) => setOverdueOnly(event.target.checked)} className="h-4 w-4 rounded border-amber-300" /> Eğitim süresi geçenler</label><button type="button" onClick={clearFilters} className="ml-auto inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-ink-500 hover:bg-ink-100"><X className="h-3.5 w-3.5" /> Temizle</button></div></div>}</div>
 
@@ -262,6 +271,16 @@ export function ParticipantsPage() {
           defaultCompany={companies[0] ?? 'Quantis Tekstil'}
           onClose={() => setShowBulkParticipantModal(false)}
           onCreate={handleBulkCreateParticipants}
+        />
+      )}
+    </AnimatePresence>
+
+    {/* Tekil katılımcı ekleme modal'ı */}
+    <AnimatePresence>
+      {showSingleParticipantModal && (
+        <SingleParticipantModal
+          onClose={() => setShowSingleParticipantModal(false)}
+          onCreate={handleCreateParticipant}
         />
       )}
     </AnimatePresence>
