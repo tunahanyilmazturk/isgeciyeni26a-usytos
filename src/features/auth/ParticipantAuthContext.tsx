@@ -5,6 +5,7 @@ export interface ParticipantUser {
   name: string
   username: string
   email: string
+  phone: string
   company: string
   department: string
   riskLevel: string
@@ -25,6 +26,7 @@ interface ParticipantAuthState {
   logout: () => void
   approveKvkk: () => void
   changePassword: (newPassword: string) => void
+  updateContact: (email: string, phone: string) => void
 }
 
 const STORAGE_KEY = 'hantech-participant-auth'
@@ -115,9 +117,27 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
     setMustChangePassword(false)
   }, [user])
 
+  const updateContact = useCallback((email: string, phone: string) => {
+    if (!user) return
+    const nextUser = { ...user, email, phone }
+    setUser(nextUser)
+    try {
+      const raw = window.localStorage.getItem('hantech-participants')
+      if (raw) {
+        const participants = JSON.parse(raw) as Array<{ id: number; email?: string; phone?: string }>
+        const updated = participants.map((p) =>
+          p.id === user.id ? { ...p, email, phone } : p,
+        )
+        window.localStorage.setItem('hantech-participants', JSON.stringify(updated))
+      }
+    } catch {
+      // Hata durumunda devam et
+    }
+  }, [user])
+
   const value = useMemo<ParticipantAuthState>(
-    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword }),
-    [user, kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword],
+    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword, updateContact }),
+    [user, kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword, updateContact],
   )
 
   return <ParticipantAuthContext.Provider value={value}>{children}</ParticipantAuthContext.Provider>

@@ -94,6 +94,7 @@ export function ParticipantLoginPage() {
         name: found.name,
         username: found.username,
         email: found.email,
+        phone: found.phone,
         company: found.company,
         department: found.department,
         riskLevel: found.riskLevel,
