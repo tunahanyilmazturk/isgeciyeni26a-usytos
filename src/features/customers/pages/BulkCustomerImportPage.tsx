@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
 import { downloadCustomerTemplate, parseIsgWorkbook, type ImportedCustomerRow, type IsgImportSummary } from '../lib/excel'
+import { readCustomers, saveCustomers, type Customer, type CompanyStatus, type ApprovalStatus, type ContractStatus, type RiskLevel } from '../data/customers'
 import { cn } from '@/lib/utils'
 
 type ImportStage = 'idle' | 'ready' | 'validating' | 'validated' | 'importing' | 'complete'
@@ -46,6 +47,71 @@ const sampleRows = [
   { company: 'Vortan Metal', status: 'Yeni Firma', statusTone: 'new', risk: 'Çok tehlikeli', employees: 58 },
 ]
 
+function normalizeKey(value: string) {
+  return value.trim().toLocaleLowerCase('tr-TR')
+}
+
+function riskLevelOf(value: string): RiskLevel {
+  return value === 'Çok tehlikeli' || value === 'Tehlikeli' || value === 'Az tehlikeli' ? value : 'Az tehlikeli'
+}
+
+function importedCustomer(row: ImportedCustomerRow, id: number): Customer {
+  return {
+    id,
+    name: row.company,
+    taxNumber: `DEMO-IMPORT-VKN-${id}`,
+    sector: 'İçe aktarılan firma',
+    location: row.city || 'Belirtilmedi',
+    employees: row.employees,
+    riskLevel: riskLevelOf(row.risk),
+    expert: row.expert,
+    doctor: row.doctor,
+    expertMinutes: 0,
+    doctorMinutes: 0,
+    contractStatus: row.contractStatus as ContractStatus,
+    approvalStatus: 'Onay bekliyor' as ApprovalStatus,
+    status: 'active' as CompanyStatus,
+    contactName: '—',
+    contactEmail: '—',
+    contactPhone: '—',
+    updatedAt: new Date().toLocaleDateString('tr-TR'),
+    socialSecurityNumber: row.sgkNumber,
+    naceCode: '—',
+    participants: 0,
+    contractStart: '—',
+    contractEnd: '—',
+    approver: 'Henüz onaylanmadı',
+    signatory: '—',
+    city: row.city || '—',
+    district: '—',
+    address: '—',
+    accountant: '—',
+    accountantPhone: '—',
+    accountantEmail: '—',
+    visitPeriod: '—',
+    completedVisits: 0,
+    plannedVisits: 0,
+    nextVisit: '—',
+    expertClass: '—',
+  }
+}
+
+function updateImportedCustomer(current: Customer, row: ImportedCustomerRow): Customer {
+  return {
+    ...current,
+    name: row.company,
+    location: row.city || current.location,
+    city: row.city || current.city,
+    employees: row.employees,
+    riskLevel: riskLevelOf(row.risk),
+    expert: row.expert || current.expert,
+    doctor: row.doctor || current.doctor,
+    contractStatus: row.contractStatus as ContractStatus,
+    socialSecurityNumber: row.sgkNumber,
+    updatedAt: new Date().toLocaleDateString('tr-TR'),
+  }
+}
+
 export function BulkCustomerImportPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -54,6 +120,7 @@ export function BulkCustomerImportPage() {
   const [error, setError] = useState('')
   const [summary, setSummary] = useState<IsgImportSummary | null>(null)
   const [previewRows, setPreviewRows] = useState<ImportedCustomerRow[]>([])
+  const [importRows, setImportRows] = useState<ImportedCustomerRow[]>([])
 
   function handleFile(candidate?: File) {
     if (!candidate) return
@@ -74,6 +141,7 @@ export function BulkCustomerImportPage() {
     setStage('ready')
     setSummary(null)
     setPreviewRows([])
+    setImportRows([])
   }
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -92,9 +160,13 @@ export function BulkCustomerImportPage() {
     setStage('validating')
     setError('')
     try {
-      const result = parseIsgWorkbook(await file.arrayBuffer())
+      const existingSgkNumbers = readCustomers()
+        .map((customer) => customer.socialSecurityNumber)
+        .filter((value): value is string => Boolean(value && value !== '—'))
+      const result = parseIsgWorkbook(await file.arrayBuffer(), existingSgkNumbers)
       if (!result.rows.length) throw new Error('Dosyada aktarılabilir, aktif sözleşmeli Firma bulunamadı.')
       setSummary(result.summary)
+      setImportRows(result.rows)
       setPreviewRows(result.rows.slice(0, 5))
       setStage('validated')
       toast.success('Dosya doğrulaması tamamlandı', { description: `${result.summary.total} satır incelendi, ${result.rows.length} Firma kaydı bulundu.` })
@@ -102,16 +174,45 @@ export function BulkCustomerImportPage() {
       setStage('ready')
       setSummary(null)
       setPreviewRows([])
+      setImportRows([])
       setError(validationError instanceof Error ? validationError.message : 'Excel dosyası okunamadı.')
     }
   }
 
   function startImport() {
+    if (stage !== 'validated' || importRows.length === 0) return
     setStage('importing')
-    window.setTimeout(() => {
+    try {
+      const current = readCustomers()
+      let next = [...current]
+      let added = 0
+      let updated = 0
+
+      importRows.forEach((row, index) => {
+        const existingIndex = next.findIndex((customer) =>
+          normalizeKey(customer.socialSecurityNumber ?? '') === normalizeKey(row.sgkNumber),
+        )
+        if (existingIndex >= 0) {
+          next[existingIndex] = updateImportedCustomer(next[existingIndex], row)
+          updated += 1
+        } else {
+          next = [...next, importedCustomer(row, Date.now() + index)]
+          added += 1
+        }
+      })
+
+      saveCustomers(next)
       setStage('complete')
-      toast.success('Toplu aktarım tamamlandı', { description: 'Firma kayıtları portföyünüze işlendi.' })
-    }, 1200)
+      toast.success('Toplu aktarım tamamlandı', {
+        description: `${added} yeni firma oluşturuldu, ${updated} firma güncellendi.`,
+      })
+    } catch {
+      setStage('validated')
+      setError('Firma kayıtları kaydedilemedi. Lütfen tekrar deneyin.')
+      toast.error('Toplu aktarım tamamlanamadı', {
+        description: 'Kayıtlar kaydedilirken bir hata oluştu.',
+      })
+    }
   }
 
   function resetImport() {
@@ -119,6 +220,7 @@ export function BulkCustomerImportPage() {
     setStage('idle')
     setSummary(null)
     setPreviewRows([])
+    setImportRows([])
     setError('')
   }
 
