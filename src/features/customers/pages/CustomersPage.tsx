@@ -159,7 +159,7 @@ export function CustomersPage() {
 
   function exportCustomers() {
     downloadCustomerList(customers)
-    toast.success('Müşteri listesi XLSX olarak indirildi')
+    toast.success("Müşteri listesi Excel'e aktarıldı")
   }
 
   function onSubmit(data: CustomerForm) {
