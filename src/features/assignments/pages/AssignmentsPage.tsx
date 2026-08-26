@@ -99,12 +99,12 @@ export function AssignmentsPage() {
     refreshData()
     setShowBulkModal(false)
     if (result.added > 0) {
-      toast.success(`${result.added} atama oluÅŸturuldu`, {
-        description: result.skipped > 0 ? `${result.skipped} zaten atanmÄ±ÅŸ olduÄŸundan atlandÄ±.` : 'TÃ¼m atamalar baÅŸarÄ±yla eklendi.',
+      toast.success(`${result.added} atama oluşturuldu`, {
+        description: result.skipped > 0 ? `${result.skipped} zaten atanmış olduğundan atlandı.` : 'Tüm atamalar başarıyla eklendi.',
       })
     } else {
       toast.info('Yeni atama eklenmedi', {
-        description: 'SeÃ§ili tÃ¼m eÄŸitimler katÄ±lÄ±mcÄ±lara zaten atanmÄ±ÅŸ.',
+        description: 'Seçili tüm eğitimler katılımcılara zaten atanmış.',
       })
     }
   }
@@ -130,16 +130,16 @@ export function AssignmentsPage() {
     addAssignment(participantId, trainingId, dueDate, options)
     refreshData()
     const training = trainingCatalog.find((t) => t.id === trainingId)
-    toast.success('EÄŸitim atandÄ±', {
-      description: `${training?.name ?? 'EÄŸitim'} baÅŸarÄ±yla atandÄ±.`,
+    toast.success('Eğitim atandı', {
+      description: `${training?.name ?? 'Eğitim'} başarıyla atandı.`,
     })
   }
 
   function handleRemoveAssignment(assignmentId: string, trainingName: string) {
     removeAssignment(assignmentId)
     refreshData()
-    toast.info('Atama kaldÄ±rÄ±ldÄ±', {
-      description: `${trainingName} atamasÄ± kaldÄ±rÄ±ldÄ±.`,
+    toast.info('Atama kaldırıldı', {
+      description: `${trainingName} ataması kaldırıldı.`,
     })
   }
 
@@ -149,10 +149,10 @@ export function AssignmentsPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400">
-            <span>Ana menÃ¼</span><span>/</span><span className="text-ink-600">EÄŸitim AtamalarÄ±</span>
+            <span>Ana menü</span><span>/</span><span className="text-ink-600">Eğitim Atamaları</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">EÄŸitim atamalarÄ±</h1>
-          <p className="mt-1.5 max-w-2xl text-sm text-ink-500">Global eÄŸitimleri katÄ±lÄ±mcÄ±lara atayÄ±n, atama durumlarÄ±nÄ± tek ekrandan takip edin.</p>
+          <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Eğitim atamaları</h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-ink-500">Global eğitimleri katılımcılara atayın, atama durumlarını tek ekrandan takip edin.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {/* View toggle */}
@@ -172,12 +172,12 @@ export function AssignmentsPage() {
               <Calendar className="h-3.5 w-3.5" strokeWidth={1.8} /> Takvim
             </button>
           </div>
-          <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => openDrawer(null)}>EÄŸitim ata</Button>
+          <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => openDrawer(null)}>Eğitim ata</Button>
           <Button variant="outline" size="md" leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />} onClick={handleBulkAssign}>Toplu atama</Button>
         </div>
       </motion.div>
 
-      {/* Aktif eÄŸitim banner'Ä± */}
+      {/* Aktif eğitim banner'ı */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -188,27 +188,27 @@ export function AssignmentsPage() {
           <Layers3 className="h-5 w-5" strokeWidth={1.8} />
         </span>
         <p className="text-sm text-ink-600">
-          Sistem genelindeki aktif eÄŸitim sayÄ±sÄ±:{' '}
+          Sistem genelindeki aktif eğitim sayısı:{' '}
           <span className="bg-gradient-to-r from-brand-600 to-teal-600 bg-clip-text font-bold text-transparent">{activeTrainingCount}</span>
         </p>
       </motion.div>
 
-      {/* Filtre + tablo kartÄ± */}
+      {/* Filtre + tablo kartı */}
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1 }}
         className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
       >
-        {/* Filtre barÄ± */}
+        {/* Filtre barı */}
         <div className="border-b border-ink-100 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-ink-900">Filtreler</h2>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filtered.length} katÄ±lÄ±mcÄ±</span>
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filtered.length} katılımcı</span>
               </div>
-              <p className="mt-1 text-xs text-ink-400">KatÄ±lÄ±mcÄ± listesini arama, eÄŸitim atamasÄ± ve mÃ¼ÅŸteriye gÃ¶re daraltÄ±n; sonucu dÄ±ÅŸa aktarabilirsiniz.</p>
+              <p className="mt-1 text-xs text-ink-400">Katılımcı listesini arama, eğitim ataması ve müşteriye göre daraltın; sonucu dışa aktarabilirsiniz.</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative">
@@ -216,7 +216,7 @@ export function AssignmentsPage() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Ad, kullanÄ±cÄ± adÄ± veya e-posta"
+                  placeholder="Ad, kullanıcı adı veya e-posta"
                   className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-3 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-72"
                 />
               </div>
@@ -230,29 +230,29 @@ export function AssignmentsPage() {
             </div>
           </div>
 
-          {/* DetaylÄ± filtreler */}
+          {/* Detaylı filtreler */}
           {showFilters && (
             <div className="mt-5 grid gap-3 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-3">
               <label>
-                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">EÄŸitim atamasÄ±</span>
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Eğitim ataması</span>
                 <select
                   value={assignmentFilter}
                   onChange={(event) => setAssignmentFilter(event.target.value as AssignmentFilter)}
                   className="h-10 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-700 outline-none focus:border-brand-500"
                 >
-                  <option value="all">TÃ¼mÃ¼</option>
-                  <option value="assigned">AtamasÄ± olanlar</option>
-                  <option value="unassigned">AtamasÄ± olmayanlar</option>
+                  <option value="all">Tümü</option>
+                  <option value="assigned">Ataması olanlar</option>
+                  <option value="unassigned">Ataması olmayanlar</option>
                 </select>
               </label>
               <label>
-                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">MÃ¼ÅŸteri</span>
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Firma</span>
                 <select
                   value={companyFilter}
                   onChange={(event) => setCompanyFilter(event.target.value)}
                   className="h-10 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-700 outline-none focus:border-brand-500"
                 >
-                  <option value="all">TÃ¼mÃ¼</option>
+                  <option value="all">Tümü</option>
                   {companies.map((company) => <option key={company} value={company}>{company}</option>)}
                 </select>
               </label>
@@ -270,18 +270,18 @@ export function AssignmentsPage() {
           )}
         </div>
 
-        {/* Tablo (liste gÃ¶rÃ¼nÃ¼mÃ¼) */}
+        {/* Tablo (liste görünümü) */}
         {view === 'list' && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
-                <th className="px-5 py-3.5 font-semibold sm:px-6">KatÄ±lÄ±mcÄ±</th>
-                <th className="px-3 py-3.5 font-semibold">MÃ¼ÅŸteri</th>
-                <th className="px-3 py-3.5 font-semibold">YÃ¼rÃ¼rlÃ¼kte</th>
+                <th className="px-5 py-3.5 font-semibold sm:px-6">Katılımcı</th>
+                <th className="px-3 py-3.5 font-semibold">Firma</th>
+                <th className="px-3 py-3.5 font-semibold">Yürürlükte</th>
                 <th className="px-3 py-3.5 font-semibold">Onay bekleyen</th>
                 <th className="px-3 py-3.5 font-semibold">Tamamlanan</th>
-                <th className="px-5 py-3.5 text-right font-semibold sm:px-6">Ä°ÅŸlem</th>
+                <th className="px-5 py-3.5 text-right font-semibold sm:px-6">İşlem</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100">
@@ -289,7 +289,7 @@ export function AssignmentsPage() {
                 const p = summary.participant
                 return (
                   <tr key={p.id} className="group transition-colors hover:bg-brand-50/35">
-                    {/* KatÄ±lÄ±mcÄ± */}
+                    {/* Katılımcı */}
                     <td className="px-5 py-4 sm:px-6">
                       <div className="flex items-center gap-3">
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-brand-100">
@@ -298,19 +298,19 @@ export function AssignmentsPage() {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-ink-800">{p.name}</p>
                           <p className="mt-0.5 truncate text-[11px] text-ink-400">
-                            {p.username} {p.email !== 'â€”' && `â€” ${p.email}`}
+                            {p.username} {p.email !== '—' && `— ${p.email}`}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* MÃ¼ÅŸteri */}
+                    {/* Firma */}
                     <td className="px-3 py-4">
                       <p className="text-sm font-medium text-ink-700">{p.company}</p>
                       <p className="mt-0.5 text-[11px] text-ink-400">{p.department}</p>
                     </td>
 
-                    {/* YÃ¼rÃ¼rlÃ¼kte (aktif) */}
+                    {/* Yürürlükte (aktif) */}
                     <td className="px-3 py-4">
                       <CountBadge count={summary.activeCount} variant="active" />
                     </td>
@@ -325,7 +325,7 @@ export function AssignmentsPage() {
                       <CountBadge count={summary.completedCount} variant="completed" />
                     </td>
 
-                    {/* Ä°ÅŸlem */}
+                    {/* İşlem */}
                     <td className="px-5 py-4 sm:px-6">
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -334,7 +334,7 @@ export function AssignmentsPage() {
                           className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-50"
                         >
                           <Pencil className="h-3.5 w-3.5" strokeWidth={1.7} />
-                          <span className="hidden sm:inline">Atama dÃ¼zenle</span>
+                          <span className="hidden sm:inline">Atama düzenle</span>
                           <ArrowRight className="h-3.5 w-3.5 sm:hidden" strokeWidth={1.7} />
                         </button>
                       </div>
@@ -345,19 +345,19 @@ export function AssignmentsPage() {
             </tbody>
           </table>
 
-          {/* BoÅŸ durum */}
+          {/* Boş durum */}
           {filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
               <Search className="h-8 w-8 text-ink-300" strokeWidth={1.7} />
-              <p className="text-sm font-semibold text-ink-700">SonuÃ§ bulunamadÄ±</p>
-              <p className="text-xs text-ink-400">Arama veya filtre kriterlerinizi gÃ¼ncelleyin.</p>
+              <p className="text-sm font-semibold text-ink-700">Sonuç bulunamadı</p>
+              <p className="text-xs text-ink-400">Arama veya filtre kriterlerinizi güncelleyin.</p>
               {hasActiveFilters && <Button variant="outline" size="sm" className="mt-2" onClick={clearFilters}>Filtreleri temizle</Button>}
             </div>
           )}
         </div>
         )}
 
-        {/* Pagination (liste gÃ¶rÃ¼nÃ¼mÃ¼) */}
+        {/* Pagination (liste görünümü) */}
         {view === 'list' && (
         <Pagination
           currentPage={currentPage}
@@ -368,11 +368,11 @@ export function AssignmentsPage() {
           onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
           startIndex={startIndex}
           endIndex={endIndex}
-          itemName="katÄ±lÄ±mcÄ±"
+          itemName="katılımcı"
         />
         )}
 
-        {/* Takvim gÃ¶rÃ¼nÃ¼mÃ¼ */}
+        {/* Takvim görünümü */}
         {view === 'calendar' && (
           <AssignmentCalendar
             summaries={filtered}
@@ -380,7 +380,7 @@ export function AssignmentsPage() {
         )}
       </motion.section>
 
-      {/* Bireysel atama drawer'Ä± */}
+      {/* Bireysel atama drawer'ı */}
       <AnimatePresence>
         {drawerParticipant !== undefined && (
           <AssignmentModal
@@ -392,7 +392,7 @@ export function AssignmentsPage() {
         )}
       </AnimatePresence>
 
-      {/* Toplu atama modal'Ä± */}
+      {/* Toplu atama modal'ı */}
       <AnimatePresence>
         {showBulkModal && (
           <BulkAssignmentModal
@@ -405,12 +405,12 @@ export function AssignmentsPage() {
   )
 }
 
-/** Atama durumu etiketleri ve renkleri (takvimde de kullanÄ±lÄ±r) */
+/** Atama durumu etiketleri ve renkleri (takvimde de kullanılır) */
 const assignmentStatusLabels: Record<TrainingAssignment['status'], string> = {
-  active: 'YÃ¼rÃ¼rlÃ¼kte',
+  active: 'Yürürlükte',
   pending_approval: 'Onay bekliyor',
-  completed: 'TamamlandÄ±',
-  expired: 'SÃ¼resi doldu',
+  completed: 'Tamamlandı',
+  expired: 'Süresi doldu',
 }
 
 const assignmentStatusClasses: Record<TrainingAssignment['status'], string> = {
@@ -427,16 +427,16 @@ const assignmentStatusDot: Record<TrainingAssignment['status'], string> = {
   expired: 'bg-rose-500',
 }
 
-/** TÃ¼rkÃ§e ay isimleri */
+/** Türkçe ay isimleri */
 const MONTH_NAMES = [
-  'Ocak', 'Åubat', 'Mart', 'Nisan', 'MayÄ±s', 'Haziran',
-  'Temmuz', 'AÄŸustos', 'EylÃ¼l', 'Ekim', 'KasÄ±m', 'AralÄ±k',
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
 ]
 
-/** TÃ¼rkÃ§e gÃ¼n kÄ±saltmalarÄ± (Pazartesi'den baÅŸlar) */
-const DAY_LABELS = ['Pzt', 'Sal', 'Ã‡ar', 'Per', 'Cum', 'Cmt', 'Paz']
+/** Türkçe gün kısaltmaları (Pazartesi'den başlar) */
+const DAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
-/** "30.11.2026" formatÄ±nÄ± "2026-11-30" formatÄ±na Ã§evirir (takvim iÃ§in) */
+/** "30.11.2026" formatını "2026-11-30" formatına çevirir (takvim için) */
 function parseDueDate(dueDate: string): string | null {
   const match = dueDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
   if (!match) return null
@@ -444,7 +444,7 @@ function parseDueDate(dueDate: string): string | null {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
 }
 
-/** AylÄ±k takvim grid'i â€” atamalarÄ± son tarihlere gÃ¶re gÃ¶sterir */
+/** Aylık takvim grid'i — atamaları son tarihlere göre gösterir */
 function AssignmentCalendar({
   summaries,
 }: {
@@ -455,7 +455,7 @@ function AssignmentCalendar({
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
-  // TÃ¼m atamalarÄ± topla â€” participant bilgisini ekle
+  // Tüm atamaları topla — participant bilgisini ekle
   const allAssignments = useMemo(() => {
     const result: Array<TrainingAssignment & { participantName: string; participantId: number; company: string }> = []
     summaries.forEach((summary) => {
@@ -471,7 +471,7 @@ function AssignmentCalendar({
     return result
   }, [summaries])
 
-  // AtamalarÄ± tarihe gÃ¶re grupla
+  // Atamaları tarihe göre grupla
   const assignmentsByDate = useMemo(() => {
     const map = new Map<string, typeof allAssignments>()
     allAssignments.forEach((a) => {
@@ -484,7 +484,7 @@ function AssignmentCalendar({
     return map
   }, [allAssignments])
 
-  // Takvim grid'ini oluÅŸtur
+  // Takvim grid'ini oluştur
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1)
     const lastDay = new Date(currentYear, currentMonth + 1, 0)
@@ -492,17 +492,17 @@ function AssignmentCalendar({
     const daysInMonth = lastDay.getDate()
 
     const days: Array<{ date: string | null; day: number | null; isToday: boolean }> = []
-    // Ã–nceki aydan gelen boÅŸ gÃ¼nler
+    // Önceki aydan gelen boş günler
     for (let i = 0; i < startWeekday; i++) {
       days.push({ date: null, day: null, isToday: false })
     }
-    // AyÄ±n gÃ¼nleri
+    // Ayın günleri
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
       const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()
       days.push({ date: dateStr, day: d, isToday })
     }
-    // Sonraki aydan gelen boÅŸ gÃ¼nler (grid'i tamamla)
+    // Sonraki aydan gelen boş günler (grid'i tamamla)
     while (days.length % 7 !== 0) {
       days.push({ date: null, day: null, isToday: false })
     }
@@ -545,15 +545,15 @@ function AssignmentCalendar({
 
   return (
     <div className="p-5 sm:p-6">
-      {/* Takvim header â€” ay navigasyonu */}
+      {/* Takvim header — ay navigasyonu */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold text-ink-900">{MONTH_NAMES[currentMonth]} {currentYear}</h3>
           <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-bold text-brand-700">{monthAssignmentsCount} atama</span>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={goToToday} className="inline-flex h-9 items-center rounded-xl border border-ink-200 px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">BugÃ¼n</button>
-          <button type="button" onClick={prevMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Ã–nceki ay">
+          <button type="button" onClick={goToToday} className="inline-flex h-9 items-center rounded-xl border border-ink-200 px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">Bugün</button>
+          <button type="button" onClick={prevMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Önceki ay">
             <ChevronLeft className="h-4 w-4" strokeWidth={1.8} />
           </button>
           <button type="button" onClick={nextMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Sonraki ay">
@@ -562,7 +562,7 @@ function AssignmentCalendar({
         </div>
       </div>
 
-      {/* GÃ¼n baÅŸlÄ±klarÄ± */}
+      {/* Gün başlıkları */}
       <div className="mb-2 grid grid-cols-7 gap-1.5">
         {DAY_LABELS.map((label) => (
           <div key={label} className="pb-2 text-center text-[10px] font-bold uppercase tracking-wide text-ink-400">{label}</div>
@@ -597,7 +597,7 @@ function AssignmentCalendar({
                   <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[9px] font-bold text-ink-600">{dayAssignments.length}</span>
                 )}
               </div>
-              {/* Atama noktalarÄ± (max 3 gÃ¶ster) */}
+              {/* Atama noktaları (max 3 göster) */}
               <div className="space-y-1">
                 {dayAssignments.slice(0, 3).map((a) => (
                   <div key={a.id} className="flex items-center gap-1 truncate">
@@ -614,7 +614,7 @@ function AssignmentCalendar({
         })}
       </div>
 
-      {/* SeÃ§ili gÃ¼nÃ¼n detaylarÄ± */}
+      {/* Seçili günün detayları */}
       {selectedDay && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -643,7 +643,7 @@ function AssignmentCalendar({
                     <span className={cn('h-2 w-2 shrink-0 rounded-full', assignmentStatusDot[a.status])} />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-ink-800">{a.trainingName}</p>
-                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{a.participantName} Â· {a.company}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{a.participantName} · {a.company}</p>
                     </div>
                   </div>
                   <span className={cn('inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[a.status])}>
@@ -670,7 +670,7 @@ function AssignmentCalendar({
   )
 }
 
-/** Atama sayÄ±sÄ± rozeti â€” duruma gÃ¶re renkli */
+/** Atama sayısı rozeti — duruma göre renkli */
 function CountBadge({ count, variant }: { count: number; variant: 'active' | 'pending' | 'completed' }) {
   const styles = {
     active: count > 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-ink-200 bg-ink-50 text-ink-400',
