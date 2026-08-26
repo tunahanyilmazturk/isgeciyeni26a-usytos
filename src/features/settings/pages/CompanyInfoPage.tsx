@@ -21,6 +21,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
+import { readStorage, writeStorage } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 
 const companySchema = z.object({
@@ -42,13 +43,13 @@ const companySchema = z.object({
 type CompanyForm = z.infer<typeof companySchema>
 
 const defaultValues: CompanyForm = {
-  name: 'Çetka OSGB',
-  phone: '0530 555 44 09',
-  taxOffice: 'Çankaya Vergi Dairesi',
-  taxNumber: '123 456 7890',
-  registryNumber: 'TR-OSGB-DEMO-1167',
-  authorizationCertificate: 'OSGB-WAC-DEMO-1167',
-  address: 'Örnek OSGB adresi — demo verisi',
+  name: 'Demo OSGB',
+  phone: '000 000 00 00',
+  taxOffice: 'Demo Vergi Dairesi',
+  taxNumber: 'DEMO-VKN-OSGB',
+  registryNumber: 'DEMO-OSGB-0001',
+  authorizationCertificate: 'DEMO-YETKI-0001',
+  address: 'Demo OSGB adresi',
   participantOtpEnabled: false,
   participantOtpChannel: 'email',
   staffOtpEnabled: false,
@@ -56,6 +57,8 @@ const defaultValues: CompanyForm = {
   notifyEmail: true,
   notifySms: false,
 }
+
+const COMPANY_INFO_STORAGE_KEY = 'hantech-company-info'
 
 function SelectField({
   id,
@@ -121,13 +124,17 @@ export function CompanyInfoPage() {
     formState: { errors, isSubmitting },
   } = useForm<CompanyForm>({
     resolver: zodResolver(companySchema),
-    defaultValues,
+    defaultValues: readStorage(COMPANY_INFO_STORAGE_KEY, defaultValues, companySchema),
   })
 
   function onSubmit(data: CompanyForm) {
-    void data
-    toast.info('Kurum ayarları henüz kalıcı değil', {
-      description: 'Ayarların kaydedilmesi için client-side persistence veya backend bağlantısı gereklidir.',
+    const saved = writeStorage(COMPANY_INFO_STORAGE_KEY, data)
+    if (!saved) {
+      toast.error('Kurum bilgileri kaydedilemedi', { description: 'Tarayıcı depolama alanına erişilemedi.' })
+      return
+    }
+    toast.success('Kurum bilgileri kaydedildi', {
+      description: 'Bilgiler bu tarayıcıda saklandı. Merkezi paylaşım için backend gereklidir.',
     })
   }
 

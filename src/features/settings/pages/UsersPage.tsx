@@ -31,6 +31,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Input, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { readStorage, writeStorage } from '@/lib/storage'
 import { type User, type UserStatus, readUsers, saveUsers } from '../data/settings'
 
 type ModuleId = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'signatures' | 'liveTraining' | 'reports' | 'trainings' | 'companyInfo' | 'support'
@@ -63,6 +64,16 @@ const statusStyles: Record<UserStatus, { label: string; className: string }> = {
 
 type RoleDefinition = { id: string; name: string; description: string; permissions: ModuleId[]; system: boolean }
 
+const moduleIdSchema = z.enum(['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'companyInfo', 'support'])
+const roleDefinitionsSchema = z.array(z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  permissions: z.array(moduleIdSchema),
+  system: z.boolean(),
+}))
+const ROLE_DEFINITIONS_STORAGE_KEY = 'hantech-role-definitions'
+
 const defaultRoleDefinitions: RoleDefinition[] = [
   { id: 'admin', name: 'Yönetici', description: 'Tüm modüllere ve kurum ayarlarına tam erişim.', permissions: modules.map((module) => module.id), system: true },
   { id: 'expert', name: 'İSG Uzmanı', description: 'Saha, eğitim ve raporlama süreçlerini yönetir.', permissions: ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'support'], system: true },
@@ -93,7 +104,7 @@ function getRolePermissions(role: string, definitions: RoleDefinition[]) { retur
 
 export function UsersPage() {
   const [users, setUsers] = useState(() => readUsers())
-  const [roleDefinitions, setRoleDefinitions] = useState(defaultRoleDefinitions)
+  const [roleDefinitions, setRoleDefinitions] = useState(() => readStorage(ROLE_DEFINITIONS_STORAGE_KEY, defaultRoleDefinitions, roleDefinitionsSchema))
   const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users')
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -109,6 +120,7 @@ export function UsersPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   useEffect(() => { saveUsers(users) }, [users])
+  useEffect(() => { writeStorage(ROLE_DEFINITIONS_STORAGE_KEY, roleDefinitions) }, [roleDefinitions])
 
   const userForm = useForm<UserForm>({ resolver: zodResolver(userSchema), defaultValues: { firstName: '', lastName: '', username: '', email: '', phone: '', role: '', company: 'Çetka OSGB', permissions: [], password: '', passwordConfirmation: '' } })
   const roleForm = useForm<RoleForm>({ resolver: zodResolver(roleSchema), defaultValues: { name: '', description: '', permissions: [] } })
