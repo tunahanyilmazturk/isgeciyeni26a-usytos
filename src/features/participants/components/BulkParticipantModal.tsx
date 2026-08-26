@@ -9,23 +9,25 @@ import { type Participant } from '../data/participants'
 export interface BulkParticipantRow {
   key: string
   name: string
-  email: string
-  phone: string
+  username: string
+  password: string
   tcNumber: string
   company: string
-  department: string
+  jobTitle: string
   riskLevel: 'Az tehlikeli' | 'Tehlikeli' | 'Çok tehlikeli'
 }
+
+const DEFAULT_PASSWORD = '123456'
 
 function emptyRow(key: string, defaultCompany: string): BulkParticipantRow {
   return {
     key,
     name: '',
-    email: '',
-    phone: '',
+    username: '',
+    password: DEFAULT_PASSWORD,
     tcNumber: '',
     company: defaultCompany,
-    department: '',
+    jobTitle: '',
     riskLevel: 'Tehlikeli',
   }
 }
@@ -76,36 +78,39 @@ export function BulkParticipantModal({
     ])
   }
 
-  // Validasyon
-  const validRows = useMemo(() => rows.filter((r) => r.name.trim() && r.email.trim() && r.department.trim()), [rows])
+  // Validasyon — Ad Soyad, Kullanıcı adı, Ünvan zorunlu
+  const validRows = useMemo(
+    () => rows.filter((r) => r.name.trim() && r.username.trim() && r.jobTitle.trim()),
+    [rows],
+  )
   const invalidCount = rows.length - validRows.length
   const canSubmit = validRows.length > 0
 
-  // Duplicate email kontrolü
-  const emailCounts = useMemo(() => {
+  // Duplicate username kontrolü
+  const usernameCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     validRows.forEach((r) => {
-      const e = r.email.trim().toLocaleLowerCase('tr-TR')
-      counts[e] = (counts[e] ?? 0) + 1
+      const u = r.username.trim().toLocaleLowerCase('tr-TR')
+      counts[u] = (counts[u] ?? 0) + 1
     })
     return counts
   }, [validRows])
-  const duplicateEmails = Object.entries(emailCounts).filter(([, c]) => c > 1).map(([e]) => e)
+  const duplicateUsernames = Object.entries(usernameCounts).filter(([, c]) => c > 1).map(([u]) => u)
 
   function handleSubmit() {
-    if (!canSubmit) return
+    if (!canSubmit || duplicateUsernames.length > 0) return
     const now = Date.now()
     const participants: Participant[] = validRows.map((r, i) => ({
       id: now + i,
       name: r.name.trim(),
-      username: `katilimci${(now + i).toString().slice(-4)}`,
-      email: r.email.trim(),
-      phone: r.phone.trim() || '—',
+      username: r.username.trim(),
+      email: '—',
+      phone: '—',
       tcNumber: r.tcNumber.trim() || '—',
       companyId: companies.indexOf(r.company) + 1,
       company: r.company,
       riskLevel: r.riskLevel,
-      department: r.department.trim(),
+      department: r.jobTitle.trim(),
       trainingMinutes: 0,
       progress: 0,
       trainingStatus: 'not_started',
@@ -113,6 +118,7 @@ export function BulkParticipantModal({
       nextTraining: '—',
       status: 'active',
       lastLogin: 'Henüz giriş yapmadı',
+      password: r.password.trim() || DEFAULT_PASSWORD,
     }))
     onCreate(participants)
   }
@@ -147,7 +153,7 @@ export function BulkParticipantModal({
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-ink-900">Toplu katılımcı ekle</h2>
                 <p className="mt-0.5 text-sm text-ink-500">
-                  Tabloya bilgileri girin, satır ekleyerek listeyi uzatın.
+                  Tabloya bilgileri girin, satır ekleyerek listeyi uzatın. E-posta ve telefonu katılımcı ilk girişte kendisi girecek.
                 </p>
               </div>
             </div>
@@ -161,7 +167,7 @@ export function BulkParticipantModal({
         <div className="shrink-0 flex flex-wrap items-center gap-2 border-b border-ink-100 bg-ink-50/30 px-6 py-3 sm:px-8">
           <span className="text-xs font-semibold text-ink-600">
             {validRows.length} geçerli{invalidCount > 0 && <span className="text-amber-600"> · {invalidCount} eksik</span>}
-            {duplicateEmails.length > 0 && <span className="text-rose-600"> · {duplicateEmails.length} tekrarlanan e-posta</span>}
+            {duplicateUsernames.length > 0 && <span className="text-rose-600"> · {duplicateUsernames.length} tekrarlanan kullanıcı adı</span>}
           </span>
           <div className="ml-auto flex flex-wrap gap-2">
             <button type="button" onClick={() => addMultipleRows(5)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">
@@ -183,19 +189,19 @@ export function BulkParticipantModal({
               <tr>
                 <th className="w-10 px-3 py-3 text-center">#</th>
                 <th className="min-w-[160px] px-2 py-3">Ad Soyad <span className="text-rose-400">*</span></th>
-                <th className="min-w-[180px] px-2 py-3">E-posta <span className="text-rose-400">*</span></th>
-                <th className="min-w-[130px] px-2 py-3">Telefon</th>
+                <th className="min-w-[150px] px-2 py-3">Kullanıcı adı <span className="text-rose-400">*</span></th>
+                <th className="min-w-[120px] px-2 py-3">Şifre <span className="text-rose-400">*</span></th>
                 <th className="min-w-[120px] px-2 py-3">TC Kimlik</th>
                 <th className="min-w-[160px] px-2 py-3">Müşteri</th>
-                <th className="min-w-[140px] px-2 py-3">Departman <span className="text-rose-400">*</span></th>
+                <th className="min-w-[140px] px-2 py-3">Ünvan <span className="text-rose-400">*</span></th>
                 <th className="min-w-[130px] px-2 py-3">Tehlike sınıfı</th>
                 <th className="w-10 px-2 py-3 text-center">Sil</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100">
               {rows.map((row, idx) => {
-                const isValid = row.name.trim() && row.email.trim() && row.department.trim()
-                const isDuplicate = row.email.trim() && emailCounts[row.email.trim().toLocaleLowerCase('tr-TR')] > 1
+                const isValid = row.name.trim() && row.username.trim() && row.jobTitle.trim()
+                const isDuplicate = row.username.trim() && usernameCounts[row.username.trim().toLocaleLowerCase('tr-TR')] > 1
                 return (
                   <tr key={row.key} className={cn('transition-colors', isValid ? 'bg-white' : 'bg-amber-50/20')}>
                     <td className="px-3 py-2 text-center text-[10px] font-semibold text-ink-300 tabular-nums">{idx + 1}</td>
@@ -210,10 +216,10 @@ export function BulkParticipantModal({
                     </td>
                     <td className="px-2 py-1.5">
                       <input
-                        type="email"
-                        value={row.email}
-                        onChange={(e) => updateRow(row.key, 'email', e.target.value)}
-                        placeholder="calisan@firma.com"
+                        type="text"
+                        value={row.username}
+                        onChange={(e) => updateRow(row.key, 'username', e.target.value)}
+                        placeholder="ahmet.yilmaz"
                         className={cn(
                           'h-9 w-full rounded-lg border bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:ring-2 focus:ring-brand-500/10',
                           isDuplicate ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/10' : 'border-ink-200 focus:border-brand-500',
@@ -222,18 +228,20 @@ export function BulkParticipantModal({
                     </td>
                     <td className="px-2 py-1.5">
                       <input
-                        type="tel"
-                        value={row.phone}
-                        onChange={(e) => updateRow(row.key, 'phone', e.target.value)}
-                        placeholder="05XX..."
+                        type="text"
+                        value={row.password}
+                        onChange={(e) => updateRow(row.key, 'password', e.target.value)}
+                        placeholder={DEFAULT_PASSWORD}
                         className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                       />
                     </td>
                     <td className="px-2 py-1.5">
                       <input
                         type="text"
+                        inputMode="numeric"
+                        maxLength={11}
                         value={row.tcNumber}
-                        onChange={(e) => updateRow(row.key, 'tcNumber', e.target.value)}
+                        onChange={(e) => updateRow(row.key, 'tcNumber', e.target.value.replace(/\D/g, ''))}
                         placeholder="11 hane"
                         className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                       />
@@ -250,9 +258,9 @@ export function BulkParticipantModal({
                     <td className="px-2 py-1.5">
                       <input
                         type="text"
-                        value={row.department}
-                        onChange={(e) => updateRow(row.key, 'department', e.target.value)}
-                        placeholder="Üretim, İK..."
+                        value={row.jobTitle}
+                        onChange={(e) => updateRow(row.key, 'jobTitle', e.target.value)}
+                        placeholder="Üretim operatörü"
                         className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                       />
                     </td>
@@ -298,15 +306,15 @@ export function BulkParticipantModal({
               {canSubmit ? (
                 <span><span className="font-bold text-ink-800">{validRows.length}</span> katılımcı eklenecek</span>
               ) : (
-                <span>En az bir satırın ad, e-posta ve departman alanlarını doldurun</span>
+                <span>En az bir satırın ad, kullanıcı adı ve ünvan alanlarını doldurun</span>
               )}
-              {duplicateEmails.length > 0 && (
-                <span className="ml-2 text-rose-500">· {duplicateEmails.length} tekrarlanan e-posta var</span>
+              {duplicateUsernames.length > 0 && (
+                <span className="ml-2 text-rose-500">· {duplicateUsernames.length} tekrarlanan kullanıcı adı var</span>
               )}
             </div>
             <div className="flex gap-2.5">
               <Button type="button" variant="outline" size="md" onClick={onClose}>İptal</Button>
-              <Button type="button" size="md" disabled={!canSubmit || duplicateEmails.length > 0} leftIcon={<UserPlus className="h-4 w-4" strokeWidth={1.7} />} onClick={handleSubmit}>
+              <Button type="button" size="md" disabled={!canSubmit || duplicateUsernames.length > 0} leftIcon={<UserPlus className="h-4 w-4" strokeWidth={1.7} />} onClick={handleSubmit}>
                 {validRows.length} katılımcı ekle
               </Button>
             </div>
