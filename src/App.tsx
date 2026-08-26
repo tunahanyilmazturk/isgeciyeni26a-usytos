@@ -78,6 +78,9 @@ const ParticipantLoginPage = lazy(() =>
 const KvkkApprovalPage = lazy(() =>
   import('./features/auth').then((m) => ({ default: m.KvkkApprovalPage })),
 )
+const PasswordChangePage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.PasswordChangePage })),
+)
 const ParticipantDashboardPage = lazy(() =>
   import('./features/auth').then((m) => ({ default: m.ParticipantDashboardPage })),
 )
@@ -129,7 +132,7 @@ function ProtectedRoutes() {
 }
 
 function ParticipantRoutes() {
-  const { isAuthenticated, kvkkApproved } = useParticipantAuth()
+  const { isAuthenticated, kvkkApproved, mustChangePassword } = useParticipantAuth()
 
   if (!isAuthenticated) {
     return <Navigate to="/katilimci/giris" replace />
@@ -137,6 +140,10 @@ function ParticipantRoutes() {
 
   if (!kvkkApproved) {
     return <KvkkApprovalPage />
+  }
+
+  if (mustChangePassword) {
+    return <PasswordChangePage />
   }
 
   return (

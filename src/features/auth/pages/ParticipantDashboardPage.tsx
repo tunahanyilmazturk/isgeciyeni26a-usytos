@@ -3,6 +3,8 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   GraduationCap,
   HardHat,
@@ -10,12 +12,15 @@ import {
   PlayCircle,
   TrendingUp,
   UserRound,
+  XCircle,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useParticipantAuth } from '../ParticipantAuthContext'
+import { trainingCatalog } from '@/features/trainings/data/trainings'
 
 type TrainingStatusKey = 'not_started' | 'in_progress' | 'successful' | 'failed'
 
@@ -26,17 +31,40 @@ const trainingStatusConfig: Record<TrainingStatusKey, { label: string; color: st
   failed: { label: 'Başarısız', color: 'bg-rose-50 text-rose-700', dot: 'bg-rose-500' },
 }
 
-const mockTrainings = [
-  { id: 1, title: 'İSG Temel Eğitimi', duration: '120 dk', status: 'successful' as const, date: '12.01.2026', score: 92 },
-  { id: 2, title: 'Yangın Güvenliği ve Tahliye', duration: '90 dk', status: 'successful' as const, date: '18.01.2026', score: 88 },
-  { id: 3, title: 'İlk Yardım Eğitimi', duration: '60 dk', status: 'in_progress' as const, date: '—', score: null },
-  { id: 4, title: 'Elektrik Güvenliği', duration: '75 dk', status: 'not_started' as const, date: '—', score: null },
-  { id: 5, title: 'Yüksekte Çalışma Eğitimi', duration: '100 dk', status: 'not_started' as const, date: '—', score: null },
-]
+function normalizeRisk(level: string): string {
+  return level.toLocaleLowerCase('tr-TR').trim()
+}
 
 export function ParticipantDashboardPage() {
   const navigate = useNavigate()
   const { user, logout } = useParticipantAuth()
+  const [expandedTraining, setExpandedTraining] = useState<string | null>(null)
+
+  // Katılımcıya atanmış eğitimler — risk seviyesine uygun eğitimler
+  const assignedTrainings = useMemo(() => {
+    if (!user) return []
+    const userRisk = normalizeRisk(user.riskLevel)
+    return trainingCatalog.filter((t) => normalizeRisk(t.risk) === userRisk)
+  }, [user])
+
+  // Katılımcının eğitim durumu — progress ve trainingStatus'a göre
+  const trainingProgressMap = useMemo<Record<string, TrainingStatusKey>>(() => {
+    if (!user) return {}
+    const map: Record<string, TrainingStatusKey> = {}
+    const userStatus = user.trainingStatus as TrainingStatusKey
+    assignedTrainings.forEach((training, index) => {
+      // İlk eğitim katılımcının mevcut durumunu yansıtır
+      if (index === 0) {
+        map[training.id] = userStatus
+      } else if (userStatus === 'successful') {
+        // İlk eğitim tamamlanmışsa, sonraki eğitimler başlamamış sayılır
+        map[training.id] = 'not_started'
+      } else {
+        map[training.id] = 'not_started'
+      }
+    })
+    return map
+  }, [user, assignedTrainings])
 
   if (!user) {
     navigate('/katilimci/giris', { replace: true })
@@ -44,9 +72,10 @@ export function ParticipantDashboardPage() {
   }
 
   const statusInfo = trainingStatusConfig[user.trainingStatus as TrainingStatusKey] ?? trainingStatusConfig.not_started
-  const completedTrainings = mockTrainings.filter((t) => t.status === 'successful').length
-  const totalTrainings = mockTrainings.length
-  const completionRate = Math.round((completedTrainings / totalTrainings) * 100)
+  const completedTrainings = Object.values(trainingProgressMap).filter((s) => s === 'successful').length
+  const inProgressTrainings = Object.values(trainingProgressMap).filter((s) => s === 'in_progress').length
+  const totalTrainings = assignedTrainings.length
+  const completionRate = totalTrainings > 0 ? Math.round((completedTrainings / totalTrainings) * 100) : 0
 
   function handleLogout() {
     logout()
@@ -54,15 +83,19 @@ export function ParticipantDashboardPage() {
     navigate('/katilimci/giris', { replace: true })
   }
 
-  function handleStartTraining(title: string) {
-    toast.info('Eğitim başlatılıyor', { description: `${title} yakında hazır olacak.` })
+  function handleStartTraining(trainingName: string) {
+    toast.info('Eğitim başlatılıyor', { description: `${trainingName} yakında hazır olacak.` })
+  }
+
+  function toggleTraining(trainingId: string) {
+    setExpandedTraining((current) => (current === trainingId ? null : trainingId))
   }
 
   const stats = [
-    { label: 'Tamamlanan eğitim', value: String(completedTrainings), icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Devam eden', value: String(mockTrainings.filter((t) => t.status === 'in_progress').length), icon: PlayCircle, color: 'text-sky-600 bg-sky-50' },
+    { label: 'Atanan eğitim', value: String(totalTrainings), icon: BookOpen, color: 'text-brand-600 bg-brand-50' },
+    { label: 'Tamamlanan', value: String(completedTrainings), icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Devam eden', value: String(inProgressTrainings), icon: PlayCircle, color: 'text-sky-600 bg-sky-50' },
     { label: 'Toplam süre', value: `${user.trainingMinutes} dk`, icon: Clock, color: 'text-violet-600 bg-violet-50' },
-    { label: 'İlerleme', value: `%${user.progress}`, icon: TrendingUp, color: 'text-brand-600 bg-brand-50' },
   ]
 
   return (
@@ -91,7 +124,7 @@ export function ParticipantDashboardPage() {
               </span>
               <div className="leading-none">
                 <p className="text-sm font-semibold text-ink-800">{user.name}</p>
-                <p className="mt-0.5 text-[11px] text-ink-400">{user.company}</p>
+                <p className="mt-0.5 text-[11px] text-ink-400">{user.company} · {user.department}</p>
               </div>
             </div>
             <button
@@ -119,12 +152,17 @@ export function ParticipantDashboardPage() {
             <span>{user.department}</span>
             <span>·</span>
             <span>{user.riskLevel}</span>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Son giriş: {user.lastLogin}
+            </span>
           </div>
           <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">
             Hoş geldiniz, {user.name.split(' ')[0]}
           </h1>
           <p className="mt-1.5 text-sm text-ink-500">
-            İSG eğitimlerinizi buradan takip edebilir ve tamamlayabilirsiniz.
+            Aşağıda size atanan İSG eğitimlerini bulabilirsiniz. Eğitimleri tamamlayarak güvenli çalışma kültürüne katkıda bulunabilirsiniz.
           </p>
         </motion.div>
 
@@ -166,7 +204,13 @@ export function ParticipantDashboardPage() {
                 <p className="mt-0.5 text-xs text-ink-400">{completedTrainings} / {totalTrainings} eğitim tamamlandı</p>
               </div>
             </div>
-            <span className="text-2xl font-bold text-brand-600">%{completionRate}</span>
+            <div className="flex items-center gap-3">
+              <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', statusInfo.color)}>
+                <span className={cn('h-1.5 w-1.5 rounded-full', statusInfo.dot)} />
+                {statusInfo.label}
+              </span>
+              <span className="text-2xl font-bold text-brand-600">%{completionRate}</span>
+            </div>
           </div>
           <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-ink-100">
             <motion.div
@@ -178,7 +222,7 @@ export function ParticipantDashboardPage() {
           </div>
         </motion.section>
 
-        {/* Eğitim listesi */}
+        {/* Eğitim listesi — sadece katılımcıya atanmış eğitimler */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -191,80 +235,147 @@ export function ParticipantDashboardPage() {
                 <BookOpen className="h-[18px] w-[18px]" strokeWidth={1.8} />
               </span>
               <div>
-                <h2 className="text-sm font-semibold text-ink-900">Eğitimlerim</h2>
-                <p className="mt-0.5 text-xs text-ink-400">Atanan eğitimleri tamamlayın</p>
+                <h2 className="text-sm font-semibold text-ink-900">Size atanan eğitimler</h2>
+                <p className="mt-0.5 text-xs text-ink-400">
+                  {user.riskLevel} risk sınıfına uygun {totalTrainings} eğitim
+                </p>
               </div>
             </div>
-            <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', statusInfo.color)}>
-              <span className={cn('h-1.5 w-1.5 rounded-full', statusInfo.dot)} />
-              {statusInfo.label}
-            </span>
           </div>
 
-          <div className="divide-y divide-ink-100">
-            {mockTrainings.map((training, index) => {
-              const tStatus = trainingStatusConfig[training.status]
-              return (
-                <motion.div
-                  key={training.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
-                  className="flex items-center gap-4 p-5 transition-colors hover:bg-ink-50/40 sm:p-6"
-                >
-                  <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', tStatus.color)}>
-                    {training.status === 'successful' ? (
-                      <CheckCircle2 className="h-5 w-5" strokeWidth={1.8} />
-                    ) : training.status === 'in_progress' ? (
-                      <PlayCircle className="h-5 w-5" strokeWidth={1.8} />
-                    ) : (
-                      <BookOpen className="h-5 w-5" strokeWidth={1.8} />
-                    )}
-                  </span>
+          {assignedTrainings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink-50 text-ink-300">
+                <BookOpen className="h-6 w-6" strokeWidth={1.5} />
+              </span>
+              <p className="mt-4 text-sm font-semibold text-ink-700">Atanan eğitim bulunamadı</p>
+              <p className="mt-1 text-xs text-ink-400">Risk seviyenize uygun eğitim henüz tanımlanmamış.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-ink-100">
+              {assignedTrainings.map((training, index) => {
+                const trainingStatus = trainingProgressMap[training.id] ?? 'not_started'
+                const tStatus = trainingStatusConfig[trainingStatus]
+                const isExpanded = expandedTraining === training.id
+                const topicCount = training.chapters.reduce((sum, ch) => sum + ch.topics.length, 0)
+                const chapterCount = training.chapters.length
 
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink-800">{training.title}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-ink-400">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" /> {training.duration}
+                return (
+                  <motion.div
+                    key={training.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
+                  >
+                    {/* Eğitim satırı */}
+                    <div className="flex items-center gap-4 p-5 transition-colors hover:bg-ink-50/40 sm:p-6">
+                      <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', tStatus.color)}>
+                        {trainingStatus === 'successful' ? (
+                          <CheckCircle2 className="h-5 w-5" strokeWidth={1.8} />
+                        ) : trainingStatus === 'in_progress' ? (
+                          <PlayCircle className="h-5 w-5" strokeWidth={1.8} />
+                        ) : trainingStatus === 'failed' ? (
+                          <XCircle className="h-5 w-5" strokeWidth={1.8} />
+                        ) : (
+                          <BookOpen className="h-5 w-5" strokeWidth={1.8} />
+                        )}
                       </span>
-                      {training.date !== '—' && (
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" /> {training.date}
-                        </span>
-                      )}
-                      {training.score !== null && (
-                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
-                          <TrendingUp className="h-3.5 w-3.5" /> {training.score} puan
-                        </span>
-                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink-800">{training.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-ink-400">
+                          <span className="inline-flex items-center gap-1">
+                            <BookOpen className="h-3.5 w-3.5" /> {chapterCount} bölüm
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <TrendingUp className="h-3.5 w-3.5" /> {topicCount} konu
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-2 py-0.5 font-medium text-ink-500">
+                            {training.package}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className={cn('hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline-flex', tStatus.color)}>
+                        <span className={cn('h-1.5 w-1.5 rounded-full', tStatus.dot)} />
+                        {tStatus.label}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {trainingStatus !== 'successful' && (
+                          <Button
+                            size="sm"
+                            variant={trainingStatus === 'in_progress' ? 'primary' : 'outline'}
+                            onClick={() => handleStartTraining(training.name)}
+                            leftIcon={<PlayCircle className="h-4 w-4" />}
+                          >
+                            {trainingStatus === 'in_progress' ? 'Devam et' : 'Başlat'}
+                          </Button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleTraining(training.id)}
+                          className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-400 transition-colors hover:bg-ink-50 hover:text-ink-700"
+                          aria-label={isExpanded ? 'İçeriği gizle' : 'İçeriği göster'}
+                        >
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <span className={cn('hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline-flex', tStatus.color)}>
-                    <span className={cn('h-1.5 w-1.5 rounded-full', tStatus.dot)} />
-                    {tStatus.label}
-                  </span>
-
-                  {training.status !== 'successful' && (
-                    <Button
-                      size="sm"
-                      variant={training.status === 'in_progress' ? 'primary' : 'outline'}
-                      onClick={() => handleStartTraining(training.title)}
-                      leftIcon={<PlayCircle className="h-4 w-4" />}
-                    >
-                      {training.status === 'in_progress' ? 'Devam et' : 'Başlat'}
-                    </Button>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
+                    {/* Eğitim içeriği — genişletilmiş */}
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.25 }}
+                        className="border-t border-ink-100 bg-ink-50/30 px-5 py-5 sm:px-6"
+                      >
+                        <p className="mb-4 text-xs leading-6 text-ink-500">{training.description}</p>
+                        <div className="space-y-4">
+                          {training.chapters.map((chapter, chIndex) => (
+                            <div key={chapter.id} className="rounded-xl border border-ink-200/80 bg-white p-4">
+                              <div className="flex items-center gap-2">
+                                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-700">
+                                  {chIndex + 1}
+                                </span>
+                                <h4 className="text-xs font-semibold text-ink-800">{chapter.title}</h4>
+                              </div>
+                              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {chapter.topics.map((topic, tIndex) => (
+                                  <li key={tIndex} className="flex items-start gap-2 text-[11px] leading-5 text-ink-500">
+                                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-brand-400" />
+                                    {topic}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                        {trainingStatus !== 'successful' && (
+                          <div className="mt-4 flex justify-end">
+                            <Button
+                              size="sm"
+                              variant={trainingStatus === 'in_progress' ? 'primary' : 'outline'}
+                              onClick={() => handleStartTraining(training.name)}
+                              leftIcon={<PlayCircle className="h-4 w-4" />}
+                            >
+                              {trainingStatus === 'in_progress' ? 'Eğitime devam et' : 'Eğitimi başlat'}
+                            </Button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )
+              })}
+            </div>
+          )}
         </motion.section>
 
         {/* Alt bilgi */}
         <p className="mt-8 text-center text-[11px] leading-5 text-ink-400">
-          Son giriş: {user.lastLogin} · HanTech İSG Yönetim Sistemi
+          HanTech İSG Yönetim Sistemi · KVKK uyumlu eğitim portalı
         </p>
       </main>
     </div>

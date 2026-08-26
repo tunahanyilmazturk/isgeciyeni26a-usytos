@@ -20,13 +20,16 @@ interface ParticipantAuthState {
   user: ParticipantUser | null
   isAuthenticated: boolean
   kvkkApproved: boolean
+  mustChangePassword: boolean
   login: (user: ParticipantUser) => void
   logout: () => void
   approveKvkk: () => void
+  changePassword: (newPassword: string) => void
 }
 
 const STORAGE_KEY = 'hantech-participant-auth'
 const KVKK_KEY = 'hantech-participant-kvkk'
+const PWD_CHANGED_KEY = 'hantech-participant-pwd-changed'
 
 const ParticipantAuthContext = createContext<ParticipantAuthState | null>(null)
 
@@ -40,10 +43,25 @@ function readStoredUser(): ParticipantUser | null {
   }
 }
 
-function readKvkkApproved(): boolean {
+function readKvkkApproved(userId?: number): boolean {
   if (typeof window === 'undefined') return false
   try {
+    if (userId !== undefined) {
+      return window.localStorage.getItem(`${KVKK_KEY}-${userId}`) === 'true'
+    }
     return window.localStorage.getItem(KVKK_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function readPwdChanged(userId?: number): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (userId !== undefined) {
+      return window.localStorage.getItem(`${PWD_CHANGED_KEY}-${userId}`) === 'true'
+    }
+    return false
   } catch {
     return false
   }
@@ -51,27 +69,26 @@ function readKvkkApproved(): boolean {
 
 export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ParticipantUser | null>(() => readStoredUser())
-  const [kvkkApproved, setKvkkApproved] = useState<boolean>(() => readKvkkApproved())
+  const [kvkkApproved, setKvkkApproved] = useState<boolean>(() => readKvkkApproved(readStoredUser()?.id))
+  const [mustChangePassword, setMustChangePassword] = useState<boolean>(() => !readPwdChanged(readStoredUser()?.id))
 
   useEffect(() => {
     if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
     else window.localStorage.removeItem(STORAGE_KEY)
   }, [user])
 
-  useEffect(() => {
-    if (kvkkApproved) window.localStorage.setItem(KVKK_KEY, 'true')
-    else window.localStorage.removeItem(KVKK_KEY)
-  }, [kvkkApproved])
-
   const login = useCallback((next: ParticipantUser) => {
     setUser(next)
-    // KVKK onayı kullanıcıya özgü saklanır
-    setKvkkApproved(window.localStorage.getItem(`${KVKK_KEY}-${next.id}`) === 'true')
+    const kvkk = readKvkkApproved(next.id)
+    setKvkkApproved(kvkk)
+    // Şifre değişikliği yapılmadıysa zorunlu
+    setMustChangePassword(!readPwdChanged(next.id))
   }, [])
 
   const logout = useCallback(() => {
     setUser(null)
     setKvkkApproved(false)
+    setMustChangePassword(false)
   }, [])
 
   const approveKvkk = useCallback(() => {
@@ -79,9 +96,28 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
     if (user) window.localStorage.setItem(`${KVKK_KEY}-${user.id}`, 'true')
   }, [user])
 
+  const changePassword = useCallback((newPassword: string) => {
+    // Şifre localStorage'daki katılımcı kaydında güncellenir
+    if (!user) return
+    try {
+      const raw = window.localStorage.getItem('hantech-participants')
+      if (raw) {
+        const participants = JSON.parse(raw) as Array<{ id: number; password?: string }>
+        const updated = participants.map((p) =>
+          p.id === user.id ? { ...p, password: newPassword } : p,
+        )
+        window.localStorage.setItem('hantech-participants', JSON.stringify(updated))
+      }
+    } catch {
+      // Hata durumunda devam et
+    }
+    window.localStorage.setItem(`${PWD_CHANGED_KEY}-${user.id}`, 'true')
+    setMustChangePassword(false)
+  }, [user])
+
   const value = useMemo<ParticipantAuthState>(
-    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, login, logout, approveKvkk }),
-    [user, kvkkApproved, login, logout, approveKvkk],
+    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword }),
+    [user, kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword],
   )
 
   return <ParticipantAuthContext.Provider value={value}>{children}</ParticipantAuthContext.Provider>
