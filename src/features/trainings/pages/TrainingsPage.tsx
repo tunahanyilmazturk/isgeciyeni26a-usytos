@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   BookOpen,
-  CheckCircle2,
   ChevronDown,
   Eye,
   FileText,
@@ -13,11 +12,11 @@ import {
   Settings2,
   SlidersHorizontal,
   Sparkles,
-  Users,
   X,
   Zap,
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button, Pagination, ViewToggle, type ViewMode, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
@@ -59,12 +58,12 @@ function highlightText(text: string, query: string) {
 }
 
 export function TrainingsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [packageFilter, setPackageFilter] = useState<'all' | TrainingPackage>('all')
   const [riskFilter, setRiskFilter] = useState<'all' | TrainingRisk>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [expanded, setExpanded] = useState<string[]>([])
-  const [selectedTraining, setSelectedTraining] = useState<Training | null>(null)
   const [view, setView] = useState<ViewMode>('table')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -103,7 +102,9 @@ export function TrainingsPage() {
     setRiskFilter('all')
   }
 
-  const handlePreview = useCallback((training: Training) => setSelectedTraining(training), [])
+  const handlePreview = useCallback((training: Training) => {
+    navigate(`/egitimler/${training.id}/katilimci-onizleme`)
+  }, [navigate])
 
   return (
     <div className="space-y-7">
@@ -354,56 +355,6 @@ export function TrainingsPage() {
           itemName="eğitim"
         />
       </motion.section>
-
-      {/* Önizleme drawer — diğer sayfalarla aynı tutarlı yapı */}
-      {selectedTraining && (
-        <div className="fixed inset-0 z-50 bg-ink-900/20 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedTraining(null) }}>
-          <motion.aside initial={{ opacity: 0, x: 32 }} animate={{ opacity: 1, x: 0 }} className="ml-auto flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-ink-200 bg-white shadow-[-20px_0_60px_-28px_rgba(17,24,39,0.32)]">
-            <div className="border-b border-ink-100 p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-xl', selectedTraining.package === 'Temel Paket' ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-violet-700')}>
-                    <BookOpen className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold', packageClasses[selectedTraining.package])}>{selectedTraining.package}</span>
-                    <h2 className="mt-2 text-base font-bold text-ink-900">{selectedTraining.name}</h2>
-                  </div>
-                </div>
-                <button type="button" onClick={() => setSelectedTraining(null)} className="rounded-xl p-2 text-ink-400 hover:bg-ink-100" aria-label="Önizlemeyi kapat">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-ink-500">{selectedTraining.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className={cn('rounded-lg border px-2.5 py-1 text-[11px] font-semibold', riskClasses[selectedTraining.risk])}>{selectedTraining.risk}</span>
-                <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-[11px] font-medium text-ink-600">{getChapterCount(selectedTraining)} alt başlık</span>
-                <span className="rounded-lg bg-ink-100 px-2.5 py-1 text-[11px] font-medium text-ink-600">{getTopicCount(selectedTraining)} konu</span>
-              </div>
-            </div>
-            <div className="flex-1 space-y-4 p-6">
-              {selectedTraining.chapters.map((chapter, index) => (
-                <div key={chapter.id} className="rounded-xl border border-ink-200 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-700">{index + 1}</span>
-                    <h3 className="text-sm font-semibold text-ink-800">{chapter.title}</h3>
-                  </div>
-                  <ul className="mt-3 space-y-2.5">
-                    {chapter.topics.map((topic) => (
-                      <li key={topic} className="flex gap-2.5 text-xs leading-5 text-ink-500">
-                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />{topic}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-ink-100 p-6">
-              <Button className="w-full" leftIcon={<Users className="h-4 w-4" />} onClick={() => toast.info('Katılımcı eğitim atama ekranı hazırlanacak.')}>Bu eğitimi ata</Button>
-            </div>
-          </motion.aside>
-        </div>
-      )}
     </div>
   )
 }

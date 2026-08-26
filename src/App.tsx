@@ -37,6 +37,9 @@ const ParticipantCreatePage = lazy(() =>
 const TrainingsPage = lazy(() =>
   import('./features/trainings').then((m) => ({ default: m.TrainingsPage })),
 )
+const TrainingPreviewPage = lazy(() =>
+  import('./features/trainings').then((m) => ({ default: m.TrainingPreviewPage })),
+)
 const ExpertsPage = lazy(() =>
   import('./features/people').then((m) => ({ default: m.ExpertsPage })),
 )
@@ -117,6 +120,7 @@ function ProtectedRoutes() {
           <Route path="katilimcilar" element={<ParticipantsPage />} />
           <Route path="katilimcilar/yeni" element={<ParticipantCreatePage />} />
           <Route path="egitimler" element={<TrainingsPage />} />
+          <Route path="egitimler/:trainingId/katilimci-onizleme" element={<TrainingPreviewPage />} />
           <Route path="osgb-bilgileri/firma-bilgileri" element={<CompanyInfoPage />} />
           <Route path="osgb-bilgileri/egiticiler" element={<ExpertsPage />} />
           <Route path="osgb-bilgileri/doktorlar" element={<DoctorsPage />} />
