@@ -66,15 +66,15 @@ const statusStyles: Record<string, string> = {
 
 export function ReportsPage() {
   const handleDownload = (name: string) => {
-    toast.success(`"${name}" indiriliyor`, { description: 'Rapor PDF olarak hazırlanıyor.' })
+    toast.info(`"${name}" indirilemedi`, { description: 'Rapor dışa aktarma özelliği henüz hazır değil.' })
   }
 
   const handleCreateReport = () => {
-    toast.success('Yeni rapor oluşturuluyor', { description: 'Rapor sihirbazı birazdan açılacak.' })
+    toast.info('Yeni rapor oluşturma henüz hazır değil', { description: 'Rapor sihirbazı backend bağlantısı sonrasında etkinleştirilecek.' })
   }
 
   const handleDownloadAll = () => {
-    toast.success('Rapor paketi indiriliyor', { description: 'Tüm hazır raporlar tek arşiv olarak hazırlanıyor.' })
+    toast.info('Rapor paketi dışa aktarma henüz hazır değil', { description: 'Bu özellik backend bağlantısı sonrasında etkinleştirilecek.' })
   }
 
   return (

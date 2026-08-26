@@ -61,8 +61,8 @@ export function LiveTrainingPage() {
           <p className="mt-1.5 max-w-2xl text-sm text-ink-500">Aktif ve yaklaşan çevrimiçi eğitim oturumlarını takip edin, katılımcılarla gerçek zamanlı bağlanın.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" leftIcon={<CalendarClock className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.info('Oturum takvimi hazırlanacak.')}>Oturum takvimi</Button>
-          <Button size="md" leftIcon={<Video className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.success('Yeni canlı oturum planlama akışı başlatıldı.', { description: 'Eğitmen ve katılımcı seçimi yapabilirsiniz.' })}>Yeni oturum</Button>
+          <Button variant="outline" size="sm" leftIcon={<CalendarClock className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.info('Oturum takvimi henüz hazır değil', { description: 'Canlı eğitim takvimi backend bağlantısı sonrasında etkinleştirilecek.' })}>Oturum takvimi</Button>
+          <Button size="md" leftIcon={<Video className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.info('Yeni canlı oturum oluşturma henüz hazır değil', { description: 'Oturum planlama için backend ve video servis bağlantısı gereklidir.' })}>Yeni oturum</Button>
         </div>
       </motion.div>
 
@@ -87,7 +87,7 @@ export function LiveTrainingPage() {
                 <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" strokeWidth={1.7} /> {featured.startTime} · {featured.duration}</span>
                 <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" strokeWidth={1.7} /> {featured.participants}/{featured.capacity} katılımcı</span>
               </div>
-              <Button variant="primary" size="md" leftIcon={<Play className="h-4 w-4 fill-current" strokeWidth={1.7} />} className="bg-white text-brand-800 hover:bg-brand-50 active:bg-brand-100 shadow-none" onClick={() => toast.success('Canlı oturuma bağlanılıyor...', { description: `${featured.name} · ${featured.trainer}` })}>Katıl</Button>
+              <Button variant="primary" size="md" leftIcon={<Play className="h-4 w-4 fill-current" strokeWidth={1.7} />} className="bg-white text-brand-800 hover:bg-brand-50 active:bg-brand-100 shadow-none" onClick={() => toast.info('Canlı oturum bağlantısı henüz hazır değil', { description: 'Video konferans servisi bağlantısı gereklidir.' })}>Katıl</Button>
             </div>
           </div>
           <div className="flex flex-col justify-center gap-3 p-6 sm:p-8">
@@ -141,7 +141,7 @@ export function LiveTrainingPage() {
                       <p className="truncate text-sm font-semibold text-ink-800">{session.name}</p>
                       <p className="mt-0.5 truncate text-xs text-ink-400">{session.trainer} · {session.company}</p>
                     </div>
-                    <Button variant="subtle" size="sm" leftIcon={<Play className="h-3.5 w-3.5 fill-current" strokeWidth={1.7} />} onClick={() => toast.success('Canlı oturuma bağlanılıyor...', { description: `${session.name}` })}>Katıl</Button>
+                    <Button variant="subtle" size="sm" leftIcon={<Play className="h-3.5 w-3.5 fill-current" strokeWidth={1.7} />} onClick={() => toast.info('Canlı oturum bağlantısı henüz hazır değil', { description: 'Video konferans servisi bağlantısı gereklidir.' })}>Katıl</Button>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-ink-400">
                     <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" strokeWidth={1.7} /> {session.startTime} · {session.duration}</span>
@@ -182,7 +182,7 @@ export function LiveTrainingPage() {
                       <p className="truncate text-sm font-semibold text-ink-800">{session.name}</p>
                       <p className="mt-0.5 truncate text-xs text-ink-400">{session.trainer} · {session.company}</p>
                     </div>
-                    <Button variant="outline" size="sm" leftIcon={<Bell className="h-3.5 w-3.5" strokeWidth={1.7} />} onClick={() => toast.success('Hatırlatma ayarlandı.', { description: `${session.name} başlamadan önce bilgilendirileceksiniz.` })}>Hatırlat</Button>
+                    <Button variant="outline" size="sm" leftIcon={<Bell className="h-3.5 w-3.5" strokeWidth={1.7} />} onClick={() => toast.info('Hatırlatma özelliği henüz hazır değil', { description: 'Bildirim servisi backend bağlantısı sonrasında etkinleştirilecek.' })}>Hatırlat</Button>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-ink-400">
                     <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" strokeWidth={1.7} /> {session.startTime} · {session.duration}</span>

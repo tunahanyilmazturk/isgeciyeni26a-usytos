@@ -146,8 +146,8 @@ export function SupportRequestPage() {
   }
 
   function handleClose(id: string) {
-    toast.success(`Talep ${id} kapatıldı`, {
-      description: 'Talep durumu "Çözüldü" olarak güncellendi.',
+    toast.info(`Talep ${id} kapatılamadı`, {
+      description: 'Destek talepleri statik demo verisi olarak gösteriliyor.',
     })
   }
 

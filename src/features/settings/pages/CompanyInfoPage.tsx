@@ -126,8 +126,8 @@ export function CompanyInfoPage() {
 
   function onSubmit(data: CompanyForm) {
     void data
-    toast.success('Kurum bilgileri kaydedildi', {
-      description: 'Güvenlik ve bildirim ayarlarınız güncellendi.',
+    toast.info('Kurum ayarları henüz kalıcı değil', {
+      description: 'Ayarların kaydedilmesi için client-side persistence veya backend bağlantısı gereklidir.',
     })
   }
 

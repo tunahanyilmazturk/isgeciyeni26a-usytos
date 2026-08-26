@@ -94,24 +94,24 @@ export function InvoicesPage() {
   const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredInvoices.length)
 
   const handleCreateInvoice = () => {
-    toast.success('Yeni fatura oluşturuluyor', { description: 'Fatura sihirbazı birazdan açılacak.' })
+    toast.info('Yeni fatura oluşturma henüz hazır değil', { description: 'Fatura işlemleri backend bağlantısı sonrasında etkinleştirilecek.' })
   }
 
   const handleView = (invoice: Invoice) => {
-    toast.info(`"${invoice.number}" görüntüleniyor`, { description: invoice.company })
+    toast.info(`"${invoice.number}" görüntüleme henüz hazır değil`, { description: 'Fatura detay ekranı backend bağlantısı sonrasında etkinleştirilecek.' })
   }
 
   const handleDownloadInvoice = (invoice: Invoice) => {
-    toast.success(`"${invoice.number}" indiriliyor`, { description: 'Fatura PDF olarak hazırlanıyor.' })
+    toast.info(`"${invoice.number}" indirilemedi`, { description: 'Fatura PDF dışa aktarma özelliği henüz hazır değil.' })
   }
 
   const handleSend = (invoice: Invoice) => {
-    toast.success(`"${invoice.number}" gönderildi`, { description: `${invoice.company} firmasına e-posta olarak iletildi.` })
+    toast.info(`"${invoice.number}" gönderilemedi`, { description: 'Fatura gönderimi için backend ve e-posta bağlantısı gereklidir.' })
   }
 
   const toggleSelection = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
-  const handleBulkDelete = () => { toast.info(`${selectedIds.length} fatura silindi`); setSelectedIds([]) }
+  const handleBulkDelete = () => { toast.info('Fatura silme henüz hazır değil', { description: 'Faturalar statik demo verisi olarak gösteriliyor.' }); setSelectedIds([]) }
 
   const selectClass =
     'h-9 rounded-xl border border-ink-200 bg-white px-3 text-xs font-medium text-ink-700 outline-none transition-colors hover:border-ink-300 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15'
@@ -345,7 +345,7 @@ export function InvoicesPage() {
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-700">
               <TrendingUp className="h-[18px] w-[18px]" strokeWidth={1.8} />
             </span>
-            <Button variant="outline" size="sm" leftIcon={<ArrowDownToLine className="h-4 w-4" strokeWidth={1.8} />} onClick={() => toast.success('Tahsilat özeti indiriliyor')}>
+            <Button variant="outline" size="sm" leftIcon={<ArrowDownToLine className="h-4 w-4" strokeWidth={1.8} />} onClick={() => toast.info('Tahsilat özeti dışa aktarma henüz hazır değil', { description: 'Bu özellik backend bağlantısı sonrasında etkinleştirilecek.' })}>
               Özet indir
             </Button>
           </div>
