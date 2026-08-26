@@ -52,6 +52,35 @@ body {
   background: var(--color-ink-50);
   color: var(--color-ink-800);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+button,
+a,
+select,
+input,
+textarea {
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  button,
+  a,
+  select,
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-height: 40px;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-height: 18px;
+    min-width: 18px;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 /* Smooth focus ring */

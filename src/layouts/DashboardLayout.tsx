@@ -88,7 +88,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col border-r border-ink-200/80 bg-white transition-transform duration-200 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-[min(264px,calc(100vw-1rem))] flex-col border-r border-ink-200/80 bg-white transition-transform duration-200 lg:translate-x-0',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -281,7 +281,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-h-screen lg:pl-[264px]">
-        <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-ink-200/80 bg-white/90 px-5 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-ink-200/80 bg-white/95 px-3 backdrop-blur sm:h-[76px] sm:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -328,7 +328,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1440px] p-5 sm:p-8">
+        <main className="mx-auto max-w-[1440px] p-3 sm:p-8">
           {children}
         </main>
       </div>

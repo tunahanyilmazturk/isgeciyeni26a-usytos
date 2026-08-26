@@ -86,7 +86,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-[#f8f9fa] text-ink-900">
       {/* Üst navigasyon */}
       <header className="border-b border-ink-200/70 bg-white">
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6 lg:px-10">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-10">
           <a href="#" className="flex items-center gap-3" aria-label="HanTech ana sayfa">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-brand-600 text-white shadow-sm shadow-brand-600/20">
               <HardHat className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -113,7 +113,7 @@ export function LoginPage() {
       </header>
 
       {/* Giriş alanı */}
-      <main className="flex min-h-[calc(100vh-72px)] items-center justify-center px-5 py-12 sm:px-8 sm:py-16">
+      <main className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-8 sm:min-h-[calc(100vh-72px)] sm:px-8 sm:py-16">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -121,7 +121,7 @@ export function LoginPage() {
           className="w-full max-w-[440px]"
         >
           {/* Form kartı */}
-          <section className="rounded-2xl border border-ink-200/90 bg-white p-7 shadow-[0_12px_40px_-24px_rgba(17,24,39,0.28)] sm:p-9">
+          <section className="rounded-2xl border border-ink-200/90 bg-white p-5 shadow-[0_12px_40px_-24px_rgba(17,24,39,0.28)] sm:p-9">
             <div className="mb-8">
               <div className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-600">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />

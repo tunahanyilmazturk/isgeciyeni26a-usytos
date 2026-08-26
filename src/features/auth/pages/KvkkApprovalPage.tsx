@@ -71,7 +71,7 @@ export function KvkkApprovalPage() {
     <div className="min-h-screen bg-[#f8f9fa] text-ink-900">
       {/* Header */}
       <header className="border-b border-ink-200/70 bg-white">
-        <div className="mx-auto flex h-[72px] max-w-5xl items-center justify-between px-6 lg:px-10">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-brand-600 text-white shadow-sm shadow-brand-600/20">
               <HardHat className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -97,7 +97,7 @@ export function KvkkApprovalPage() {
       </header>
 
       {/* İçerik */}
-      <main className="flex min-h-[calc(100vh-72px)] items-start justify-center px-5 py-10 sm:px-8 sm:py-14">
+      <main className="flex min-h-[calc(100vh-64px)] items-start justify-center px-3 py-6 sm:min-h-[calc(100vh-72px)] sm:px-8 sm:py-14">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -105,8 +105,8 @@ export function KvkkApprovalPage() {
           className="w-full max-w-3xl"
         >
           {/* Başlık */}
-          <div className="mb-6 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-700">
+          <div className="mb-5 flex items-start gap-3 sm:mb-6 sm:gap-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 sm:h-12 sm:w-12 sm:rounded-2xl">
               <FileText className="h-6 w-6" strokeWidth={1.7} />
             </span>
             <div>
@@ -114,7 +114,7 @@ export function KvkkApprovalPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                 Yasal bilgilendirme
               </div>
-              <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[28px]">
+              <h1 className="text-xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[28px]">
                 KVKK Aydınlatma Metni
               </h1>
               <p className="mt-1.5 text-sm leading-6 text-ink-500">
@@ -126,10 +126,10 @@ export function KvkkApprovalPage() {
 
           {/* KVKK metni — scroll alanı */}
           <div className="rounded-2xl border border-ink-200/90 bg-white shadow-[0_12px_40px_-24px_rgba(17,24,39,0.28)]">
-            <div className="flex items-center justify-between border-b border-ink-100 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink-100 px-4 py-3.5 sm:px-6 sm:py-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-brand-600" strokeWidth={1.8} />
-                <span className="text-sm font-semibold text-ink-800">6698 sayılı KVKK Aydınlatma Metni</span>
+                <span className="text-xs font-semibold text-ink-800 sm:text-sm">6698 sayılı KVKK Aydınlatma Metni</span>
               </div>
               <span
                 className={cn(
@@ -152,7 +152,7 @@ export function KvkkApprovalPage() {
             <div
               ref={scrollRef}
               onScroll={handleScroll}
-              className="h-[55vh] overflow-y-auto border-b border-ink-100 bg-slate-50/40 px-6 py-5 text-sm leading-7 text-ink-700"
+              className="h-[52vh] min-h-[280px] overflow-y-auto overscroll-contain border-b border-ink-100 bg-slate-50/40 px-4 py-4 text-sm leading-7 text-ink-700 sm:h-[55vh] sm:px-6 sm:py-5"
             >
               {kvkkLines.map((line, index) => (
                 <p key={index} className={cn(line.trim() === '' ? 'h-3' : 'mb-1')}>
@@ -205,6 +205,7 @@ export function KvkkApprovalPage() {
               <Button
                 variant="outline"
                 size="lg"
+                className="w-full sm:w-auto"
                 onClick={handleReject}
                 leftIcon={<X className="h-4 w-4" />}
               >
@@ -212,6 +213,7 @@ export function KvkkApprovalPage() {
               </Button>
               <Button
                 size="lg"
+                className="w-full sm:w-auto"
                 onClick={handleApprove}
                 disabled={!hasScrolledToEnd || !accepted}
                 leftIcon={hasScrolledToEnd && accepted ? <Check className="h-4 w-4" /> : undefined}

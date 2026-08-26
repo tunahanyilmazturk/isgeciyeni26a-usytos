@@ -102,7 +102,7 @@ export function ParticipantDashboardPage() {
     <div className="min-h-screen bg-[#f8f9fa] text-ink-900">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6 lg:px-10">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-brand-600 text-white shadow-sm shadow-brand-600/20">
               <HardHat className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -139,7 +139,7 @@ export function ParticipantDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8 lg:px-10 lg:py-12">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-12">
         {/* Karşılama */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -147,7 +147,7 @@ export function ParticipantDashboardPage() {
           transition={{ duration: 0.35 }}
           className="mb-8"
         >
-          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400">
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-ink-400">
             <UserRound className="h-3.5 w-3.5" />
             <span>{user.department}</span>
             <span>·</span>
@@ -194,7 +194,7 @@ export function ParticipantDashboardPage() {
           transition={{ duration: 0.35, delay: 0.1 }}
           className="mb-8 rounded-2xl border border-ink-200/80 bg-white p-6 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-700">
                 <GraduationCap className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -204,7 +204,7 @@ export function ParticipantDashboardPage() {
                 <p className="mt-0.5 text-xs text-ink-400">{completedTrainings} / {totalTrainings} eğitim tamamlandı</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
               <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', statusInfo.color)}>
                 <span className={cn('h-1.5 w-1.5 rounded-full', statusInfo.dot)} />
                 {statusInfo.label}
@@ -268,7 +268,7 @@ export function ParticipantDashboardPage() {
                     transition={{ duration: 0.3, delay: 0.2 + index * 0.05 }}
                   >
                     {/* Eğitim satırı */}
-                    <div className="flex items-center gap-4 p-5 transition-colors hover:bg-ink-50/40 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-3 p-4 transition-colors hover:bg-ink-50/40 sm:flex-nowrap sm:gap-4 sm:p-6">
                       <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', tStatus.color)}>
                         {trainingStatus === 'successful' ? (
                           <CheckCircle2 className="h-5 w-5" strokeWidth={1.8} />
@@ -301,7 +301,7 @@ export function ParticipantDashboardPage() {
                         {tStatus.label}
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                         {trainingStatus !== 'successful' && (
                           <Button
                             size="sm"
