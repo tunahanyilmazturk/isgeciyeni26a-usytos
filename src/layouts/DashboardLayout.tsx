@@ -351,8 +351,10 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto h-[calc(100dvh-64px)] max-w-[1440px] overflow-y-auto p-3 pb-28 sm:h-[calc(100dvh-76px)] sm:p-8 sm:pb-32 lg:pb-8">
-          {children}
+        <main className="h-[calc(100dvh-64px)] overflow-y-auto sm:h-[calc(100dvh-76px)]">
+          <div className="mx-auto max-w-[1440px] p-3 pb-28 sm:p-8 sm:pb-32 lg:pb-8">
+            {children}
+          </div>
         </main>
       </div>
 
