@@ -120,7 +120,7 @@ export function AssignmentsPage() {
   }, [])
 
   const closeDrawer = useCallback(() => {
-    setDrawerParticipant(null)
+    setDrawerParticipant(undefined)
   }, [])
 
   function handleEditAssignment(summary: ParticipantAssignmentSummary) {
