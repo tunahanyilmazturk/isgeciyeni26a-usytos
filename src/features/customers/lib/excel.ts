@@ -48,9 +48,9 @@ Object.assign(templateHeaders, {
   6: 'Sertifika tipi (uzman / hekim)',
   11: 'Hizmet veren SGK no',
   13: 'Hizmet veren yetki belgesi no',
-  14: 'Müşteri unvanı',
-  15: 'Müşteri SGK işyeri sicil no',
-  16: 'Müşteri ili',
+  14: 'Firma unvanı',
+  15: 'Firma SGK işyeri sicil no',
+  16: 'Firma ili',
   17: 'Çalışan sayısı',
   18: 'Tehlike sınıfı',
   19: 'Sözleşme başlangıç',
@@ -96,7 +96,7 @@ function findHeaderRow(rows: unknown[][]) {
   const maxRowsToInspect = Math.min(rows.length, 10)
   for (let index = 0; index < maxRowsToInspect; index += 1) {
     const row = rows[index].map(cellText).map(normalized)
-    if (row.some((value) => value.includes('musteriunvani')) || row.some((value) => value.includes('musterisgk'))) return index
+    if (row.some((value) => value.includes('firmaunvani')) || row.some((value) => value.includes('firmasgk')) || row.some((value) => value.includes('musteriunvani')) || row.some((value) => value.includes('musterisgk'))) return index
   }
   return 0
 }
@@ -184,8 +184,8 @@ export function downloadCustomerTemplate() {
   worksheet['!autofilter'] = { ref: 'A1:V2' }
   worksheet['!freeze'] = { ySplit: 1 }
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'ISG Müşteri Aktarımı')
-  XLSX.writeFile(workbook, 'hantech-isg-musteri-sablonu.xlsx')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'ISG Firma Aktarımı')
+  XLSX.writeFile(workbook, 'hantech-isg-firma-sablonu.xlsx')
 }
 
 export type CustomerListExportRow = {
@@ -223,6 +223,6 @@ export function downloadCustomerList(rows: readonly CustomerListExportRow[]) {
   worksheet['!autofilter'] = { ref: `A1:K${rows.length + 1}` }
   worksheet['!freeze'] = { ySplit: 1 }
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Müşteri Listesi')
-  XLSX.writeFile(workbook, `hantech-musteriler-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Firma Listesi')
+  XLSX.writeFile(workbook, `hantech-firmalar-${new Date().toISOString().slice(0, 10)}.xlsx`)
 }

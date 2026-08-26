@@ -32,11 +32,11 @@ const filterTabs: FilterTab[] = ['Tümü', 'Açık', 'Yanıt bekliyor', 'Çözü
 const supportTickets: SupportTicket[] = [
   {
     id: 'TKT-2041',
-    subject: 'Müşteri içe aktarımında Excel hatası',
+    subject: 'Firma içe aktarımında Excel hatası',
     priority: 'Yüksek',
     status: 'Açık',
     createdAt: '2 saat önce',
-    category: 'Müşteriler',
+    category: 'Firmalar',
   },
   {
     id: 'TKT-2040',

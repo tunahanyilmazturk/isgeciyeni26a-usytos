@@ -44,7 +44,7 @@ export function downloadParticipantList(rows: readonly ParticipantListExportRow[
     'E-posta': row.email,
     'Telefon': row.phone,
     'TC Kimlik No': row.tcNumber,
-    'Müşteri': row.company,
+    'Firma': row.company,
     'Departman': row.department,
     'Tehlike sınıfı': row.riskLevel,
     'Eğitim süresi': formatTrainingMinutes(row.trainingMinutes),

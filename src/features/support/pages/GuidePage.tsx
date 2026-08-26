@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 
 type CategoryId =
   | 'baslangic'
-  | 'musteri'
+  | 'firma'
   | 'katilimci'
   | 'egitimler'
   | 'raporlar'
@@ -35,7 +35,7 @@ interface GuideTopic {
 
 const categories: Category[] = [
   { id: 'baslangic', label: 'Başlangıç', icon: BookOpen },
-  { id: 'musteri', label: 'Müşteri yönetimi', icon: BookOpen },
+  { id: 'firma', label: 'Firma yönetimi', icon: BookOpen },
   { id: 'katilimci', label: 'Katılımcı yönetimi', icon: BookOpen },
   { id: 'egitimler', label: 'Eğitimler', icon: BookOpen },
   { id: 'raporlar', label: 'Raporlar', icon: BookOpen },
@@ -67,22 +67,22 @@ const guideTopics: GuideTopic[] = [
   },
   {
     id: 'g3',
-    category: 'musteri',
-    title: 'Yeni müşteri ekleme',
+    category: 'firma',
+    title: 'Yeni Firma ekleme',
     description: 'Firma bilgilerini girerek portföyünüze yeni kayıt ekleyin.',
     steps: [
-      'Müşteriler modülünden "Yeni müşteri" butonuna tıklayın.',
+      'Firmalar modülünden "Yeni Firma" butonuna tıklayın.',
       'Firma unvanı, vergi numarası ve iletişim bilgilerini doldurun.',
       'Tehlike sınıfı ve sözleşme durumunu seçip kaydedin.',
     ],
   },
   {
     id: 'g4',
-    category: 'musteri',
+    category: 'firma',
     title: 'İSG uzmanı ve doktor atama',
-    description: 'Müşteri kaydına uzman ve doktor atayarak süreci başlatın.',
+    description: 'Firma kaydına uzman ve doktor atayarak süreci başlatın.',
     steps: [
-      'Müşteri detayından "Atamalar" sekmesini açın.',
+      'Firma detayından "Atamalar" sekmesini açın.',
       'Uzman ve doktor listesinden uygun personeli seçin.',
       'Atama tarihini belirleyip onaya gönderin.',
     ],

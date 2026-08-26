@@ -37,7 +37,7 @@ type ModuleId = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'si
 
 const modules: { id: ModuleId; label: string; icon: ReactNode }[] = [
   { id: 'dashboard', label: 'Gösterge Paneli', icon: <Gauge /> },
-  { id: 'companies', label: 'Müşteriler', icon: <Building2 /> },
+  { id: 'companies', label: 'Firmalar', icon: <Building2 /> },
   { id: 'participants', label: 'Katılımcılar', icon: <Users /> },
   { id: 'assignments', label: 'Eğitim Atamaları', icon: <ClipboardCheck /> },
   { id: 'signatures', label: 'E-İmza Kuyruğu', icon: <KeyRound /> },

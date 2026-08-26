@@ -154,7 +154,7 @@ const sectorTemplates: Array<{ id: string; name: string; risk: TrainingRisk; top
       'f) Mola Yönetimi ve Verimli Çalışma',
       'g) Yangın ve Tahliye',
       'ğ) İş Yükü Kaynaklı Stres',
-      'h) Psikososyal Riskler ve Müşteri Tacizi',
+      'h) Psikososyal Riskler ve Firma Tacizi',
       'ı) Uzaktan (Evden) Çalışmada İş Sağlığı ve Güvenliği',
       'i) Biyolojik Riskler, Ofis Hijyeni ve Hasta Bina Sendromu',
       'j) Akustik Şok ve İleri İşitme Sorunları',

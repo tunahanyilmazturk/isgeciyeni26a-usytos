@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 type VideoCategory =
   | 'Tümü'
   | 'Başlangıç'
-  | 'Müşteriler'
+  | 'Firmalar'
   | 'Katılımcılar'
   | 'Eğitimler'
   | 'Raporlar'
@@ -30,7 +30,7 @@ interface VideoTutorial {
 const categoryFilters: VideoCategory[] = [
   'Tümü',
   'Başlangıç',
-  'Müşteriler',
+  'Firmalar',
   'Katılımcılar',
   'Eğitimler',
   'Raporlar',
@@ -49,9 +49,9 @@ const videoTutorials: VideoTutorial[] = [
   },
   {
     id: 'v2',
-    title: 'Müşteri ekleme ve sözleşme yönetimi',
+    title: 'Firma ekleme ve sözleşme yönetimi',
     duration: '08:15',
-    category: 'Müşteriler',
+    category: 'Firmalar',
     description: 'Yeni firma kaydı oluşturun ve sözleşme durumunu takip edin.',
     gradient: 'from-sky-500 via-sky-600 to-sky-800',
   },
@@ -59,8 +59,8 @@ const videoTutorials: VideoTutorial[] = [
     id: 'v3',
     title: 'İSG uzmanı ve doktor atama',
     duration: '06:42',
-    category: 'Müşteriler',
-    description: 'Müşteri kaydına uzman ve doktor atayarak süreci başlatın.',
+    category: 'Firmalar',
+    description: 'Firma kaydına uzman ve doktor atayarak süreci başlatın.',
     gradient: 'from-violet-500 via-violet-600 to-violet-800',
   },
   {
@@ -107,7 +107,7 @@ const videoTutorials: VideoTutorial[] = [
 
 function categoryBadgeClass(category: string) {
   if (category === 'Başlangıç') return 'bg-brand-50 text-brand-700'
-  if (category === 'Müşteriler') return 'bg-sky-50 text-sky-700'
+  if (category === 'Firmalar') return 'bg-sky-50 text-sky-700'
   if (category === 'Katılımcılar') return 'bg-amber-50 text-amber-700'
   if (category === 'Eğitimler') return 'bg-emerald-50 text-emerald-700'
   return 'bg-indigo-50 text-indigo-700'

@@ -37,7 +37,7 @@ interface NavigationItem {
 
 const mainNavigation: NavigationItem[] = [
   { label: 'Gösterge Paneli', to: '/dashboard', icon: <LayoutDashboard /> },
-  { label: 'Müşteriler', to: '/dashboard/firmalar', icon: <Building2 /> },
+  { label: 'Firmalar', to: '/dashboard/firmalar', icon: <Building2 /> },
   { label: 'Katılımcılar', to: '/dashboard/katilimcilar', icon: <Users /> },
   { label: 'Eğitim Atamaları', to: '/dashboard/egitim-atamalari', icon: <ClipboardCheck /> },
   { label: 'E-İmza Kuyruğu', to: '/dashboard/imza-kuyrugu', icon: <KeyRound /> },

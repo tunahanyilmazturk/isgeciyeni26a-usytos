@@ -142,7 +142,7 @@ const topicQuestionPool: Record<string, QuizQuestion[]> = {
     {
       id: 'q-mevzuat-2',
       text: 'İş sağlığı ve güvenliği açısından, çalışma ortamındaki kurallara uymak kimin temel görevidir?',
-      options: ['Sadece İşverenin', 'Çalışanın (İşçinin)', 'Sadece Devletin', 'Müşterilerin'],
+      options: ['Sadece İşverenin', 'Çalışanın (İşçinin)', 'Sadece Devletin', 'Firmalarin'],
       correctIndex: 1,
     },
     {

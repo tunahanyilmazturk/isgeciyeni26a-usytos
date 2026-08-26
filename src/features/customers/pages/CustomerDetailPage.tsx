@@ -116,15 +116,15 @@ export function CustomerDetailPage() {
 
   function handleDelete() {
     if (!window.confirm(`${company.name} kaydı silinsin mi?`)) return
-    toast.success('Müşteri kaydı silindi')
+    toast.success('Firma kaydı silindi')
     navigate('/dashboard/firmalar')
   }
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-        <Link to="/dashboard/firmalar" className="inline-flex items-center gap-2 text-xs font-semibold text-ink-500 transition-colors hover:text-brand-700"><ArrowLeft className="h-4 w-4" /> Müşteri listesine dön</Link>
-        <div className="mt-5 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Müşteriler</span><ChevronRight className="h-3.5 w-3.5" /><span className="text-ink-600">Firma kartı</span></div>
+        <Link to="/dashboard/firmalar" className="inline-flex items-center gap-2 text-xs font-semibold text-ink-500 transition-colors hover:text-brand-700"><ArrowLeft className="h-4 w-4" /> Firma listesine dön</Link>
+        <div className="mt-5 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Firmalar</span><ChevronRight className="h-3.5 w-3.5" /><span className="text-ink-600">Firma kartı</span></div>
       </motion.div>
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.04 }} className="relative overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-[0_8px_28px_-18px_rgba(17,24,39,0.28)]">

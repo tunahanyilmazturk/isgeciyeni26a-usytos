@@ -194,7 +194,7 @@ export function BulkParticipantModal({
                 <th className="min-w-[150px] px-2 py-3">Kullanıcı adı <span className="text-rose-400">*</span></th>
                 <th className="min-w-[120px] px-2 py-3">Şifre <span className="text-rose-400">*</span></th>
                 <th className="min-w-[120px] px-2 py-3">TC Kimlik</th>
-                <th className="min-w-[160px] px-2 py-3">Müşteri</th>
+                <th className="min-w-[160px] px-2 py-3">Firma</th>
                 <th className="min-w-[140px] px-2 py-3">Ünvan <span className="text-rose-400">*</span></th>
                 <th className="w-10 px-2 py-3 text-center">Sil</th>
               </tr>
