@@ -19,6 +19,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
 import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
@@ -764,7 +765,7 @@ function AssignmentDrawer({
 
   const totalSelected = selectedTrainingIds.length
 
-  return (
+  return createPortal(
     <>
       {/* Overlay */}
       <motion.div
@@ -1075,7 +1076,8 @@ function AssignmentDrawer({
           )}
         </div>
       </motion.div>
-    </>
+    </>,
+    document.body,
   )
 }
 
@@ -1140,7 +1142,7 @@ function BulkAssignmentModal({
     onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate, { preTest, requiresExpertApproval, requiresDoctorApproval })
   }
 
-  return (
+  return createPortal(
     <>
       {/* Overlay */}
       <motion.div
@@ -1355,6 +1357,7 @@ function BulkAssignmentModal({
           </form>
         </div>
       </motion.div>
-    </>
+    </>,
+    document.body,
   )
 }
