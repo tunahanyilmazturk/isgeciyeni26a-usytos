@@ -7,9 +7,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock,
-  Download,
-  FileSpreadsheet,
-  FileText,
   Layers3,
   List,
   Pencil,
@@ -90,12 +87,6 @@ export function AssignmentsPage() {
   }
 
   const hasActiveFilters = search || assignmentFilter !== 'all' || companyFilter !== 'all'
-
-  function handleExport(format: 'csv' | 'xlsx' | 'pdf') {
-    toast.success(`${format.toUpperCase()} dışa aktarma başlatıldı`, {
-      description: `${filtered.length} katılımcı listesi indiriliyor.`,
-    })
-  }
 
   function handleBulkAssign() {
     toast.success('Toplu eğitim atama akışı başlatıldı', {
@@ -262,31 +253,6 @@ export function AssignmentsPage() {
               </div>
             </div>
           )}
-
-          {/* Dışa aktarma butonları */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-100 pt-4">
-            <button
-              type="button"
-              onClick={() => handleExport('csv')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
-            >
-              <Download className="h-3.5 w-3.5" /> CSV indir
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExport('xlsx')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
-            >
-              <FileSpreadsheet className="h-3.5 w-3.5" /> XLSX indir
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExport('pdf')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-700"
-            >
-              <FileText className="h-3.5 w-3.5" /> PDF indir
-            </button>
-          </div>
         </div>
 
         {/* Tablo (liste görünümü) */}
