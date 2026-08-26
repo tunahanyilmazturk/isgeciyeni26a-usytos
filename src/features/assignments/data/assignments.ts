@@ -12,6 +12,9 @@ export interface TrainingAssignment {
   assignedDate: string
   dueDate: string
   progress: number
+  preTest: boolean
+  requiresExpertApproval: boolean
+  requiresDoctorApproval: boolean
 }
 
 export interface ParticipantAssignmentSummary {
@@ -51,6 +54,9 @@ function generateAssignments(): TrainingAssignment[] {
         assignedDate: '01.09.2026',
         dueDate: status === 'expired' ? '15.07.2026' : '30.11.2026',
         progress: status === 'completed' ? 100 : status === 'active' ? 20 + ((seed + i) % 60) : 0,
+        preTest: (seed + i) % 3 === 0,
+        requiresExpertApproval: status === 'pending_approval',
+        requiresDoctorApproval: false,
       })
     }
   })
@@ -76,19 +82,35 @@ export function saveAssignments(assignments: TrainingAssignment[]) {
   if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
 }
 
+/** Atama oluşturma seçenekleri */
+export interface AssignmentOptions {
+  preTest?: boolean
+  requiresExpertApproval?: boolean
+  requiresDoctorApproval?: boolean
+}
+
 /** Bir katılımcıya yeni eğitim ataması ekler */
-export function addAssignment(participantId: number, trainingId: string, dueDate: string): TrainingAssignment {
+export function addAssignment(
+  participantId: number,
+  trainingId: string,
+  dueDate: string,
+  options: AssignmentOptions = {},
+): TrainingAssignment {
   const assignments = readAssignments()
   const training = trainingCatalog.find((t) => t.id === trainingId)
+  const needsApproval = options.requiresExpertApproval || options.requiresDoctorApproval
   const newAssignment: TrainingAssignment = {
     id: `A-${1000 + assignments.length + 1}`,
     participantId,
     trainingId,
     trainingName: training?.name ?? 'Bilinmeyen eğitim',
-    status: 'active',
+    status: needsApproval ? 'pending_approval' : 'active',
     assignedDate: new Date().toLocaleDateString('tr-TR'),
     dueDate,
     progress: 0,
+    preTest: options.preTest ?? false,
+    requiresExpertApproval: options.requiresExpertApproval ?? false,
+    requiresDoctorApproval: options.requiresDoctorApproval ?? false,
   }
   const updated = [...assignments, newAssignment]
   saveAssignments(updated)
@@ -109,9 +131,11 @@ export function bulkAssign(
   participantIds: number[],
   trainingIds: string[],
   dueDate: string,
+  options: AssignmentOptions = {},
 ): { added: number; skipped: number } {
   const assignments = readAssignments()
   const existing = new Set(assignments.map((a) => `${a.participantId}:${a.trainingId}`))
+  const needsApproval = options.requiresExpertApproval || options.requiresDoctorApproval
 
   const newAssignments: TrainingAssignment[] = []
   for (const participantId of participantIds) {
@@ -124,10 +148,13 @@ export function bulkAssign(
         participantId,
         trainingId,
         trainingName: training?.name ?? 'Bilinmeyen eğitim',
-        status: 'active',
+        status: needsApproval ? 'pending_approval' : 'active',
         assignedDate: new Date().toLocaleDateString('tr-TR'),
         dueDate,
         progress: 0,
+        preTest: options.preTest ?? false,
+        requiresExpertApproval: options.requiresExpertApproval ?? false,
+        requiresDoctorApproval: options.requiresDoctorApproval ?? false,
       })
       existing.add(key)
     }

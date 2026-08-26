@@ -31,6 +31,7 @@ import {
   getActiveTrainingCount,
   readAssignments,
   removeAssignment,
+  type AssignmentOptions,
   type ParticipantAssignmentSummary,
   type TrainingAssignment,
 } from '../data/assignments'
@@ -94,8 +95,8 @@ export function AssignmentsPage() {
     setShowBulkModal(true)
   }
 
-  function handleBulkSubmit(participantIds: number[], trainingIds: string[], dueDate: string) {
-    const result = bulkAssign(participantIds, trainingIds, dueDate)
+  function handleBulkSubmit(participantIds: number[], trainingIds: string[], dueDate: string, options: AssignmentOptions) {
+    const result = bulkAssign(participantIds, trainingIds, dueDate, options)
     refreshData()
     setShowBulkModal(false)
     if (result.added > 0) {
@@ -126,8 +127,8 @@ export function AssignmentsPage() {
     openDrawer(summary.participant)
   }
 
-  function handleAddAssignment(participantId: number, trainingId: string, dueDate: string) {
-    addAssignment(participantId, trainingId, dueDate)
+  function handleAddAssignment(participantId: number, trainingId: string, dueDate: string, options: AssignmentOptions) {
+    addAssignment(participantId, trainingId, dueDate, options)
     refreshData()
     const training = trainingCatalog.find((t) => t.id === trainingId)
     toast.success('Eğitim atandı', {
@@ -690,7 +691,7 @@ function CountBadge({ count, variant }: { count: number; variant: 'active' | 'pe
   )
 }
 
-/** Bireysel eğitim atama drawer'ı — katılımcı seçimi, mevcut atamalar, yeni atama ekleme */
+/** Bireysel eğitim atama drawer'ı — gelişmiş: devam eden atamalar, kategorize eğitim seçimi, onay gereksinimleri */
 function AssignmentDrawer({
   participant,
   onClose,
@@ -699,19 +700,25 @@ function AssignmentDrawer({
 }: {
   participant: Participant | null
   onClose: () => void
-  onAddAssignment: (participantId: number, trainingId: string, dueDate: string) => void
+  onAddAssignment: (participantId: number, trainingId: string, dueDate: string, options: AssignmentOptions) => void
   onRemoveAssignment: (assignmentId: string, trainingName: string) => void
 }) {
   const allParticipants = useMemo(() => readParticipants(), [])
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(participant?.id ?? null)
-  const [selectedTrainingId, setSelectedTrainingId] = useState('')
+  const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([])
   const [dueDate, setDueDate] = useState('')
+  const [preTest, setPreTest] = useState(false)
+  const [requiresExpertApproval, setRequiresExpertApproval] = useState(false)
+  const [requiresDoctorApproval, setRequiresDoctorApproval] = useState(false)
 
   // Drawer açıldığında participant değişirse güncelle
   useEffect(() => {
     setSelectedParticipantId(participant?.id ?? null)
-    setSelectedTrainingId('')
+    setSelectedTrainingIds([])
     setDueDate('')
+    setPreTest(false)
+    setRequiresExpertApproval(false)
+    setRequiresDoctorApproval(false)
   }, [participant])
 
   const selectedParticipant = allParticipants.find((p) => p.id === selectedParticipantId) ?? null
@@ -720,19 +727,38 @@ function AssignmentDrawer({
     return readAssignments().filter((a) => a.participantId === selectedParticipantId)
   }, [selectedParticipantId, onAddAssignment, onRemoveAssignment])
 
+  // Devam eden ve tamamlanan atamalar
+  const ongoingAssignments = participantAssignments.filter((a) => a.status === 'active' || a.status === 'pending_approval')
+  const completedAssignments = participantAssignments.filter((a) => a.status === 'completed' || a.status === 'expired')
+
   // Katılımcının halihazırda atalı eğitimleri — tekrar atamayı önle
   const assignedTrainingIds = new Set(participantAssignments.map((a) => a.trainingId))
-  const availableTrainings = trainingCatalog.filter((t) => !assignedTrainingIds.has(t.id))
 
-  const canSubmit = selectedParticipantId !== null && selectedTrainingId && dueDate
+  // Eğitimleri paket türüne göre grupla
+  const baseTrainings = trainingCatalog.filter((t) => t.package === 'Temel Paket' && !assignedTrainingIds.has(t.id))
+  const sectorTrainings = trainingCatalog.filter((t) => t.package === 'Sektör Paketi' && !assignedTrainingIds.has(t.id))
+
+  const canSubmit = selectedParticipantId !== null && selectedTrainingIds.length > 0 && dueDate
+
+  function toggleTraining(id: string) {
+    setSelectedTrainingIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit || !selectedParticipantId) return
-    onAddAssignment(selectedParticipantId, selectedTrainingId, dueDate)
-    setSelectedTrainingId('')
+    const options: AssignmentOptions = { preTest, requiresExpertApproval, requiresDoctorApproval }
+    selectedTrainingIds.forEach((trainingId) => {
+      onAddAssignment(selectedParticipantId, trainingId, dueDate, options)
+    })
+    setSelectedTrainingIds([])
     setDueDate('')
+    setPreTest(false)
+    setRequiresExpertApproval(false)
+    setRequiresDoctorApproval(false)
   }
+
+  const totalSelected = selectedTrainingIds.length
 
   return (
     <>
@@ -751,10 +777,10 @@ function AssignmentDrawer({
         initial={{ opacity: 0, x: 32 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 32 }}
-        className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-ink-200 bg-white shadow-[-20px_0_60px_-28px_rgba(17,24,39,0.32)]"
+        className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-2xl flex-col overflow-y-auto border-l border-ink-200 bg-white shadow-[-20px_0_60px_-28px_rgba(17,24,39,0.32)]"
       >
         {/* Header */}
-        <div className="border-b border-ink-100 p-6">
+        <div className="sticky top-0 z-10 border-b border-ink-100 bg-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
@@ -775,17 +801,17 @@ function AssignmentDrawer({
 
         {/* İçerik */}
         <div className="flex-1 space-y-6 p-6">
-          {/* Katılımcı seçimi — participant null ise seçilebilir, değilse sabit */}
+          {/* Katılımcı seçimi */}
           <div>
             <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Katılımcı</label>
             {participant ? (
               <div className="flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50/50 p-3.5">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-brand-100">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-brand-100">
                   {initials(participant.name)}
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink-800">{participant.name}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-ink-400">{participant.username} · {participant.company}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-ink-400">{participant.username} · {participant.company} · {participant.department}</p>
                 </div>
               </div>
             ) : (
@@ -802,33 +828,34 @@ function AssignmentDrawer({
             )}
           </div>
 
-          {/* Mevcut atamalar */}
-          {selectedParticipant && (
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Mevcut atamalar</h3>
-                <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-bold text-ink-600">{participantAssignments.length}</span>
-              </div>
-              {participantAssignments.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/30 px-4 py-6 text-center">
-                  <p className="text-xs text-ink-400">Bu katılımcıya henüz eğitim atanmamış.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {participantAssignments.map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between gap-3 rounded-xl border border-ink-200 bg-white p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink-800">{assignment.trainingName}</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[assignment.status])}>
-                            {assignmentStatusLabels[assignment.status]}
-                          </span>
-                          <span className="text-[11px] text-ink-400">Son: {assignment.dueDate}</span>
-                          {assignment.progress > 0 && assignment.progress < 100 && (
-                            <span className="text-[11px] text-ink-400">· %{assignment.progress}</span>
-                          )}
+          {/* Devam eden atamalar */}
+          {selectedParticipant && ongoingAssignments.length > 0 && (
+            <div className="rounded-2xl border border-ink-200 bg-ink-50/30 p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-brand-700">Devam eden atamalar</h3>
+              <div className="mt-3 space-y-3">
+                {ongoingAssignments.map((assignment) => (
+                  <div key={assignment.id} className="flex flex-col gap-3 rounded-xl border border-ink-200 bg-white p-4 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink-800">{assignment.trainingName}</p>
+                      <p className="mt-0.5 text-[11px] text-ink-400">
+                        Atama: {assignment.assignedDate} · Son: {assignment.dueDate}
+                        {assignment.preTest && ' · Ön test: Açık'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
+                      {/* Progress bar */}
+                      <div className="w-full min-w-[120px] sm:w-36">
+                        <div className="h-2 overflow-hidden rounded-full bg-ink-100">
+                          <div
+                            className={cn('h-full rounded-full transition-all', assignment.status === 'pending_approval' ? 'bg-amber-500' : 'bg-brand-500')}
+                            style={{ width: `${assignment.progress}%` }}
+                          />
                         </div>
+                        <p className="mt-1 text-[10px] font-medium tabular-nums text-ink-400">%{assignment.progress}</p>
                       </div>
+                      <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[assignment.status])}>
+                        {assignmentStatusLabels[assignment.status]}
+                      </span>
                       <button
                         type="button"
                         onClick={() => onRemoveAssignment(assignment.id, assignment.trainingName)}
@@ -838,51 +865,172 @@ function AssignmentDrawer({
                         <Trash2 className="h-4 w-4" strokeWidth={1.7} />
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tamamlanan / süresi dolan atamalar */}
+          {selectedParticipant && completedAssignments.length > 0 && (
+            <div className="rounded-2xl border border-ink-200 bg-ink-50/20 p-5">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Geçmiş atamalar</h3>
+              <div className="mt-3 space-y-2">
+                {completedAssignments.map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between gap-3 rounded-xl border border-ink-100 bg-white p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-ink-700">{assignment.trainingName}</p>
+                      <p className="mt-0.5 text-[10px] text-ink-400">Son: {assignment.dueDate} · %{assignment.progress}</p>
+                    </div>
+                    <span className={cn('inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[assignment.status])}>
+                      {assignmentStatusLabels[assignment.status]}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Yeni atama formu */}
           {selectedParticipant && (
-            <form onSubmit={handleSubmit} className="space-y-4 border-t border-ink-100 pt-5">
-              <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-400">Yeni eğitim ata</h3>
+            <form onSubmit={handleSubmit} className="space-y-5 border-t border-ink-100 pt-5">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Yeni eğitim ata</h3>
+                {totalSelected > 0 && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{totalSelected} seçili</span>}
               </div>
 
-              {availableTrainings.length === 0 ? (
+              {baseTrainings.length === 0 && sectorTrainings.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/30 px-4 py-6 text-center">
                   <p className="text-xs text-ink-400">Tüm eğitimler bu katılımcıya zaten atanmış.</p>
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Eğitim</label>
-                    <select
-                      value={selectedTrainingId}
-                      onChange={(e) => setSelectedTrainingId(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
-                    >
-                      <option value="">Eğitim seçin…</option>
-                      {availableTrainings.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Temel paket eğitimleri */}
+                  {baseTrainings.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600">1 — Temel paket eğitimleri</p>
+                      <p className="mt-1 text-[11px] text-ink-400">Katılımcının tamamlayacağı ana eğitim paketleri.</p>
+                      <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                        {baseTrainings.map((t) => {
+                          const isSelected = selectedTrainingIds.includes(t.id)
+                          return (
+                            <label
+                              key={t.id}
+                              className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors', isSelected ? 'border-brand-300 bg-brand-50/40' : 'border-ink-200 bg-white hover:border-brand-200')}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleTraining(t.id)}
+                                className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-ink-800">{t.name}</p>
+                                <p className="mt-0.5 text-[10px] text-ink-400">{t.risk}</p>
+                              </div>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Son tarih</label>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
-                    />
-                  </div>
+                  {/* Sektör paketi eğitimleri */}
+                  {sectorTrainings.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-violet-600">2 — Sektör paketi eğitimleri</p>
+                      <p className="mt-1 text-[11px] text-ink-400">İşe ve işyerine özgü riskleri kapsayan uygulamalı eğitimler.</p>
+                      <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                        {sectorTrainings.map((t) => {
+                          const isSelected = selectedTrainingIds.includes(t.id)
+                          return (
+                            <label
+                              key={t.id}
+                              className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors', isSelected ? 'border-violet-300 bg-violet-50/40' : 'border-ink-200 bg-white hover:border-violet-200')}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleTraining(t.id)}
+                                className="mt-0.5 h-4 w-4 rounded border-ink-300 text-violet-600 focus:ring-violet-500"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-ink-800">{t.name}</p>
+                                <p className="mt-0.5 text-[10px] text-ink-400">{t.risk}</p>
+                              </div>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
+                  {/* Ön test seçeneği */}
+                  {totalSelected > 0 && (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5">
+                      <input
+                        type="checkbox"
+                        checked={preTest}
+                        onChange={(e) => setPreTest(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-amber-800">Ön test uygula</p>
+                        <p className="mt-0.5 text-[11px] text-amber-700">Videolardan önce eğitim sonu testini tanı olarak uygula (baraj/deneme yok; sertifikaya yazılmaz).</p>
+                      </div>
+                    </label>
+                  )}
+
+                  {/* Onay gereksinimleri */}
+                  {totalSelected > 0 && (
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-700">Onay gereksinimleri</p>
+                      <p className="mt-1 text-[11px] text-indigo-600">Hiçbiri seçilmezse atama doğrudan yürürlüğe girer.</p>
+                      <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-indigo-200 bg-white p-3 hover:border-indigo-300">
+                          <input
+                            type="checkbox"
+                            checked={requiresExpertApproval}
+                            onChange={(e) => setRequiresExpertApproval(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div>
+                            <p className="text-xs font-semibold text-ink-800">İş güvenliği uzmanı onayı</p>
+                            <p className="mt-0.5 text-[10px] text-ink-400">Firmaya atanmış uzman onay vermelidir.</p>
+                          </div>
+                        </label>
+                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-indigo-200 bg-white p-3 hover:border-indigo-300">
+                          <input
+                            type="checkbox"
+                            checked={requiresDoctorApproval}
+                            onChange={(e) => setRequiresDoctorApproval(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div>
+                            <p className="text-xs font-semibold text-ink-800">İşyeri hekimi onayı</p>
+                            <p className="mt-0.5 text-[10px] text-ink-400">Firmaya atanmış işyeri hekimi onay vermelidir.</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Son tarih */}
+                  {totalSelected > 0 && (
+                    <div>
+                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Son tarih</label>
+                      <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Submit */}
                   <Button type="submit" size="md" disabled={!canSubmit} leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} className="w-full">
-                    Eğitimi ata
+                    {totalSelected > 0 ? `${totalSelected} eğitimi ata` : 'Eğitim seçin'}
                   </Button>
                 </>
               )}
@@ -900,7 +1048,7 @@ function BulkAssignmentModal({
   onSubmit,
 }: {
   onClose: () => void
-  onSubmit: (participantIds: number[], trainingIds: string[], dueDate: string) => void
+  onSubmit: (participantIds: number[], trainingIds: string[], dueDate: string, options: AssignmentOptions) => void
 }) {
   const allParticipants = useMemo(() => readParticipants(), [])
   const companies = useMemo(
@@ -911,6 +1059,9 @@ function BulkAssignmentModal({
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([])
   const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([])
   const [dueDate, setDueDate] = useState('')
+  const [preTest, setPreTest] = useState(false)
+  const [requiresExpertApproval, setRequiresExpertApproval] = useState(false)
+  const [requiresDoctorApproval, setRequiresDoctorApproval] = useState(false)
   const [companyFilter, setCompanyFilter] = useState('all')
   const [participantSearch, setParticipantSearch] = useState('')
 
@@ -949,7 +1100,7 @@ function BulkAssignmentModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
-    onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate)
+    onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate, { preTest, requiresExpertApproval, requiresDoctorApproval })
   }
 
   return (
@@ -1099,6 +1250,51 @@ function BulkAssignmentModal({
                     onChange={(e) => setDueDate(e.target.value)}
                     className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
                   />
+                </div>
+
+                {/* Ön test */}
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-3">
+                  <input
+                    type="checkbox"
+                    checked={preTest}
+                    onChange={(e) => setPreTest(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-amber-800">Ön test uygula</p>
+                    <p className="mt-0.5 text-[11px] text-amber-700">Videolardan önce tanı testi.</p>
+                  </div>
+                </label>
+
+                {/* Onay gereksinimleri */}
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-700">Onay gereksinimleri</p>
+                  <div className="mt-2.5 space-y-2">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-indigo-200 bg-white p-2.5 hover:border-indigo-300">
+                      <input
+                        type="checkbox"
+                        checked={requiresExpertApproval}
+                        onChange={(e) => setRequiresExpertApproval(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div>
+                        <p className="text-xs font-semibold text-ink-800">İSG uzmanı onayı</p>
+                        <p className="mt-0.5 text-[10px] text-ink-400">Firmaya atanmış uzman onay vermelidir.</p>
+                      </div>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-indigo-200 bg-white p-2.5 hover:border-indigo-300">
+                      <input
+                        type="checkbox"
+                        checked={requiresDoctorApproval}
+                        onChange={(e) => setRequiresDoctorApproval(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div>
+                        <p className="text-xs font-semibold text-ink-800">İşyeri hekimi onayı</p>
+                        <p className="mt-0.5 text-[10px] text-ink-400">Firmaya atanmış hekim onay vermelidir.</p>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
