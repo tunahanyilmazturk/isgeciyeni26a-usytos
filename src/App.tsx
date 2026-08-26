@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
+import { ParticipantLayout } from './layouts/ParticipantLayout'
 import {
   AuthProvider,
   LoginPage,
@@ -84,6 +85,12 @@ const PasswordChangePage = lazy(() =>
 const ParticipantDashboardPage = lazy(() =>
   import('./features/auth').then((m) => ({ default: m.ParticipantDashboardPage })),
 )
+const ParticipantTrainingsPage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.ParticipantTrainingsPage })),
+)
+const ParticipantProfilePage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.ParticipantProfilePage })),
+)
 
 function ProtectedRoutes() {
   const { isAuthenticated } = useAuth()
@@ -147,18 +154,22 @@ function ParticipantRoutes() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center text-sm text-ink-400">
-          Yükleniyor…
-        </div>
-      }
-    >
-      <Routes>
-        <Route index element={<ParticipantDashboardPage />} />
-        <Route path="*" element={<Navigate to="/katilimci" replace />} />
-      </Routes>
-    </Suspense>
+    <ParticipantLayout>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[60vh] items-center justify-center text-sm text-ink-400">
+            Yükleniyor…
+          </div>
+        }
+      >
+        <Routes>
+          <Route index element={<ParticipantDashboardPage />} />
+          <Route path="egitimler" element={<ParticipantTrainingsPage />} />
+          <Route path="profil" element={<ParticipantProfilePage />} />
+          <Route path="*" element={<Navigate to="/katilimci" replace />} />
+        </Routes>
+      </Suspense>
+    </ParticipantLayout>
   )
 }
 
