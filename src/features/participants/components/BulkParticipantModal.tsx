@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { readCustomers } from '@/features/customers/data/customers'
 import { type Participant } from '../data/participants'
 
 export interface BulkParticipantRow {
@@ -14,7 +15,6 @@ export interface BulkParticipantRow {
   tcNumber: string
   company: string
   jobTitle: string
-  riskLevel: 'Az tehlikeli' | 'Tehlikeli' | 'Çok tehlikeli'
 }
 
 const DEFAULT_PASSWORD = '123456'
@@ -28,11 +28,8 @@ function emptyRow(key: string, defaultCompany: string): BulkParticipantRow {
     tcNumber: '',
     company: defaultCompany,
     jobTitle: '',
-    riskLevel: 'Tehlikeli',
   }
 }
-
-const RISK_OPTIONS: BulkParticipantRow['riskLevel'][] = ['Az tehlikeli', 'Tehlikeli', 'Çok tehlikeli']
 
 /** Toplu katılımcı ekleme modal'ı — editable table + satır ekle/sil */
 export function BulkParticipantModal({
@@ -99,27 +96,32 @@ export function BulkParticipantModal({
 
   function handleSubmit() {
     if (!canSubmit || duplicateUsernames.length > 0) return
+    const customers = readCustomers()
     const now = Date.now()
-    const participants: Participant[] = validRows.map((r, i) => ({
-      id: now + i,
-      name: r.name.trim(),
-      username: r.username.trim(),
-      email: '—',
-      phone: '—',
-      tcNumber: r.tcNumber.trim() || '—',
-      companyId: companies.indexOf(r.company) + 1,
-      company: r.company,
-      riskLevel: r.riskLevel,
-      department: r.jobTitle.trim(),
-      trainingMinutes: 0,
-      progress: 0,
-      trainingStatus: 'not_started',
-      lastCompletion: '—',
-      nextTraining: '—',
-      status: 'active',
-      lastLogin: 'Henüz giriş yapmadı',
-      password: r.password.trim() || DEFAULT_PASSWORD,
-    }))
+    const participants: Participant[] = validRows.map((r, i) => {
+      const customer = customers.find((c) => c.name === r.company)
+      const riskLevel = (customer?.riskLevel ?? 'Tehlikeli') as Participant['riskLevel']
+      return {
+        id: now + i,
+        name: r.name.trim(),
+        username: r.username.trim(),
+        email: '—',
+        phone: '—',
+        tcNumber: r.tcNumber.trim() || '—',
+        companyId: customer?.id ?? companies.indexOf(r.company) + 1,
+        company: r.company,
+        riskLevel,
+        department: r.jobTitle.trim(),
+        trainingMinutes: 0,
+        progress: 0,
+        trainingStatus: 'not_started',
+        lastCompletion: '—',
+        nextTraining: '—',
+        status: 'active',
+        lastLogin: 'Henüz giriş yapmadı',
+        password: r.password.trim() || DEFAULT_PASSWORD,
+      }
+    })
     onCreate(participants)
   }
 
@@ -194,7 +196,6 @@ export function BulkParticipantModal({
                 <th className="min-w-[120px] px-2 py-3">TC Kimlik</th>
                 <th className="min-w-[160px] px-2 py-3">Müşteri</th>
                 <th className="min-w-[140px] px-2 py-3">Ünvan <span className="text-rose-400">*</span></th>
-                <th className="min-w-[130px] px-2 py-3">Tehlike sınıfı</th>
                 <th className="w-10 px-2 py-3 text-center">Sil</th>
               </tr>
             </thead>
@@ -263,15 +264,6 @@ export function BulkParticipantModal({
                         placeholder="Üretim operatörü"
                         className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                       />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <select
-                        value={row.riskLevel}
-                        onChange={(e) => updateRow(row.key, 'riskLevel', e.target.value)}
-                        className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-                      >
-                        {RISK_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                      </select>
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <button
