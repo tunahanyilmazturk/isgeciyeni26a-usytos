@@ -8,11 +8,12 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
+  UserRound,
   Wand2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
@@ -205,6 +206,23 @@ export function LoginPage() {
               Kayıt talebi oluşturun
             </a>
           </p>
+
+          {/* Katılımcı girişi */}
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50/50 px-4 py-3.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
+              <UserRound className="h-4 w-4" strokeWidth={1.8} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-ink-700">Katılımcı girişi</p>
+              <p className="mt-0.5 truncate text-[11px] text-ink-400">İSG eğitim portalına giriş için</p>
+            </div>
+            <Link
+              to="/katilimci/giris"
+              className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
+            >
+              Giriş yap →
+            </Link>
+          </div>
 
           <div className="mt-9 flex items-center justify-center gap-5 text-[11px] text-ink-400">
             <span className="inline-flex items-center gap-1.5">

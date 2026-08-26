@@ -133,6 +133,7 @@ export function ParticipantCreatePage() {
       nextTraining: '—',
       status: form.status,
       lastLogin: 'Henüz giriş yapmadı',
+      password: form.password,
     }
     saveParticipants([...readParticipants(), participant])
     toast.success('Katılımcı başarıyla oluşturuldu', { description: `${participant.name} ${participant.company} firmasına eklendi.` })

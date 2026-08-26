@@ -19,6 +19,7 @@ export interface Participant {
   nextTraining: string
   status: ParticipantStatus
   lastLogin: string
+  password?: string
 }
 
 export const PARTICIPANTS_STORAGE_KEY = 'hantech-participants'

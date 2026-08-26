@@ -54,9 +54,9 @@ export function ParticipantLoginPage() {
       })
       return
     }
-    const first = participants[0]
+    const first = participants.find((p) => p.status === 'active') ?? participants[0]
     setValue('username', first.username, { shouldValidate: true })
-    setValue('password', 'demo1234', { shouldValidate: true })
+    setValue('password', first.password ?? 'demo1234', { shouldValidate: true })
     toast.info('Demo katılımcı bilgileri dolduruldu', {
       description: `${first.name} (${first.company})`,
     })
@@ -66,13 +66,26 @@ export function ParticipantLoginPage() {
     setSubmitting(true)
     setTimeout(() => {
       const participants = readParticipants()
-      const found = participants.find(
-        (p) => p.username === data.username && p.status === 'active',
-      )
+      const found = participants.find((p) => p.username === data.username)
       if (!found) {
         setSubmitting(false)
         toast.error('Giriş başarısız', {
-          description: 'Kullanıcı adı bulunamadı veya hesap pasif.',
+          description: 'Kullanıcı adı bulunamadı.',
+        })
+        return
+      }
+      if (found.status !== 'active') {
+        setSubmitting(false)
+        toast.error('Hesap pasif', {
+          description: 'Hesabınız pasif durumda. Yöneticinizle iletişime geçin.',
+        })
+        return
+      }
+      // Şifre kontrolü — şifre kaydedilmişse kontrol et, yoksa geçici şifre kabul et
+      if (found.password && found.password !== data.password) {
+        setSubmitting(false)
+        toast.error('Giriş başarısız', {
+          description: 'Şifre hatalı.',
         })
         return
       }
