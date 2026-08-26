@@ -1,7 +1,13 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
-import { AuthProvider, LoginPage, useAuth } from './features/auth'
+import {
+  AuthProvider,
+  LoginPage,
+  ParticipantAuthProvider,
+  useAuth,
+  useParticipantAuth,
+} from './features/auth'
 
 const DashboardPage = lazy(() =>
   import('./features/dashboard').then((m) => ({ default: m.DashboardPage })),
@@ -66,6 +72,15 @@ const VideoPage = lazy(() =>
 const SupportRequestPage = lazy(() =>
   import('./features/support').then((m) => ({ default: m.SupportRequestPage })),
 )
+const ParticipantLoginPage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.ParticipantLoginPage })),
+)
+const KvkkApprovalPage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.KvkkApprovalPage })),
+)
+const ParticipantDashboardPage = lazy(() =>
+  import('./features/auth').then((m) => ({ default: m.ParticipantDashboardPage })),
+)
 
 function ProtectedRoutes() {
   const { isAuthenticated } = useAuth()
@@ -113,14 +128,45 @@ function ProtectedRoutes() {
   )
 }
 
+function ParticipantRoutes() {
+  const { isAuthenticated, kvkkApproved } = useParticipantAuth()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/katilimci/giris" replace />
+  }
+
+  if (!kvkkApproved) {
+    return <KvkkApprovalPage />
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center text-sm text-ink-400">
+          Yükleniyor…
+        </div>
+      }
+    >
+      <Routes>
+        <Route index element={<ParticipantDashboardPage />} />
+        <Route path="*" element={<Navigate to="/katilimci" replace />} />
+      </Routes>
+    </Suspense>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/giris" element={<LoginPage />} />
-        <Route path="/dashboard/*" element={<ProtectedRoutes />} />
-      </Routes>
+      <ParticipantAuthProvider>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/giris" element={<LoginPage />} />
+          <Route path="/dashboard/*" element={<ProtectedRoutes />} />
+          <Route path="/katilimci/giris" element={<ParticipantLoginPage />} />
+          <Route path="/katilimci/*" element={<ParticipantRoutes />} />
+        </Routes>
+      </ParticipantAuthProvider>
     </AuthProvider>
   )
 }

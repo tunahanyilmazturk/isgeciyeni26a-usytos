@@ -1,3 +1,7 @@
 export { AuthProvider, useAuth, type AuthUser } from './AuthContext'
+export { ParticipantAuthProvider, useParticipantAuth, type ParticipantUser } from './ParticipantAuthContext'
 export { ProtectedRoute } from './ProtectedRoute'
 export { LoginPage } from './pages/LoginPage'
+export { ParticipantLoginPage } from './pages/ParticipantLoginPage'
+export { KvkkApprovalPage } from './pages/KvkkApprovalPage'
+export { ParticipantDashboardPage } from './pages/ParticipantDashboardPage'
