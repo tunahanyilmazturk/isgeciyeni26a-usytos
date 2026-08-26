@@ -26,6 +26,7 @@ import { readParticipants, type Participant } from '@/features/participants/data
 import { trainingCatalog } from '@/features/trainings/data/trainings'
 import {
   addAssignment,
+  bulkAssign,
   getParticipantAssignmentSummaries,
   getActiveTrainingCount,
   readAssignments,
@@ -50,6 +51,7 @@ export function AssignmentsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [view, setView] = useState<ViewMode>('list')
   const [drawerParticipant, setDrawerParticipant] = useState<Participant | null | undefined>(undefined)
+  const [showBulkModal, setShowBulkModal] = useState(false)
 
   const [allSummaries, setAllSummaries] = useState<ParticipantAssignmentSummary[]>(() => getParticipantAssignmentSummaries())
   const [activeTrainingCount, setActiveTrainingCount] = useState(() => getActiveTrainingCount())
@@ -89,9 +91,22 @@ export function AssignmentsPage() {
   const hasActiveFilters = search || assignmentFilter !== 'all' || companyFilter !== 'all'
 
   function handleBulkAssign() {
-    toast.success('Toplu eğitim atama akışı başlatıldı', {
-      description: 'Katılımcı ve eğitim seçimi yapabilirsiniz.',
-    })
+    setShowBulkModal(true)
+  }
+
+  function handleBulkSubmit(participantIds: number[], trainingIds: string[], dueDate: string) {
+    const result = bulkAssign(participantIds, trainingIds, dueDate)
+    refreshData()
+    setShowBulkModal(false)
+    if (result.added > 0) {
+      toast.success(`${result.added} atama oluşturuldu`, {
+        description: result.skipped > 0 ? `${result.skipped} zaten atanmış olduğundan atlandı.` : 'Tüm atamalar başarıyla eklendi.',
+      })
+    } else {
+      toast.info('Yeni atama eklenmedi', {
+        description: 'Seçili tüm eğitimler katılımcılara zaten atanmış.',
+      })
+    }
   }
 
   function refreshData() {
@@ -373,6 +388,16 @@ export function AssignmentsPage() {
             onClose={closeDrawer}
             onAddAssignment={handleAddAssignment}
             onRemoveAssignment={handleRemoveAssignment}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Toplu atama modal'ı */}
+      <AnimatePresence>
+        {showBulkModal && (
+          <BulkAssignmentModal
+            onClose={() => setShowBulkModal(false)}
+            onSubmit={handleBulkSubmit}
           />
         )}
       </AnimatePresence>
@@ -865,6 +890,238 @@ function AssignmentDrawer({
           )}
         </div>
       </motion.aside>
+    </>
+  )
+}
+
+/** Toplu eğitim atama modal'ı — çoklu katılımcı + çoklu eğitim seçimi */
+function BulkAssignmentModal({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void
+  onSubmit: (participantIds: number[], trainingIds: string[], dueDate: string) => void
+}) {
+  const allParticipants = useMemo(() => readParticipants(), [])
+  const companies = useMemo(
+    () => [...new Set(allParticipants.map((p) => p.company))].sort((a, b) => a.localeCompare(b, 'tr')),
+    [allParticipants],
+  )
+
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([])
+  const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([])
+  const [dueDate, setDueDate] = useState('')
+  const [companyFilter, setCompanyFilter] = useState('all')
+  const [participantSearch, setParticipantSearch] = useState('')
+
+  const filteredParticipants = useMemo(() => {
+    const query = participantSearch.trim().toLocaleLowerCase('tr-TR')
+    return allParticipants.filter((p) => {
+      const matchesCompany = companyFilter === 'all' || p.company === companyFilter
+      const haystack = `${p.name} ${p.username} ${p.company}`.toLocaleLowerCase('tr-TR')
+      return matchesCompany && (!query || haystack.includes(query))
+    })
+  }, [allParticipants, companyFilter, participantSearch])
+
+  const visibleParticipantIds = filteredParticipants.map((p) => p.id)
+  const allVisibleSelected = visibleParticipantIds.length > 0 && visibleParticipantIds.every((id) => selectedParticipantIds.includes(id))
+
+  function toggleParticipant(id: number) {
+    setSelectedParticipantIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
+  }
+
+  function toggleAllVisible() {
+    setSelectedParticipantIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter((id) => !visibleParticipantIds.includes(id))
+      }
+      return [...new Set([...current, ...visibleParticipantIds])]
+    })
+  }
+
+  function toggleTraining(id: string) {
+    setSelectedTrainingIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
+  }
+
+  const canSubmit = selectedParticipantIds.length > 0 && selectedTrainingIds.length > 0 && dueDate
+  const totalAssignments = selectedParticipantIds.length * selectedTrainingIds.length
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit) return
+    onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate)
+  }
+
+  return (
+    <>
+      {/* Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-ink-900/30 backdrop-blur-[2px]"
+        role="presentation"
+        onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}
+      />
+
+      {/* Modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 border-b border-ink-100 p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
+                <Users className="h-5 w-5" strokeWidth={1.8} />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-ink-900">Toplu eğitim ataması</h2>
+                <p className="mt-1 text-xs text-ink-500">Birden fazla katılımcıya birden fazla eğitim tek seferde atayın.</p>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-xl p-2 text-ink-400 hover:bg-ink-100" aria-label="Kapat">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* İçerik */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+            <div className="grid gap-6 p-6 lg:grid-cols-2">
+              {/* Sol: Katılımcı seçimi */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Katılımcılar</h3>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{selectedParticipantIds.length} seçili</span>
+                </div>
+
+                {/* Katılımcı filtreleri */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400" strokeWidth={1.7} />
+                    <input
+                      value={participantSearch}
+                      onChange={(e) => setParticipantSearch(e.target.value)}
+                      placeholder="Ara..."
+                      className="h-9 w-full rounded-lg border border-ink-200 bg-white pl-8 pr-3 text-xs text-ink-800 outline-none focus:border-brand-500"
+                    />
+                  </div>
+                  <select
+                    value={companyFilter}
+                    onChange={(e) => setCompanyFilter(e.target.value)}
+                    className="h-9 shrink-0 rounded-lg border border-ink-200 bg-white px-2 text-xs font-medium text-ink-700 outline-none focus:border-brand-500"
+                  >
+                    <option value="all">Tüm firmalar</option>
+                    {companies.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                {/* Tümünü seç */}
+                <button
+                  type="button"
+                  onClick={toggleAllVisible}
+                  className={cn('inline-flex h-8 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition-colors', allVisibleSelected ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  {allVisibleSelected ? 'Seçimi kaldır' : 'Tümünü seç'}
+                </button>
+
+                {/* Katılımcı listesi */}
+                <div className="max-h-[320px] space-y-1.5 overflow-y-auto rounded-xl border border-ink-100 bg-ink-50/20 p-2">
+                  {filteredParticipants.map((p) => {
+                    const isSelected = selectedParticipantIds.includes(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => toggleParticipant(p.id)}
+                        className={cn('flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition-colors', isSelected ? 'border-brand-300 bg-brand-50/50' : 'border-transparent hover:bg-white')}
+                      >
+                        <span className={cn('grid h-5 w-5 shrink-0 place-items-center rounded-md border', isSelected ? 'border-brand-500 bg-brand-500 text-white' : 'border-ink-300')}>
+                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />}
+                        </span>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-50 text-[10px] font-bold text-brand-700 ring-1 ring-brand-100">
+                          {initials(p.name)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-ink-800">{p.name}</p>
+                          <p className="mt-0.5 truncate text-[10px] text-ink-400">{p.company} · {p.department}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                  {filteredParticipants.length === 0 && (
+                    <p className="py-6 text-center text-xs text-ink-400">Katılımcı bulunamadı.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sağ: Eğitim seçimi + son tarih */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Eğitimler</h3>
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{selectedTrainingIds.length} seçili</span>
+                </div>
+
+                {/* Eğitim listesi */}
+                <div className="max-h-[260px] space-y-1.5 overflow-y-auto rounded-xl border border-ink-100 bg-ink-50/20 p-2">
+                  {trainingCatalog.map((t) => {
+                    const isSelected = selectedTrainingIds.includes(t.id)
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => toggleTraining(t.id)}
+                        className={cn('flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition-colors', isSelected ? 'border-brand-300 bg-brand-50/50' : 'border-transparent hover:bg-white')}
+                      >
+                        <span className={cn('grid h-5 w-5 shrink-0 place-items-center rounded-md border', isSelected ? 'border-brand-500 bg-brand-500 text-white' : 'border-ink-300')}>
+                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-ink-800">{t.name}</p>
+                          <p className="mt-0.5 truncate text-[10px] text-ink-400">{t.package} · {t.risk}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Son tarih */}
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Son tarih</label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-4 border-t border-ink-100 bg-ink-50/30 px-6 py-4">
+              <div className="text-xs text-ink-500">
+                {canSubmit ? (
+                  <span><span className="font-bold text-ink-800">{totalAssignments}</span> atama oluşturulacak</span>
+                ) : (
+                  <span>Katılımcı, eğitim ve son tarih seçin</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="md" onClick={onClose}>İptal</Button>
+                <Button type="submit" size="md" disabled={!canSubmit} leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />}>
+                  {totalAssignments} atama oluştur
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </motion.div>
     </>
   )
 }

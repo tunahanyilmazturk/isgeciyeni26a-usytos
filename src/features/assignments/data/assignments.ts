@@ -102,6 +102,45 @@ export function removeAssignment(assignmentId: string): void {
   saveAssignments(updated)
 }
 
+/** Birden fazla katılımcıya birden fazla eğitim toplu atar
+ *  Halihazırda atanmış (participantId+trainingId) çiftlerini atlar
+ */
+export function bulkAssign(
+  participantIds: number[],
+  trainingIds: string[],
+  dueDate: string,
+): { added: number; skipped: number } {
+  const assignments = readAssignments()
+  const existing = new Set(assignments.map((a) => `${a.participantId}:${a.trainingId}`))
+
+  const newAssignments: TrainingAssignment[] = []
+  for (const participantId of participantIds) {
+    for (const trainingId of trainingIds) {
+      const key = `${participantId}:${trainingId}`
+      if (existing.has(key)) continue
+      const training = trainingCatalog.find((t) => t.id === trainingId)
+      newAssignments.push({
+        id: `A-${1000 + assignments.length + newAssignments.length + 1}`,
+        participantId,
+        trainingId,
+        trainingName: training?.name ?? 'Bilinmeyen eğitim',
+        status: 'active',
+        assignedDate: new Date().toLocaleDateString('tr-TR'),
+        dueDate,
+        progress: 0,
+      })
+      existing.add(key)
+    }
+  }
+
+  if (newAssignments.length > 0) {
+    saveAssignments([...assignments, ...newAssignments])
+  }
+
+  const totalRequested = participantIds.length * trainingIds.length
+  return { added: newAssignments.length, skipped: totalRequested - newAssignments.length }
+}
+
 /** Tüm katılımcıların atama özetini üretir */
 export function getParticipantAssignmentSummaries(): ParticipantAssignmentSummary[] {
   const participants = readParticipants()
