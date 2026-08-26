@@ -166,7 +166,7 @@ export function parseIsgWorkbook(data: ArrayBuffer, existingSgkNumbers: readonly
 export function downloadCustomerTemplate() {
   const sampleRow = Array.from({ length: 22 }, () => '')
   Object.assign(sampleRow, {
-    5: 'Barış Eren',
+    5: 'Demo Uzman 01',
     6: 'Uzman',
     11: 'OSGB-SGK-001',
     13: 'YETKI-001',

@@ -31,8 +31,8 @@ import { readCustomers, saveCustomers, type Customer, type RiskLevel, type Contr
 
 const riskLevels: RiskLevel[] = ['Az tehlikeli', 'Tehlikeli', 'Çok tehlikeli']
 const contractStatuses: ContractStatus[] = ['Devam ediyor', 'Teklif aşamasında', 'Sonlandırıldı']
-const experts = ['Barış Eren', 'Deniz Kara', 'Mert Acar', 'Ozan Tekin', 'Seda Yalçın']
-const doctors = ['Elif Demir', 'Onur Polat']
+const experts = ['Demo Uzman 01', 'Demo Uzman 02', 'Demo Uzman 03', 'Demo Uzman 04', 'Demo Uzman 05']
+const doctors = ['Demo Hekim 01', 'Demo Hekim 02']
 
 const customerSchema = z.object({
   name: z.string().trim().min(2, 'Firma adı en az 2 karakter olmalı.'),

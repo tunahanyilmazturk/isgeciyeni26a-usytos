@@ -17,7 +17,7 @@ export interface BulkParticipantRow {
   jobTitle: string
 }
 
-const DEFAULT_PASSWORD = '123456'
+const DEFAULT_PASSWORD = import.meta.env.DEV ? 'dev-demo-1234' : ''
 
 function emptyRow(key: string, defaultCompany: string): BulkParticipantRow {
   return {

@@ -18,16 +18,8 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
 import { readParticipants } from '@/features/participants/data/participants'
-import { useAuth, type AuthUser } from '../AuthContext'
+import { useAuth } from '../AuthContext'
 import { useParticipantAuth, type ParticipantUser } from '../ParticipantAuthContext'
-
-const DEMO_ADMIN: AuthUser = {
-  name: 'Savaş Akay',
-  email: 'demo@hantech.com',
-  role: 'Yönetici',
-  company: 'Çetka OSGB',
-  initials: 'SA',
-}
 
 const loginSchema = z.object({
   login: z
@@ -83,7 +75,7 @@ export function LoginPage() {
     }
     const first = participants.find((p) => p.status === 'active') ?? participants[0]
     setValue('login', first.username, { shouldValidate: true })
-    setValue('password', first.password ?? 'demo1234', { shouldValidate: true })
+    setValue('password', first.password ?? 'dev-demo-1234', { shouldValidate: true })
     toast.info('Demo katılımcı bilgileri dolduruldu', {
       description: `${first.name} (${first.company})`,
     })
@@ -95,9 +87,23 @@ export function LoginPage() {
     setTimeout(() => {
       const loginValue = data.login.trim()
 
-      // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı eşleşmesi)
+      // Backend yok: auth yalnızca development demo akışında kullanılabilir.
+      if (!import.meta.env.DEV) {
+        setSubmitting(false)
+        toast.error('Giriş servisi kullanıma hazır değil', {
+          description: 'Gerçek kullanıcı girişi için backend bağlantısı gereklidir.',
+        })
+        return
+      }
+
+      // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı/e-posta/TC eşleşmesi)
       const participants = readParticipants()
-      const foundParticipant = participants.find((p) => p.username === loginValue)
+      const normalizedLogin = loginValue.toLocaleLowerCase('tr-TR')
+      const foundParticipant = participants.find((p) =>
+        p.username.toLocaleLowerCase('tr-TR') === normalizedLogin
+        || (p.email !== '—' && p.email.toLocaleLowerCase('tr-TR') === normalizedLogin)
+        || (p.tcNumber !== '—' && p.tcNumber === loginValue),
+      )
 
       if (foundParticipant) {
         // Katılımcı bulundu — katılımcı girişi
@@ -141,9 +147,8 @@ export function LoginPage() {
         return
       }
 
-      // 2) Yönetici girişi (demo — backend bağlanınca API çağrısı buraya)
-      // Şimdilik demo yönetici hesabını kabul ediyoruz
-      if (loginValue === DEMO_ADMIN.email || loginValue === 'demo@hantech.com') {
+      // 2) Development-only demo yönetici hesabı.
+      if (import.meta.env.DEV && loginValue === 'demo@hantech.com') {
         if (data.password !== 'demo1234') {
           setSubmitting(false)
           toast.error('Giriş başarısız', {
@@ -151,7 +156,13 @@ export function LoginPage() {
           })
           return
         }
-        adminLogin(DEMO_ADMIN)
+        adminLogin({
+          name: 'Demo Yönetici',
+          email: loginValue,
+          role: 'Yönetici',
+          company: 'Demo OSGB',
+          initials: 'DY',
+        })
         setSubmitting(false)
         toast.success('Giriş başarılı', {
           description: 'Yönetim paneline yönlendiriliyorsunuz…',

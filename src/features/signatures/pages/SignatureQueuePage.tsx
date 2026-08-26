@@ -51,14 +51,14 @@ const typeIcons: Record<DocumentType, typeof FileSignature> = {
 }
 
 const records: SignatureRecord[] = [
-  { id: 'S-2011', document: '2026 İSG Hizmet Sözleşmesi', company: 'Quantis Tekstil', type: 'İSG sözleşmesi', dueDate: '14.09.2026', status: 'pending', recipient: 'Ahmet Yılmaz' },
-  { id: 'S-2012', document: 'Üretim Hattı Risk Değerlendirmesi', company: 'Vesta Metal', type: 'Risk değerlendirmesi', dueDate: '09.09.2026', status: 'pending', recipient: 'Selin Arslan' },
-  { id: 'S-2013', document: 'Temel İSG Eğitim Sertifikası', company: 'Pelion Gıda', type: 'Eğitim sertifikası', dueDate: '02.08.2026', status: 'signed', recipient: 'Selin Arslan' },
-  { id: 'S-2014', document: 'Acil Durum Eylem Planı', company: 'Norden Lojistik', type: 'Acil durum planı', dueDate: '26.08.2026', status: 'expired', recipient: 'Burak Şahin' },
-  { id: 'S-2015', document: 'Yüksekten Çalışma İzin Belgesi', company: 'Vesta Metal', type: 'Risk değerlendirmesi', dueDate: '20.09.2026', status: 'pending', recipient: 'Can Öztürk' },
-  { id: 'S-2016', document: 'İlk Yardım Eğitim Sertifikası', company: 'Quantis Tekstil', type: 'Eğitim sertifikası', dueDate: '11.08.2026', status: 'signed', recipient: 'Mert Yıldız' },
-  { id: 'S-2017', document: 'Yangın Güvenliği Sözleşmesi', company: 'Pelion Gıda', type: 'İSG sözleşmesi', dueDate: '30.08.2026', status: 'rejected', recipient: 'Deniz Koç' },
-  { id: 'S-2018', document: 'Elektrik Güvenliği Risk Değerlendirmesi', company: 'Norden Lojistik', type: 'Risk değerlendirmesi', dueDate: '22.09.2026', status: 'pending', recipient: 'Emre Çelik' },
+  { id: 'S-2011', document: '2026 İSG Hizmet Sözleşmesi', company: 'Quantis Tekstil', type: 'İSG sözleşmesi', dueDate: '14.09.2026', status: 'pending', recipient: 'Demo Alıcı 01' },
+  { id: 'S-2012', document: 'Üretim Hattı Risk Değerlendirmesi', company: 'Vesta Metal', type: 'Risk değerlendirmesi', dueDate: '09.09.2026', status: 'pending', recipient: 'Demo Alıcı 02' },
+  { id: 'S-2013', document: 'Temel İSG Eğitim Sertifikası', company: 'Pelion Gıda', type: 'Eğitim sertifikası', dueDate: '02.08.2026', status: 'signed', recipient: 'Demo Alıcı 02' },
+  { id: 'S-2014', document: 'Acil Durum Eylem Planı', company: 'Norden Lojistik', type: 'Acil durum planı', dueDate: '26.08.2026', status: 'expired', recipient: 'Demo Alıcı 03' },
+  { id: 'S-2015', document: 'Yüksekten Çalışma İzin Belgesi', company: 'Vesta Metal', type: 'Risk değerlendirmesi', dueDate: '20.09.2026', status: 'pending', recipient: 'Demo Alıcı 04' },
+  { id: 'S-2016', document: 'İlk Yardım Eğitim Sertifikası', company: 'Quantis Tekstil', type: 'Eğitim sertifikası', dueDate: '11.08.2026', status: 'signed', recipient: 'Demo Alıcı 05' },
+  { id: 'S-2017', document: 'Yangın Güvenliği Sözleşmesi', company: 'Pelion Gıda', type: 'İSG sözleşmesi', dueDate: '30.08.2026', status: 'rejected', recipient: 'Demo Alıcı 06' },
+  { id: 'S-2018', document: 'Elektrik Güvenliği Risk Değerlendirmesi', company: 'Norden Lojistik', type: 'Risk değerlendirmesi', dueDate: '22.09.2026', status: 'pending', recipient: 'Demo Alıcı 07' },
 ]
 
 const tabs: { key: TabKey; label: string }[] = [

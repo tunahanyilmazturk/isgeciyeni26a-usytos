@@ -23,7 +23,7 @@ type ParticipantForm = {
   password: string
 }
 
-const DEFAULT_PASSWORD = '123456'
+const DEFAULT_PASSWORD = import.meta.env.DEV ? 'dev-demo-1234' : ''
 
 const initialForm: ParticipantForm = {
   company: '', name: '', jobTitle: '', username: '', tcNumber: '', status: 'active', password: DEFAULT_PASSWORD,
@@ -261,7 +261,7 @@ export function SingleParticipantModal({
                   value={form.password}
                   onChange={(event) => updateField('password', event.target.value)}
                   required
-                  hint="Varsayılan: 123456 — katılımcı giriş yapınca değiştirecek"
+                  hint="Development demo hesabı için geçici şifre — katılımcı ilk girişte değiştirecek"
                 />
 
                 <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50/70 p-3.5">

@@ -65,14 +65,14 @@ export function saveDoctors(doctors: Doctor[]) {
 }
 
 export const initialExperts: Expert[] = [
-  { id: 279, firstName: 'Barış', lastName: 'Eren', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0182', maxServiceDuration: 11700, usedServiceDuration: 6240, email: 'baris.eren@hantech.com', status: 'active' },
-  { id: 278, firstName: 'Seda', lastName: 'Yalçın', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2023-0094', maxServiceDuration: 11700, usedServiceDuration: 8100, email: 'seda.yalcin@hantech.com', status: 'active' },
-  { id: 277, firstName: 'Ozan', lastName: 'Tekin', title: 'C Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'C-2025-0317', maxServiceDuration: 11700, usedServiceDuration: 2950, phone: '+90 532 000 00 00', status: 'active' },
-  { id: 276, firstName: 'Deniz', lastName: 'Kara', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0141', maxServiceDuration: 11700, usedServiceDuration: 11700, email: 'deniz.kara@hantech.com', status: 'active' },
-  { id: 275, firstName: 'Mert', lastName: 'Acar', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2022-0068', maxServiceDuration: 11700, usedServiceDuration: 0, status: 'inactive' },
+  { id: 279, firstName: 'Demo', lastName: 'Uzman 01', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0182', maxServiceDuration: 11700, usedServiceDuration: 6240, email: 'baris.eren@example.invalid', status: 'active' },
+  { id: 278, firstName: 'Demo', lastName: 'Uzman 02', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2023-0094', maxServiceDuration: 11700, usedServiceDuration: 8100, email: 'seda.yalcin@example.invalid', status: 'active' },
+  { id: 277, firstName: 'Demo', lastName: 'Uzman 03', title: 'C Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'C-2025-0317', maxServiceDuration: 11700, usedServiceDuration: 2950, phone: '+90 000 000 00 00', status: 'active' },
+  { id: 276, firstName: 'Demo', lastName: 'Uzman 04', title: 'B Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'B-2024-0141', maxServiceDuration: 11700, usedServiceDuration: 11700, email: 'deniz.kara@example.invalid', status: 'active' },
+  { id: 275, firstName: 'Demo', lastName: 'Uzman 05', title: 'A Sınıfı İş Güvenliği Uzmanı', certificateNumber: 'A-2022-0068', maxServiceDuration: 11700, usedServiceDuration: 0, status: 'inactive' },
 ]
 
 export const initialDoctors: Doctor[] = [
-  { id: 195, doctorLevel: 'Dr.', firstName: 'Onur', lastName: 'Polat', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2024-0108', maxServiceDuration: 11700, usedServiceDuration: 4680, email: 'onur.polat@hantech.com', status: 'active' },
-  { id: 194, doctorLevel: 'Dr.', firstName: 'Elif', lastName: 'Demir', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2023-0074', maxServiceDuration: 11700, usedServiceDuration: 7020, email: 'elif.demir@hantech.com', status: 'active' },
+  { id: 195, doctorLevel: 'Dr.', firstName: 'Demo', lastName: 'Hekim 01', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2024-0108', maxServiceDuration: 11700, usedServiceDuration: 4680, email: 'onur.polat@example.invalid', status: 'active' },
+  { id: 194, doctorLevel: 'Dr.', firstName: 'Demo', lastName: 'Hekim 02', title: 'İşyeri Hekimi', certificateNumber: 'HEK-2023-0074', maxServiceDuration: 11700, usedServiceDuration: 7020, email: 'elif.demir@example.invalid', status: 'active' },
 ]

@@ -29,16 +29,16 @@ interface Session {
 }
 
 const activeSessions: Session[] = [
-  { id: 'L-301', name: 'Temel İSG Eğitimi — Canlı Oturum', trainer: 'Uzm. Mert Yıldız', company: 'Quantis Tekstil', participants: 24, capacity: 30, startTime: '10:00', duration: '2 saat', status: 'live', category: 'Temel Paket' },
-  { id: 'L-302', name: 'Acil Durum Planı Briefing', trainer: 'Uzm. Selin Arslan', company: 'Pelion Gıda', participants: 18, capacity: 25, startTime: '11:30', duration: '45 dk', status: 'live', category: 'Sektör Paketi' },
-  { id: 'L-303', name: 'Yüksekten Çalışma Güvenliği', trainer: 'Uzm. Can Öztürk', company: 'Vesta Metal', participants: 12, capacity: 20, startTime: '13:00', duration: '1 saat', status: 'live', category: 'Sektör Paketi' },
+  { id: 'L-301', name: 'Temel İSG Eğitimi — Canlı Oturum', trainer: 'Uzm. Demo Eğitmen 01', company: 'Quantis Tekstil', participants: 24, capacity: 30, startTime: '10:00', duration: '2 saat', status: 'live', category: 'Temel Paket' },
+  { id: 'L-302', name: 'Acil Durum Planı Briefing', trainer: 'Uzm. Demo Eğitmen 02', company: 'Pelion Gıda', participants: 18, capacity: 25, startTime: '11:30', duration: '45 dk', status: 'live', category: 'Sektör Paketi' },
+  { id: 'L-303', name: 'Yüksekten Çalışma Güvenliği', trainer: 'Uzm. Demo Eğitmen 03', company: 'Vesta Metal', participants: 12, capacity: 20, startTime: '13:00', duration: '1 saat', status: 'live', category: 'Sektör Paketi' },
 ]
 
 const upcomingSessions: Session[] = [
-  { id: 'L-304', name: 'Risk Değerlendirmesi Atölyesi', trainer: 'Uzm. Burak Şahin', company: 'Norden Lojistik', participants: 8, capacity: 22, startTime: '15:00', duration: '1.5 saat', status: 'upcoming', category: 'Sektör Paketi' },
-  { id: 'L-305', name: 'İlk Yardım Uygulamaları', trainer: 'Uzm. Ayşe Kaya', company: 'Quantis Tekstil', participants: 15, capacity: 28, startTime: '16:30', duration: '2 saat', status: 'upcoming', category: 'Temel Paket' },
-  { id: 'L-306', name: 'Yangın Güvenliği Semineri', trainer: 'Uzm. Emre Çelik', company: 'Pelion Gıda', participants: 6, capacity: 30, startTime: 'Yarın 10:00', duration: '1 saat', status: 'upcoming', category: 'Temel Paket' },
-  { id: 'L-307', name: 'Elektrik Güvenliği Eğitimi', trainer: 'Uzm. Deniz Koç', company: 'Vesta Metal', participants: 4, capacity: 18, startTime: 'Yarın 14:00', duration: '1.5 saat', status: 'upcoming', category: 'Sektör Paketi' },
+  { id: 'L-304', name: 'Risk Değerlendirmesi Atölyesi', trainer: 'Uzm. Demo Eğitmen 04', company: 'Norden Lojistik', participants: 8, capacity: 22, startTime: '15:00', duration: '1.5 saat', status: 'upcoming', category: 'Sektör Paketi' },
+  { id: 'L-305', name: 'İlk Yardım Uygulamaları', trainer: 'Uzm. Demo Eğitmen 05', company: 'Quantis Tekstil', participants: 15, capacity: 28, startTime: '16:30', duration: '2 saat', status: 'upcoming', category: 'Temel Paket' },
+  { id: 'L-306', name: 'Yangın Güvenliği Semineri', trainer: 'Uzm. Demo Eğitmen 06', company: 'Pelion Gıda', participants: 6, capacity: 30, startTime: 'Yarın 10:00', duration: '1 saat', status: 'upcoming', category: 'Temel Paket' },
+  { id: 'L-307', name: 'Elektrik Güvenliği Eğitimi', trainer: 'Uzm. Demo Eğitmen 07', company: 'Vesta Metal', participants: 4, capacity: 18, startTime: 'Yarın 14:00', duration: '1.5 saat', status: 'upcoming', category: 'Sektör Paketi' },
 ]
 
 const statusConfig: Record<SessionStatus, { label: string; dot: string; badge: string }> = {

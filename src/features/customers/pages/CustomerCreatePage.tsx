@@ -66,8 +66,8 @@ const initialForm: FormData = {
   companyName: '', taxNumber: '', sgkNumber: '', naceCode: '', naceTitle: '', riskLevel: '', branchType: 'Merkez', city: '', district: '', address: '', contactName: '', signatory: '', email: '', phone: '', accountantName: '', accountantPhone: '', accountantEmail: '', employees: '', expert: '', doctor: '', expertMinutes: '720', doctorMinutes: '360', contractStart: '', contractEnd: '', contractStatus: 'Teklif aşamasında', sms: false, loginSms: false, loginWhatsapp: false, trainingWhatsapp: false, loginEmail: true,
 }
 
-const experts = ['Barış Eren', 'Deniz Kara', 'Mert Acar', 'Ozan Tekin', 'Seda Yalçın']
-const doctors = ['Elif Demir', 'Onur Polat']
+const experts = ['Demo Uzman 01', 'Demo Uzman 02', 'Demo Uzman 03', 'Demo Uzman 04', 'Demo Uzman 05']
+const doctors = ['Demo Hekim 01', 'Demo Hekim 02']
 
 const steps = [
   { title: 'Firma bilgileri', detail: 'Temel şirket bilgileri', icon: Building2 },
