@@ -97,6 +97,35 @@ const preTestQuestions: QuizQuestion[] = [
   },
 ]
 
+/** Genel İSG soru havuzu — eğitim konu-specific sorular yetersizse ön testi tamamlar */
+const generalIskQuestions: QuizQuestion[] = [
+  ...preTestQuestions,
+  {
+    id: 'gen-isk-1',
+    text: 'İş sağlığı ve güvenliği kültürünün temel unsuru aşağıdakilerden hangisidir?',
+    options: ['Yalnızca yönetimin aldığı kararlar', 'Tüm çalışanların aktif katılımı ve farkındalığı', 'Sadece denetimlerde kurallara uymak', 'İş kazası olduktan sonra önlem almak'],
+    correctIndex: 1,
+  },
+  {
+    id: 'gen-isk-2',
+    text: 'Risk değerlendirmesi yapmanın temel amacı nedir?',
+    options: ['Çalışan sayısını azaltmak', 'Tehlikeleri tespit edip riskleri kontrol altına almak', 'Sigorta primlerini düşürmek', 'Denetimlerden geçebilmek için evrak hazırlamak'],
+    correctIndex: 1,
+  },
+  {
+    id: 'gen-isk-3',
+    text: 'Acil durum tahliyesinde en öncelikli kural aşağıdakilerden hangisidir?',
+    options: ['Eşyaları toplayarak çıkmak', 'Sakin ve hızlı şekilde belirlenmiş çıkışları kullanmak', 'Asansörü kullanarak hızlı inmek', 'Geride kalanları beklemek'],
+    correctIndex: 1,
+  },
+  {
+    id: 'gen-isk-4',
+    text: 'Kişisel koruyucu donanım (KKD) kullanırken dikkat edilmesi gereken en önemli husus nedir?',
+    options: ['Estetik görünümü', 'Riske uygun doğru seçim ve doğru kullanım', 'Markasının popülerliği', 'En düşük maliyetli olanı tercih etmek'],
+    correctIndex: 1,
+  },
+]
+
 /**
  * Konu bazlı soru havuzu — konu metnine göre anahtarlanır.
  * Temel paket konuları için elle yazılmış sorular.
@@ -472,17 +501,64 @@ function buildPreviewChapter(chapter: TrainingChapter, globalStepCounter: { n: n
   }
 }
 
+/** Bir Training için konu-specific ön test sorularını üretir */
+function buildPreTest(training: Training): QuizQuestion[] {
+  const allTopics = training.chapters.flatMap((ch) => ch.topics)
+  const maxPreTestQuestions = 8
+  const minPreTestQuestions = 5
+
+  // Her konudan 1 soru seç (havuzdan ilk soru veya generic)
+  const topicQuestions: QuizQuestion[] = allTopics.map((topic, idx) => {
+    const pool = topicQuestionPool[topic]
+    if (pool && pool.length > 0) {
+      // Konu havuzunda soru varsa, ilk soruyu ön test için al
+      // ID'yi ön test için benzersiz yap
+      return { ...pool[0], id: `pre-${pool[0].id}` }
+    }
+    // Havuzda yoksa generic soru üret
+    const generic = generateGenericQuestions(topic, idx)
+    return { ...generic[0], id: `pre-gen-${idx}` }
+  })
+
+  // Konu sayısı maksimumu aşıyorsa eşit aralıklarla seç
+  let selected = topicQuestions
+  if (topicQuestions.length > maxPreTestQuestions) {
+    const step = topicQuestions.length / maxPreTestQuestions
+    selected = []
+    for (let i = 0; i < maxPreTestQuestions; i++) {
+      const idx = Math.floor(i * step)
+      selected.push(topicQuestions[idx])
+    }
+  }
+
+  // Konu sayısı minimumdan azsa genel İSG sorularıyla tamamla
+  if (selected.length < minPreTestQuestions) {
+    const needed = minPreTestQuestions - selected.length
+    // Daha önce kullanılmamış genel soruları bul
+    const usedIds = new Set(selected.map((q) => q.id))
+    const fallback = generalIskQuestions
+      .filter((q) => !usedIds.has(q.id) && !usedIds.has(`pre-${q.id}`))
+      .slice(0, needed)
+      .map((q) => ({ ...q, id: `pre-${q.id}` }))
+    selected = [...selected, ...fallback]
+  }
+
+  // Soru numaralarına göre ID'leri yeniden sırala
+  return selected.map((q, idx) => ({ ...q, id: `pre-${idx + 1}` }))
+}
+
 /** Bir Training için dinamik preview verisi üretir */
 export function buildTrainingPreview(training: Training): TrainingPreview {
   const stepCounter = { n: 1 }
   const chapters = training.chapters.map((ch) => buildPreviewChapter(ch, stepCounter))
+  const preTestQuestionsForTraining = buildPreTest(training)
   return {
     trainingId: training.id,
     preTest: {
       title: 'Ön test',
       description:
-        'Eğitime başlamadan önce bilgi düzeyinizi ölçer; gönderdiğinizde videolar açılır. Geçme barajı ve deneme sınırı yoktur; puan rapor için saklanır ve sertifikaya yazılmaz.',
-      questions: preTestQuestions,
+        `${training.name} eğitimine başlamadan önce, bu eğitimin konularına yönelik bilgi düzeyinizi ölçer. Gönderdiğinizde videolar açılır. Geçme barajı ve deneme sınırı yoktur; puan rapor için saklanır ve sertifikaya yazılmaz.`,
+      questions: preTestQuestionsForTraining,
     },
     chapters,
   }
