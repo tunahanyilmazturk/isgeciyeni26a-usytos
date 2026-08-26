@@ -28,6 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500"
         >
           {label}
+          {props.required && <span className="ml-1 text-brand-600" aria-hidden="true">*</span>}
         </label>
       )}
 
@@ -47,6 +48,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           ref={ref}
           id={inputId}
           type={effectiveType}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
           className={cn(
             'w-full rounded-xl border bg-white text-sm text-ink-900',
             'placeholder:text-ink-400',
@@ -68,7 +71,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             type="button"
             onClick={() => setShowPassword((s) => !s)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 transition-colors hover:text-ink-600"
-            tabIndex={-1}
             aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
           >
             {showPassword ? (
@@ -81,9 +83,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       </div>
 
       {error ? (
-        <p className="mt-1.5 text-xs font-medium text-red-500">{error}</p>
+        <p id={`${inputId}-error`} className="mt-1.5 text-xs font-medium text-red-500">{error}</p>
       ) : hint ? (
-        <p className="mt-1.5 text-xs text-ink-400">{hint}</p>
+        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-ink-400">{hint}</p>
       ) : null}
     </div>
   )

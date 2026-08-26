@@ -85,7 +85,8 @@ textarea {
 
 /* Smooth focus ring */
 :focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
 }
 
 /* Custom checkbox accent */

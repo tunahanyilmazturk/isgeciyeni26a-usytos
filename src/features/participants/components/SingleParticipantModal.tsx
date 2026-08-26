@@ -49,11 +49,16 @@ export function SingleParticipantModal({
 
   // ESC ile kapatma
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     function handleEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEsc)
+    }
   }, [onClose])
 
   // İlk firma otomatik seçili olsun
@@ -128,6 +133,10 @@ export function SingleParticipantModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 16 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="single-participant-modal-title"
+        aria-describedby="single-participant-modal-description"
         className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl shadow-ink-900/15"
       >
         {/* Header */}
@@ -138,8 +147,8 @@ export function SingleParticipantModal({
                 <UserPlus className="h-6 w-6" strokeWidth={1.8} />
               </span>
               <div>
-                <h2 className="text-lg font-bold tracking-tight text-ink-900">Yeni katılımcı ekle</h2>
-                <p className="mt-0.5 text-sm text-ink-500">Çalışan bilgilerini ve panel hesabını oluşturun.</p>
+                <h2 id="single-participant-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Yeni katılımcı ekle</h2>
+                <p id="single-participant-modal-description" className="mt-0.5 text-sm text-ink-500">Çalışan bilgilerini ve panel hesabını oluşturun.</p>
               </div>
             </div>
             <button type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Kapat">

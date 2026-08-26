@@ -54,11 +54,16 @@ export function BulkParticipantModal({
 
   // ESC ile kapatma
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     function handleEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEsc)
+    }
   }, [onClose])
 
   function updateRow(key: string, field: keyof BulkParticipantRow, value: string) {
@@ -148,6 +153,10 @@ export function BulkParticipantModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 16 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-participant-modal-title"
+        aria-describedby="bulk-participant-modal-description"
         className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl shadow-ink-900/15"
       >
         {/* Header */}
@@ -158,8 +167,8 @@ export function BulkParticipantModal({
                 <Users className="h-6 w-6" strokeWidth={1.8} />
               </span>
               <div>
-                <h2 className="text-lg font-bold tracking-tight text-ink-900">Toplu katılımcı ekle</h2>
-                <p className="mt-0.5 text-sm text-ink-500">
+                <h2 id="bulk-participant-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Toplu katılımcı ekle</h2>
+                <p id="bulk-participant-modal-description" className="mt-0.5 text-sm text-ink-500">
                   Tabloya bilgileri girin, satır ekleyerek listeyi uzatın. E-posta ve telefonu katılımcı ilk girişte kendisi girecek.
                 </p>
               </div>

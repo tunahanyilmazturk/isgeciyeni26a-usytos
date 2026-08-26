@@ -68,11 +68,16 @@ export function AssignmentModal({
   }, [participant])
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     function handleEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEsc)
+    }
   }, [onClose])
 
   const selectedParticipant = allParticipants.find((p) => p.id === selectedParticipantId) ?? null
@@ -128,7 +133,7 @@ export function AssignmentModal({
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
         >
-          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl shadow-ink-900/15">
+          <div role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl shadow-ink-900/15">
             <div className="shrink-0 border-b border-ink-100 bg-gradient-to-br from-brand-50/60 via-white to-white px-6 py-5 sm:px-8">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -136,7 +141,7 @@ export function AssignmentModal({
                     <ClipboardCheck className="h-6 w-6" strokeWidth={1.8} />
                   </span>
                   <div>
-                    <h2 className="text-lg font-bold tracking-tight text-ink-900">Eğitim ataması</h2>
+                    <h2 id="assignment-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Eğitim ataması</h2>
                     <p className="mt-0.5 text-sm text-ink-500">
                       {participant ? `${participant.name} için atama yönetin` : 'Katılımcı seçip eğitim atayın'}
                     </p>
@@ -435,6 +440,19 @@ export function BulkAssignmentModal({
   const [companyFilter, setCompanyFilter] = useState('all')
   const [participantSearch, setParticipantSearch] = useState('')
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleEsc)
+    }
+  }, [onClose])
+
   const companyFilterOptions = useMemo(
     () => [
       { value: 'all', label: 'Tüm firmalar' },
@@ -504,14 +522,14 @@ export function BulkAssignmentModal({
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="bulk-assignment-modal-title" className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-ink-100 p-6">
               <div className="flex items-start gap-3">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
                   <Users className="h-5 w-5" strokeWidth={1.8} />
                 </span>
                 <div>
-                  <h2 className="text-base font-bold text-ink-900">Toplu eğitim ataması</h2>
+                  <h2 id="bulk-assignment-modal-title" className="text-base font-bold text-ink-900">Toplu eğitim ataması</h2>
                   <p className="mt-1 text-xs text-ink-500">Birden fazla katılımcıya birden fazla eğitim tek seferde atayın.</p>
                 </div>
               </div>
