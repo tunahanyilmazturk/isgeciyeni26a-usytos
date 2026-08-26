@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   ChevronDown,
   Eye,
-  Filter,
+  FileText,
   Layers3,
+  ListCollapse,
   Maximize2,
   Minimize2,
   Search,
   Settings2,
+  SlidersHorizontal,
   Sparkles,
   Users,
   X,
@@ -17,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui'
+import { Button, Pagination, ViewToggle, type ViewMode, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { trainingCatalog, type Training, type TrainingPackage, type TrainingRisk } from '../data/trainings'
 
@@ -60,8 +62,12 @@ export function TrainingsPage() {
   const [search, setSearch] = useState('')
   const [packageFilter, setPackageFilter] = useState<'all' | TrainingPackage>('all')
   const [riskFilter, setRiskFilter] = useState<'all' | TrainingRisk>('all')
-  const [expanded, setExpanded] = useState<string[]>(['base-low'])
+  const [showFilters, setShowFilters] = useState(false)
+  const [expanded, setExpanded] = useState<string[]>([])
   const [selectedTraining, setSelectedTraining] = useState<Training | null>(null)
+  const [view, setView] = useState<ViewMode>('table')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const filteredTrainings = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
@@ -71,41 +77,37 @@ export function TrainingsPage() {
     })
   }, [search, packageFilter, riskFilter])
 
-  const baseTrainings = filteredTrainings.filter((training) => training.package === 'Temel Paket')
-  const sectorTrainings = filteredTrainings.filter((training) => training.package === 'Sektör Paketi')
-  const baseCount = trainingCatalog.filter((training) => training.package === 'Temel Paket').length
-  const sectorCount = trainingCatalog.filter((training) => training.package === 'Sektör Paketi').length
-  const chapterCount = trainingCatalog.reduce((sum, training) => sum + getChapterCount(training), 0)
-  const topicCount = trainingCatalog.reduce((sum, training) => sum + getTopicCount(training), 0)
+  const totalPages = Math.max(1, Math.ceil(filteredTrainings.length / pageSize))
+  const paginatedTrainings = paginate(filteredTrainings, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredTrainings.length)
+
+  const baseCount = trainingCatalog.filter((t) => t.package === 'Temel Paket').length
+  const sectorCount = trainingCatalog.filter((t) => t.package === 'Sektör Paketi').length
+  const chapterCount = trainingCatalog.reduce((sum, t) => sum + getChapterCount(t), 0)
+  const topicCount = trainingCatalog.reduce((sum, t) => sum + getTopicCount(t), 0)
+
+  const filterCount = (packageFilter !== 'all' ? 1 : 0) + (riskFilter !== 'all' ? 1 : 0)
+  const hasActiveFilters = search || packageFilter !== 'all' || riskFilter !== 'all'
+  const allExpanded = expanded.length === paginatedTrainings.length && paginatedTrainings.length > 0
 
   const toggleTraining = useCallback((id: string) => {
     setExpanded((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   }, [])
 
-  const expandAll = useCallback(() => {
-    setExpanded(filteredTrainings.map((t) => t.id))
-  }, [filteredTrainings])
+  const expandAll = useCallback(() => setExpanded(paginatedTrainings.map((t) => t.id)), [paginatedTrainings])
+  const collapseAll = useCallback(() => setExpanded([]), [])
 
-  const collapseAll = useCallback(() => {
-    setExpanded([])
-  }, [])
-
-  const resetFilters = useCallback(() => {
+  function clearFilters() {
     setSearch('')
     setPackageFilter('all')
     setRiskFilter('all')
-  }, [])
+  }
 
-  const handlePreview = useCallback((training: Training) => {
-    setSelectedTraining(training)
-  }, [])
-
-  const hasActiveFilters = search || packageFilter !== 'all' || riskFilter !== 'all'
-  const allExpanded = expanded.length === filteredTrainings.length && filteredTrainings.length > 0
+  const handlePreview = useCallback((training: Training) => setSelectedTraining(training), [])
 
   return (
     <div className="space-y-7">
-      {/* Header */}
+      {/* Header — standart proje pattern'i */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400">
@@ -120,13 +122,8 @@ export function TrainingsPage() {
         </div>
       </motion.div>
 
-      {/* Stats Banner — brand-900 petrol yeşili, proje tasarım dili */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.04 }}
-        className="relative overflow-hidden rounded-2xl bg-brand-900 p-5 text-white shadow-[0_12px_32px_-18px_rgba(18,70,65,0.5)] sm:p-6"
-      >
+      {/* Stats — brand-900 hero (Diğer sayfalarla aynı hero pattern) */}
+      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.04 }} className="relative overflow-hidden rounded-2xl bg-brand-900 p-5 text-white shadow-[0_12px_32px_-18px_rgba(18,70,65,0.5)] sm:p-6">
         <div className="absolute -right-12 -top-20 h-56 w-56 rounded-full border-[26px] border-brand-800/50" aria-hidden />
         <div className="absolute -bottom-24 right-40 h-44 w-44 rounded-full border-[18px] border-brand-800/40" aria-hidden />
         <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
@@ -158,212 +155,207 @@ export function TrainingsPage() {
         </div>
       </motion.section>
 
-      {/* Arama + Filtre + Tümünü Aç/Kapat */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.08 }}
-        className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] sm:p-6"
-      >
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
-          <label className="min-w-0 flex-1">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Eğitim ara</span>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Eğitim, alt başlık veya konu adıyla ara..."
-                className="h-12 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-10 pr-10 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10"
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600" aria-label="Aramayı temizle">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </label>
-          <div className="grid gap-2 sm:grid-cols-2 xl:w-[390px]">
-            <label>
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Paket</span>
-              <select value={packageFilter} onChange={(event) => setPackageFilter(event.target.value as 'all' | TrainingPackage)} className="h-10 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-700 outline-none focus:border-brand-500">
-                <option value="all">Tüm paketler</option>
-                <option value="Temel Paket">Temel Paket</option>
-                <option value="Sektör Paketi">Sektör Paketi</option>
-              </select>
-            </label>
-            <label>
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Tehlike sınıfı</span>
-              <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as 'all' | TrainingRisk)} className="h-10 w-full rounded-xl border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-700 outline-none focus:border-brand-500">
-                <option value="all">Tüm sınıflar</option>
-                <option value="Az Tehlikeli">Az tehlikeli</option>
-                <option value="Tehlikeli">Tehlikeli</option>
-                <option value="Çok Tehlikeli">Çok tehlikeli</option>
-              </select>
-            </label>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <button type="button" onClick={resetFilters} disabled={!hasActiveFilters} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-ink-200 px-3.5 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50 disabled:opacity-40 disabled:hover:bg-transparent">
-              <Filter className="h-4 w-4" /> Temizle
-            </button>
-            <button type="button" onClick={allExpanded ? collapseAll : expandAll} disabled={filteredTrainings.length === 0} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-ink-200 px-3.5 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50 disabled:opacity-40 disabled:hover:bg-transparent">
-              {allExpanded ? <><Minimize2 className="h-4 w-4" /> Tümünü kapat</> : <><Maximize2 className="h-4 w-4" /> Tümünü aç</>}
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-100 pt-4 text-xs text-ink-400">
-          <span className="font-medium text-ink-600">{filteredTrainings.length} eğitim gösteriliyor</span>
-          <span>·</span>
-          <span>Toplam {trainingCatalog.length} katalog kaydı</span>
-          {search && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">"{search}" araması</span>}
-          {packageFilter !== 'all' && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">{packageFilter}</span>}
-          {riskFilter !== 'all' && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">{riskFilter}</span>}
-        </div>
-      </motion.section>
-
-      {/* Eğitim grupları */}
-      <div className="space-y-10">
-        {([
-          ['Temel Paket', baseTrainings, 'Temel İSG eğitim paketleri; katılımcılara doğrudan atanabilir.', 'brand'] as const,
-          ['Sektör Paketi', sectorTrainings, 'İşe ve işyerine özel riskleri kapsayan sektörel eğitim içerikleri.', 'violet'] as const,
-        ]).map(([packageName, trainings, description, tone]) => (
-          <motion.section
-            key={packageName}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.12 }}
-            aria-labelledby={`training-${packageName}`}
-          >
-            {/* Grup başlığı */}
-            <div className={cn(
-              'mb-4 flex items-center gap-3 rounded-2xl border px-5 py-4',
-              tone === 'brand' ? 'border-brand-100 bg-brand-50/60' : 'border-violet-100 bg-violet-50/50',
-            )}>
-              <span className={cn(
-                'grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white',
-                tone === 'brand' ? 'text-brand-700 ring-1 ring-brand-100' : 'text-violet-700 ring-1 ring-violet-100',
-              )} aria-hidden>
-                {tone === 'brand' ? <Layers3 className="h-[18px] w-[18px]" /> : <Zap className="h-[18px] w-[18px]" />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 id={`training-${packageName}`} className="text-sm font-bold tracking-tight text-ink-900">
-                  {packageName === 'Temel Paket' ? '1–3. Konu (Temel Paket)' : '4. Konu (Sektör Paketi)'}
-                </h2>
-                <p className="mt-0.5 text-xs text-ink-500">{description}</p>
+      {/* Ana içerik kartı — standart wrapper */}
+      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.08 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
+        {/* Filtre header — diğer sayfalarla aynı yapı */}
+        <div className="border-b border-ink-100 p-5 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-ink-900">Eğitim listesi</h2>
+                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filteredTrainings.length} kayıt</span>
               </div>
-              <span className={cn(
-                'shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold tabular-nums',
-                tone === 'brand' ? 'border-brand-200 bg-white text-brand-700' : 'border-violet-200 bg-white text-violet-700',
-              )}>
-                {trainings.length} eğitim
-              </span>
+              <p className="mt-1 text-xs text-ink-400">Paket, tehlike sınıfı ve içerik yapısına göre filtreleyin.</p>
             </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Eğitim, başlık veya konu ara..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-9 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-64" />
+                {search && <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-0.5 text-ink-400 hover:bg-ink-100 hover:text-ink-600" aria-label="Temizle"><X className="h-3.5 w-3.5" /></button>}
+              </div>
+              <button type="button" onClick={() => setShowFilters((c) => !c)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition-colors', showFilters || filterCount ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}>
+                <SlidersHorizontal className="h-4 w-4" /> Filtreler {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] text-white">{filterCount}</span>}
+              </button>
+              <ViewToggle view={view} onChange={setView} />
+            </div>
+          </div>
 
-            {/* Eğitim kartları */}
-            <div className="space-y-2.5">
-              {trainings.map((training) => {
-                const isExpanded = expanded.includes(training.id)
-                const topicCount = getTopicCount(training)
-                const chapterCount = getChapterCount(training)
-                const barColor = tone === 'brand' ? 'bg-brand-500' : 'bg-violet-500'
-                const dotColor = tone === 'brand' ? 'bg-brand-500' : 'bg-violet-500'
+          {showFilters && (
+            <div className="mt-5 grid gap-3 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <label>
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Paket</span>
+                <div className="relative">
+                  <select value={packageFilter} onChange={(event) => setPackageFilter(event.target.value as 'all' | TrainingPackage)} className="h-10 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3 pr-8 text-xs font-medium text-ink-700 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10">
+                    <option value="all">Tüm paketler</option>
+                    <option value="Temel Paket">Temel Paket</option>
+                    <option value="Sektör Paketi">Sektör Paketi</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                </div>
+              </label>
+              <label>
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Tehlike sınıfı</span>
+                <div className="relative">
+                  <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as 'all' | TrainingRisk)} className="h-10 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3 pr-8 text-xs font-medium text-ink-700 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10">
+                    <option value="all">Tüm sınıflar</option>
+                    <option value="Az Tehlikeli">Az Tehlikeli</option>
+                    <option value="Tehlikeli">Tehlikeli</option>
+                    <option value="Çok Tehlikeli">Çok Tehlikeli</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                </div>
+              </label>
+              <div className="flex items-end">
+                <button type="button" onClick={clearFilters} disabled={!hasActiveFilters} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 disabled:opacity-40">
+                  <X className="h-3.5 w-3.5" /> Filtreleri temizle
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
-                return (
-                  <article
-                    key={training.id}
-                    className={cn(
-                      'group overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] transition-all',
-                      isExpanded ? 'border-ink-300 shadow-lg shadow-ink-900/5' : 'border-ink-200/80 hover:border-ink-300',
-                    )}
-                  >
-                    {/* Summary satırı */}
-                    <div className="flex cursor-pointer items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4" onClick={() => toggleTraining(training.id)}>
-                      <span className={cn('h-9 w-1 shrink-0 rounded-full transition-opacity', barColor, isExpanded ? 'opacity-100' : 'opacity-60')} aria-hidden />
+        {/* Tümünü aç/kapat barı */}
+        {view === 'table' && paginatedTrainings.length > 0 && (
+          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-2.5 sm:px-6">
+            <span className="text-[11px] font-medium text-ink-400">{expanded.length} / {paginatedTrainings.length} eğitim açık</span>
+            <button type="button" onClick={allExpanded ? collapseAll : expandAll} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-50">
+              {allExpanded ? <><Minimize2 className="h-3.5 w-3.5" /> Tümünü kapat</> : <><Maximize2 className="h-3.5 w-3.5" /> Tümünü aç</>}
+            </button>
+          </div>
+        )}
 
-                      <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-ink-800 group-hover:text-ink-900">
-                        {highlightText(training.name, search)}
-                      </span>
+        {/* Liste görünümü — accordion */}
+        {view === 'table' && (
+          <div className="divide-y divide-ink-100">
+            {paginatedTrainings.map((training) => {
+              const isExpanded = expanded.includes(training.id)
+              const topicCount = getTopicCount(training)
+              const chapterCount = getChapterCount(training)
+              const isBase = training.package === 'Temel Paket'
 
-                      <span className="hidden items-center gap-2 sm:flex">
-                        <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', riskClasses[training.risk])}>
-                          {training.risk}
-                        </span>
-                        <span className="rounded-lg bg-ink-50 px-2.5 py-1 text-[10px] font-medium text-ink-500">
-                          {chapterCount} başlık · {topicCount} konu
-                        </span>
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handlePreview(training) }}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-ink-900 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-brand-700"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">Önizle</span>
-                      </button>
-
-                      <ChevronDown className={cn('h-4 w-4 shrink-0 text-ink-400 transition-transform', isExpanded && 'rotate-180')} />
+              return (
+                <article key={training.id} className={cn('transition-colors', isExpanded ? 'bg-brand-50/30' : 'hover:bg-ink-50/40')}>
+                  {/* Summary satırı */}
+                  <div className="flex cursor-pointer items-center gap-3 px-5 py-4 sm:px-6" onClick={() => toggleTraining(training.id)}>
+                    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-xl', isBase ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-violet-700')}>
+                      {isBase ? <Layers3 className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink-800">{highlightText(training.name, search)}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{training.description}</p>
                     </div>
+                    <span className="hidden items-center gap-2 sm:flex">
+                      <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', packageClasses[training.package])}>{training.package}</span>
+                      <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', riskClasses[training.risk])}>{training.risk}</span>
+                      <span className="rounded-lg bg-ink-50 px-2.5 py-1 text-[10px] font-medium text-ink-500">{chapterCount} başlık · {topicCount} konu</span>
+                    </span>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); handlePreview(training) }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-ink-900 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-brand-700">
+                      <Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">Önizle</span>
+                    </button>
+                    <ChevronDown className={cn('h-4 w-4 shrink-0 text-ink-400 transition-transform', isExpanded && 'rotate-180')} />
+                  </div>
 
-                    {/* Açılır içerik */}
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                          className="overflow-hidden"
-                        >
-                          <div className="border-t border-ink-100 bg-ink-50/30 px-5 pb-5 pt-4">
-                            <p className="mb-4 text-xs leading-relaxed text-ink-500">{training.description}</p>
-
-                            <div className="mb-4 flex items-center gap-2">
-                              <span className={cn('text-[10px] font-bold uppercase tracking-[0.14em]', tone === 'brand' ? 'text-brand-700' : 'text-violet-700')}>İçerik yapısı</span>
-                              <span className="h-px flex-1 bg-ink-200" />
-                              <span className="text-[10px] text-ink-400">{chapterCount} alt başlık · {topicCount} konu</span>
-                            </div>
-
-                            <div className="space-y-2">
-                              {training.chapters.map((chapter, index) => (
-                                <div key={chapter.id} className="overflow-hidden rounded-xl border border-ink-200/80 bg-white">
-                                  <div className="flex items-center gap-3 bg-ink-50/80 px-4 py-3">
-                                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ink-100 text-[10px] font-bold text-brand-700">{index + 1}</span>
-                                    <span className="min-w-0 flex-1 text-xs font-semibold text-ink-700">{highlightText(chapter.title, search)}</span>
-                                    <span className="text-[10px] text-ink-400">{chapter.topics.length} konu</span>
-                                  </div>
-                                  <ul className="divide-y divide-ink-100 px-4">
-                                    {chapter.topics.map((topic) => (
-                                      <li key={topic} className="flex items-center gap-2.5 py-2 text-xs leading-5 text-ink-500">
-                                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dotColor)} />
-                                        <span className="min-w-0 flex-1">{highlightText(topic, search)}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              ))}
-                            </div>
+                  {/* Açılır içerik */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
+                        <div className="px-5 pb-5 sm:px-6">
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className={cn('text-[10px] font-bold uppercase tracking-[0.14em]', isBase ? 'text-brand-700' : 'text-violet-700')}>İçerik yapısı</span>
+                            <span className="h-px flex-1 bg-ink-200" />
+                            <span className="text-[10px] text-ink-400">{chapterCount} alt başlık · {topicCount} konu</span>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </article>
-                )
-              })}
-            </div>
+                          <div className="space-y-2">
+                            {training.chapters.map((chapter, index) => (
+                              <div key={chapter.id} className="overflow-hidden rounded-xl border border-ink-200/80 bg-white">
+                                <div className="flex items-center gap-3 bg-ink-50/80 px-4 py-2.5">
+                                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ink-100 text-[10px] font-bold text-brand-700">{index + 1}</span>
+                                  <span className="min-w-0 flex-1 text-xs font-semibold text-ink-700">{highlightText(chapter.title, search)}</span>
+                                  <span className="text-[10px] text-ink-400">{chapter.topics.length} konu</span>
+                                </div>
+                                <ul className="divide-y divide-ink-100 px-4">
+                                  {chapter.topics.map((topic) => (
+                                    <li key={topic} className="flex items-center gap-2.5 py-2 text-xs leading-5 text-ink-500">
+                                      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', isBase ? 'bg-brand-500' : 'bg-violet-500')} />
+                                      <span className="min-w-0 flex-1">{highlightText(topic, search)}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </article>
+              )
+            })}
 
-            {!trainings.length && (
-              <div className="rounded-2xl border border-dashed border-ink-200 bg-white px-6 py-12 text-center">
-                <Search className="mx-auto h-7 w-7 text-ink-300" />
-                <p className="mt-3 text-sm font-semibold text-ink-700">Bu filtrelerle eğitim bulunamadı</p>
-                <button type="button" onClick={resetFilters} className="mt-2 text-xs font-semibold text-brand-700">Filtreleri temizle</button>
+            {filteredTrainings.length === 0 && (
+              <div className="px-6 py-16 text-center">
+                <Search className="mx-auto h-8 w-8 text-ink-300" />
+                <p className="mt-3 text-sm font-semibold text-ink-700">Eğitim bulunamadı</p>
+                <p className="mt-1 text-xs text-ink-400">Arama veya filtre kriterlerini değiştirerek tekrar deneyin.</p>
+                {hasActiveFilters && <button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-brand-700 hover:text-brand-800">Filtreleri temizle</button>}
               </div>
             )}
-          </motion.section>
-        ))}
-      </div>
+          </div>
+        )}
 
-      {/* Önizleme drawer */}
+        {/* Kart görünümü — grid */}
+        {view === 'card' && (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+            {paginatedTrainings.map((training) => {
+              const isBase = training.package === 'Temel Paket'
+              return (
+                <div key={training.id} className="cursor-pointer rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]" onClick={() => handlePreview(training)}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', isBase ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-violet-700')}>
+                        {isBase ? <Layers3 className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-800">{highlightText(training.name, search)}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-ink-400">{training.package}</p>
+                      </div>
+                    </div>
+                    <span className={cn('shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold', riskClasses[training.risk])}>{training.risk}</span>
+                  </div>
+                  <div className="mt-4 space-y-2 border-t border-ink-100 pt-3">
+                    <p className="line-clamp-2 text-[11px] leading-relaxed text-ink-500">{training.description}</p>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-ink-600"><ListCollapse className="h-3.5 w-3.5 text-ink-400" />{getChapterCount(training)} başlık</span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-ink-600"><FileText className="h-3.5 w-3.5 text-ink-400" />{getTopicCount(training)} konu</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredTrainings.length === 0 && (
+              <div className="col-span-full py-16 text-center">
+                <Search className="mx-auto h-8 w-8 text-ink-300" />
+                <p className="mt-3 text-sm font-semibold text-ink-700">Eğitim bulunamadı</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pagination — diğer sayfalarla aynı */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredTrainings.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="eğitim"
+        />
+      </motion.section>
+
+      {/* Önizleme drawer — diğer sayfalarla aynı tutarlı yapı */}
       {selectedTraining && (
         <div className="fixed inset-0 z-50 bg-ink-900/20 backdrop-blur-[2px]" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedTraining(null) }}>
           <motion.aside initial={{ opacity: 0, x: 32 }} animate={{ opacity: 1, x: 0 }} className="ml-auto flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-ink-200 bg-white shadow-[-20px_0_60px_-28px_rgba(17,24,39,0.32)]">
