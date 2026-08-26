@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Eye,
   Filter,
+  Layers3,
   Maximize2,
   Minimize2,
   Search,
@@ -21,14 +22,14 @@ import { cn } from '@/lib/utils'
 import { trainingCatalog, type Training, type TrainingPackage, type TrainingRisk } from '../data/trainings'
 
 const riskClasses: Record<TrainingRisk, string> = {
-  'Az Tehlikeli': 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
-  Tehlikeli: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
-  'Çok Tehlikeli': 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+  'Az Tehlikeli': 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  Tehlikeli: 'border-amber-200 bg-amber-50 text-amber-700',
+  'Çok Tehlikeli': 'border-rose-200 bg-rose-50 text-rose-700',
 }
 
 const packageClasses: Record<TrainingPackage, string> = {
-  'Temel Paket': 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300',
-  'Sektör Paketi': 'border-violet-500/30 bg-violet-500/10 text-violet-300',
+  'Temel Paket': 'border-brand-200 bg-brand-50 text-brand-700',
+  'Sektör Paketi': 'border-violet-200 bg-violet-50 text-violet-700',
 }
 
 function getTopicCount(training: Training) {
@@ -49,7 +50,7 @@ function highlightText(text: string, query: string) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="rounded bg-cyan-500/30 px-0.5 text-cyan-200">{text.slice(idx, idx + q.length)}</mark>
+      <mark className="rounded bg-brand-100 px-0.5 font-semibold text-brand-800">{text.slice(idx, idx + q.length)}</mark>
       {text.slice(idx + q.length)}
     </>
   )
@@ -119,50 +120,46 @@ export function TrainingsPage() {
         </div>
       </motion.div>
 
-      {/* Stats Banner — koyu temalı, gradient sayılarla */}
-      <motion.div
+      {/* Stats Banner — brand-900 petrol yeşili, proje tasarım dili */}
+      <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.04 }}
-        className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-5 py-4 shadow-lg shadow-cyan-950/25 ring-1 ring-cyan-500/15 sm:px-6"
+        className="relative overflow-hidden rounded-2xl bg-brand-900 p-5 text-white shadow-[0_12px_32px_-18px_rgba(18,70,65,0.5)] sm:p-6"
       >
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full border border-cyan-500/10" aria-hidden />
-        <div className="absolute -bottom-20 right-32 h-32 w-32 rounded-full border border-violet-500/10" aria-hidden />
-
-        <div className="relative flex flex-wrap items-center gap-6">
+        <div className="absolute -right-12 -top-20 h-56 w-56 rounded-full border-[26px] border-brand-800/50" aria-hidden />
+        <div className="absolute -bottom-24 right-40 h-44 w-44 rounded-full border-[18px] border-brand-800/40" aria-hidden />
+        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Temel Paket</p>
-            <p className="mt-0.5 text-2xl font-bold tabular-nums text-white">
-              <span className="bg-gradient-to-r from-cyan-300 to-teal-300 bg-clip-text text-transparent">{baseCount}</span>
-              <span className="ml-1 text-sm font-normal text-slate-400">eğitim</span>
-            </p>
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-200">
+              <BookOpen className="h-3.5 w-3.5" /> İçerik merkezi
+            </div>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] sm:text-xl">Doğru eğitim, doğru risk seviyesinde.</h2>
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-brand-100/75">Katılımcılarınıza atayacağınız eğitimleri paket, tehlike sınıfı ve içerik yapısına göre hızlıca bulun.</p>
           </div>
-          <div className="h-8 w-px bg-slate-700/60" />
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Sektör Paketi</p>
-            <p className="mt-0.5 text-2xl font-bold tabular-nums text-white">
-              <span className="bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">{sectorCount}</span>
-              <span className="ml-1 text-sm font-normal text-slate-400">eğitim</span>
-            </p>
-          </div>
-          <div className="hidden h-8 w-px bg-slate-700/60 sm:block" />
-          <div className="hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Alt Başlık</p>
-            <p className="mt-0.5 text-2xl font-bold tabular-nums text-white">{chapterCount}</p>
-          </div>
-          <div className="hidden h-8 w-px bg-slate-700/60 sm:block" />
-          <div className="hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Konu</p>
-            <p className="mt-0.5 text-2xl font-bold tabular-nums text-white">{topicCount}</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
+              <p className="text-2xl font-bold tabular-nums">{baseCount}</p>
+              <p className="mt-1 text-[10px] text-brand-100/70">temel eğitim</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
+              <p className="text-2xl font-bold tabular-nums">{sectorCount}</p>
+              <p className="mt-1 text-[10px] text-brand-100/70">sektör eğitimi</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
+              <p className="text-2xl font-bold tabular-nums">{chapterCount}</p>
+              <p className="mt-1 text-[10px] text-brand-100/70">alt başlık</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
+              <p className="text-2xl font-bold tabular-nums">{topicCount}</p>
+              <p className="mt-1 text-[10px] text-brand-100/70">konu</p>
+            </div>
           </div>
         </div>
-        <span className="relative hidden rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-400 sm:inline-flex">
-          Üretim Kataloğu
-        </span>
-      </motion.div>
+      </motion.section>
 
       {/* Arama + Filtre + Tümünü Aç/Kapat */}
-      <motion.div
+      <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.08 }}
@@ -222,12 +219,12 @@ export function TrainingsPage() {
           {packageFilter !== 'all' && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">{packageFilter}</span>}
           {riskFilter !== 'all' && <span className="rounded-full bg-brand-50 px-2.5 py-1 font-semibold text-brand-700">{riskFilter}</span>}
         </div>
-      </motion.div>
+      </motion.section>
 
       {/* Eğitim grupları */}
       <div className="space-y-10">
         {([
-          ['Temel Paket', baseTrainings, 'Temel İSG eğitim paketleri; katılımcılara doğrudan atanabilir.', 'cyan'] as const,
+          ['Temel Paket', baseTrainings, 'Temel İSG eğitim paketleri; katılımcılara doğrudan atanabilir.', 'brand'] as const,
           ['Sektör Paketi', sectorTrainings, 'İşe ve işyerine özel riskleri kapsayan sektörel eğitim içerikleri.', 'violet'] as const,
         ]).map(([packageName, trainings, description, tone]) => (
           <motion.section
@@ -240,13 +237,13 @@ export function TrainingsPage() {
             {/* Grup başlığı */}
             <div className={cn(
               'mb-4 flex items-center gap-3 rounded-2xl border px-5 py-4',
-              tone === 'cyan' ? 'border-cyan-500/15 bg-gradient-to-r from-cyan-500/8 to-transparent' : 'border-violet-500/15 bg-gradient-to-r from-violet-500/8 to-transparent',
+              tone === 'brand' ? 'border-brand-100 bg-brand-50/60' : 'border-violet-100 bg-violet-50/50',
             )}>
               <span className={cn(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-slate-950/50',
-                tone === 'cyan' ? 'text-cyan-300' : 'text-violet-300',
+                'grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white',
+                tone === 'brand' ? 'text-brand-700 ring-1 ring-brand-100' : 'text-violet-700 ring-1 ring-violet-100',
               )} aria-hidden>
-                {tone === 'cyan' ? <BookOpen className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
+                {tone === 'brand' ? <Layers3 className="h-[18px] w-[18px]" /> : <Zap className="h-[18px] w-[18px]" />}
               </span>
               <div className="min-w-0 flex-1">
                 <h2 id={`training-${packageName}`} className="text-sm font-bold tracking-tight text-ink-900">
@@ -256,7 +253,7 @@ export function TrainingsPage() {
               </div>
               <span className={cn(
                 'shrink-0 rounded-full border px-3 py-1 text-[11px] font-semibold tabular-nums',
-                tone === 'cyan' ? 'border-cyan-500/25 bg-cyan-500/10 text-cyan-700' : 'border-violet-500/30 bg-violet-500/10 text-violet-700',
+                tone === 'brand' ? 'border-brand-200 bg-white text-brand-700' : 'border-violet-200 bg-white text-violet-700',
               )}>
                 {trainings.length} eğitim
               </span>
@@ -268,30 +265,30 @@ export function TrainingsPage() {
                 const isExpanded = expanded.includes(training.id)
                 const topicCount = getTopicCount(training)
                 const chapterCount = getChapterCount(training)
-                const barColor = tone === 'cyan' ? 'bg-cyan-400/70' : 'bg-violet-400/70'
-                const dotColor = tone === 'cyan' ? 'bg-cyan-400/70' : 'bg-violet-400/70'
+                const barColor = tone === 'brand' ? 'bg-brand-500' : 'bg-violet-500'
+                const dotColor = tone === 'brand' ? 'bg-brand-500' : 'bg-violet-500'
 
                 return (
                   <article
                     key={training.id}
                     className={cn(
-                      'group overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] ring-1 ring-ink-200/[0.04] transition-all hover:ring-ink-200/[0.07]',
+                      'group overflow-hidden rounded-2xl border bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] transition-all',
                       isExpanded ? 'border-ink-300 shadow-lg shadow-ink-900/5' : 'border-ink-200/80 hover:border-ink-300',
                     )}
                   >
                     {/* Summary satırı */}
                     <div className="flex cursor-pointer items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4" onClick={() => toggleTraining(training.id)}>
-                      <span className={cn('h-8 w-1 shrink-0 rounded-full transition-opacity', barColor, isExpanded ? 'opacity-100' : 'opacity-60')} aria-hidden />
+                      <span className={cn('h-9 w-1 shrink-0 rounded-full transition-opacity', barColor, isExpanded ? 'opacity-100' : 'opacity-60')} aria-hidden />
 
                       <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-ink-800 group-hover:text-ink-900">
                         {highlightText(training.name, search)}
                       </span>
 
                       <span className="hidden items-center gap-2 sm:flex">
-                        <span className={cn('rounded-md border px-2 py-0.5 text-[10px] font-medium', riskClasses[training.risk])}>
+                        <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', riskClasses[training.risk])}>
                           {training.risk}
                         </span>
-                        <span className="rounded-md border border-ink-200/60 bg-ink-50/50 px-2 py-0.5 text-[10px] text-ink-400">
+                        <span className="rounded-lg bg-ink-50 px-2.5 py-1 text-[10px] font-medium text-ink-500">
                           {chapterCount} başlık · {topicCount} konu
                         </span>
                       </span>
@@ -299,7 +296,7 @@ export function TrainingsPage() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handlePreview(training) }}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-950 shadow shadow-amber-900/30 transition hover:bg-amber-300 active:scale-95"
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-ink-900 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-brand-700"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">Önizle</span>
@@ -318,28 +315,28 @@ export function TrainingsPage() {
                           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                           className="overflow-hidden"
                         >
-                          <div className="border-t border-ink-100 px-5 pb-5 pt-4">
+                          <div className="border-t border-ink-100 bg-ink-50/30 px-5 pb-5 pt-4">
                             <p className="mb-4 text-xs leading-relaxed text-ink-500">{training.description}</p>
 
-                            <div className="mb-3 flex items-center gap-2">
-                              <span className={cn('text-[11px] font-semibold uppercase tracking-widest', tone === 'cyan' ? 'text-cyan-700' : 'text-violet-700')}>İçerik Yapısı</span>
+                            <div className="mb-4 flex items-center gap-2">
+                              <span className={cn('text-[10px] font-bold uppercase tracking-[0.14em]', tone === 'brand' ? 'text-brand-700' : 'text-violet-700')}>İçerik yapısı</span>
                               <span className="h-px flex-1 bg-ink-200" />
-                              <span className="text-[11px] text-ink-400">{chapterCount} başlık · {topicCount} konu</span>
+                              <span className="text-[10px] text-ink-400">{chapterCount} alt başlık · {topicCount} konu</span>
                             </div>
 
                             <div className="space-y-2">
                               {training.chapters.map((chapter, index) => (
-                                <div key={chapter.id} className="overflow-hidden rounded-xl border border-ink-200/80 bg-ink-50/30">
-                                  <div className="flex items-center gap-3 bg-ink-50/80 px-4 py-2.5">
-                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-ink-100 text-[10px] font-bold tabular-nums text-ink-600">{index + 1}</span>
-                                    <span className="min-w-0 flex-1 text-sm font-semibold text-ink-700">{highlightText(chapter.title, search)}</span>
-                                    <span className="shrink-0 text-[10px] text-ink-400">{chapter.topics.length} konu</span>
+                                <div key={chapter.id} className="overflow-hidden rounded-xl border border-ink-200/80 bg-white">
+                                  <div className="flex items-center gap-3 bg-ink-50/80 px-4 py-3">
+                                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ink-100 text-[10px] font-bold text-brand-700">{index + 1}</span>
+                                    <span className="min-w-0 flex-1 text-xs font-semibold text-ink-700">{highlightText(chapter.title, search)}</span>
+                                    <span className="text-[10px] text-ink-400">{chapter.topics.length} konu</span>
                                   </div>
-                                  <ul className="divide-y divide-ink-100 px-4 py-1">
+                                  <ul className="divide-y divide-ink-100 px-4">
                                     {chapter.topics.map((topic) => (
-                                      <li key={topic} className="flex items-center gap-2.5 py-2 text-xs text-ink-500">
-                                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full opacity-70', dotColor)} aria-hidden />
-                                        <span className="min-w-0 flex-1 leading-relaxed">{highlightText(topic, search)}</span>
+                                      <li key={topic} className="flex items-center gap-2.5 py-2 text-xs leading-5 text-ink-500">
+                                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dotColor)} />
+                                        <span className="min-w-0 flex-1">{highlightText(topic, search)}</span>
                                       </li>
                                     ))}
                                   </ul>
