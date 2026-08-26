@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth'
+import { MobileBottomBar, type BottomBarItem } from '@/components/ui'
 
 interface NavigationItem {
   label: string
@@ -57,6 +58,28 @@ const osgbNavigation: NavigationItem[] = [
   { label: 'Doktor', to: '/dashboard/osgb-bilgileri/doktorlar', icon: <ShieldCheck /> },
   { label: 'Kullanıcılar', to: '/dashboard/osgb-bilgileri/kullanicilar', icon: <Users /> },
   { label: 'Faturalar', to: '/dashboard/osgb-bilgileri/faturalar', icon: <FileCheck2 /> },
+]
+
+const mobileBarItems: BottomBarItem[] = [
+  { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard', exact: true },
+  { key: 'firmalar', label: 'Firmalar', icon: Building2, path: '/dashboard/firmalar' },
+  { key: 'katilimcilar', label: 'Kişiler', icon: Users, path: '/dashboard/katilimcilar' },
+  { key: 'atamalar', label: 'Atamalar', icon: ClipboardCheck, path: '/dashboard/egitim-atamalari' },
+  { key: 'imza', label: 'İmza', icon: KeyRound, path: '/dashboard/imza-kuyrugu' },
+  { key: 'canli', label: 'Canlı', icon: Video, path: '/dashboard/canli-egitim' },
+  { key: 'raporlar', label: 'Raporlar', icon: Gauge, path: '/dashboard/raporlar' },
+  { key: 'egitimler', label: 'Eğitimler', icon: BookOpen, path: '/dashboard/egitimler' },
+]
+
+const mobileBarMoreItems: BottomBarItem[] = [
+  { key: 'osgb-firma', label: 'Firma Bilgileri', icon: Building2, path: '/dashboard/osgb-bilgileri/firma-bilgileri' },
+  { key: 'osgb-uzman', label: 'Uzman', icon: UserRound, path: '/dashboard/osgb-bilgileri/egiticiler' },
+  { key: 'osgb-doktor', label: 'Doktor', icon: ShieldCheck, path: '/dashboard/osgb-bilgileri/doktorlar' },
+  { key: 'osgb-kullanicilar', label: 'Kullanıcılar', icon: Users, path: '/dashboard/osgb-bilgileri/kullanicilar' },
+  { key: 'osgb-faturalar', label: 'Faturalar', icon: FileCheck2, path: '/dashboard/osgb-bilgileri/faturalar' },
+  { key: 'destek-kilavuz', label: 'Kılavuz', icon: FileText, path: '/dashboard/destek/kilavuz' },
+  { key: 'destek-video', label: 'Video', icon: PlayCircle, path: '/dashboard/destek/video' },
+  { key: 'destek-talep', label: 'Destek', icon: LifeBuoy, path: '/dashboard/destek/talepler' },
 ]
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
@@ -328,10 +351,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1440px] p-3 sm:p-8">
+        <main className="mx-auto max-w-[1440px] p-3 pb-24 sm:p-8 sm:pb-28 lg:pb-8">
           {children}
         </main>
       </div>
+
+      {/* Mobil alt bar */}
+      <MobileBottomBar items={mobileBarItems} moreItems={mobileBarMoreItems} />
     </div>
   )
 }

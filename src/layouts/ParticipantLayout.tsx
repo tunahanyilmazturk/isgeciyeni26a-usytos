@@ -11,6 +11,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useParticipantAuth } from '@/features/auth/ParticipantAuthContext'
+import { MobileBottomBar, type BottomBarItem } from '@/components/ui'
 
 interface NavItem {
   key: string
@@ -21,6 +22,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/katilimci' },
+  { key: 'trainings', label: 'Eğitimler', icon: BookOpen, path: '/katilimci/egitimler' },
+  { key: 'profile', label: 'Profil', icon: UserRound, path: '/katilimci/profil' },
+]
+
+const mobileBarItems: BottomBarItem[] = [
+  { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/katilimci', exact: true },
   { key: 'trainings', label: 'Eğitimler', icon: BookOpen, path: '/katilimci/egitimler' },
   { key: 'profile', label: 'Profil', icon: UserRound, path: '/katilimci/profil' },
 ]
@@ -45,8 +52,8 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-ink-900">
-      {/* Sidebar — sol tarafta şık dikey navigasyon */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-[76px] flex-col items-center border-r border-ink-200/70 bg-white/95 py-5 backdrop-blur sm:w-[88px]">
+      {/* Sidebar — sol tarafta şık dikey navigasyon (sadece masaüstü) */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center border-r border-ink-200/70 bg-white/95 py-5 backdrop-blur sm:flex">
         {/* Logo */}
         <div className="mb-7 flex flex-col items-center gap-2">
           <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-brand-600 text-white shadow-sm shadow-brand-600/20 sm:h-11 sm:w-11">
@@ -151,8 +158,8 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
         </button>
       </aside>
 
-      {/* İçerik — sidebar genişliği kadar sola kaydırılmış */}
-      <div className="pl-[76px] sm:pl-[88px]">
+      {/* İçerik — sidebar genişliği kadar sola kaydırılmış (masaüstü) */}
+      <div className="min-h-screen sm:pl-[88px]">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-ink-200/70 bg-white/95 backdrop-blur">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-10">
@@ -182,10 +189,13 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* İçerik */}
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-12">
+        <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:py-8 sm:pb-12 lg:px-10 lg:py-12">
           {children}
         </main>
       </div>
+
+      {/* Mobil alt bar */}
+      <MobileBottomBar items={mobileBarItems} />
     </div>
   )
 }
