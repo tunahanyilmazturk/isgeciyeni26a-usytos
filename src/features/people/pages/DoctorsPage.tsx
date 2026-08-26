@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Doctor, type DoctorLevel, readDoctors, saveDoctors } from '../data/people'
 
@@ -63,6 +63,8 @@ export function DoctorsPage() {
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => saveDoctors(doctors), [doctors])
 
@@ -112,6 +114,12 @@ export function DoctorsPage() {
     })
   }, [doctors, search, levelFilter])
 
+  useEffect(() => { setCurrentPage(1) }, [doctors, search, levelFilter])
+
+  const totalPages = Math.ceil(filteredDoctors.length / pageSize) || 1
+  const paginatedItems = paginate(filteredDoctors, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredDoctors.length)
+
   function onSubmit(data: DoctorForm) {
     const doctor: Doctor = {
       id: Date.now(),
@@ -160,11 +168,11 @@ export function DoctorsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[900px] text-left text-xs">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400"><tr><th className="px-5 py-3.5 font-semibold sm:px-6">Tip</th><th className="px-3 py-3.5 font-semibold">Doktor</th><th className="px-3 py-3.5 font-semibold">Unvan</th><th className="px-3 py-3.5 font-semibold">Sertifika</th><th className="px-3 py-3.5 font-semibold">Hizmet kapasitesi</th><th className="px-3 py-3.5 font-semibold">Kullanım</th><th className="px-5 py-3.5 text-right font-semibold sm:px-6">İşlem</th></tr></thead>
             <tbody className="divide-y divide-ink-100">
-              {filteredDoctors.map((doctor) => {
+              {paginatedItems.map((doctor) => {
                 const percentage = doctor.maxServiceDuration ? Math.round((doctor.usedServiceDuration / doctor.maxServiceDuration) * 100) : 0
                 return <tr key={doctor.id} className="group transition-colors hover:bg-ink-50/50">
                   <td className="px-5 py-4 sm:px-6"><span className="inline-flex rounded-lg bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700">{doctor.doctorLevel}</span></td>
@@ -180,6 +188,17 @@ export function DoctorsPage() {
           </table>
           {filteredDoctors.length === 0 && <div className="px-6 py-14 text-center"><Search className="mx-auto h-7 w-7 text-ink-300" /><p className="mt-3 text-sm font-medium text-ink-600">Doktor bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama veya tip filtresini değiştirmeyi deneyin.</p></div>}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredDoctors.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="doktor"
+        />
       </motion.section>
 
       {isModalOpen && (

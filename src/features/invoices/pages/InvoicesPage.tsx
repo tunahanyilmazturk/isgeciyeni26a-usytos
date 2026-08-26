@@ -9,7 +9,7 @@ import {
   Send,
   TrendingUp,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Button } from '@/components/ui'
+import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -69,6 +69,8 @@ export function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | InvoiceStatus>('all')
   const [companyFilter, setCompanyFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const companies = useMemo(() => Array.from(new Set(invoices.map((i) => i.company))), [])
 
@@ -82,6 +84,12 @@ export function InvoicesPage() {
       return matchesSearch && matchesStatus && matchesCompany
     })
   }, [search, statusFilter, companyFilter])
+
+  useEffect(() => { setCurrentPage(1) }, [search, statusFilter, companyFilter])
+
+  const totalPages = Math.ceil(filteredInvoices.length / pageSize) || 1
+  const paginatedItems = paginate(filteredInvoices, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredInvoices.length)
 
   const handleCreateInvoice = () => {
     toast.success('Yeni fatura oluşturuluyor', { description: 'Fatura sihirbazı birazdan açılacak.' })
@@ -171,7 +179,7 @@ export function InvoicesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="border-b border-ink-100 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
@@ -191,7 +199,7 @@ export function InvoicesPage() {
                   </td>
                 </tr>
               ) : (
-                filteredInvoices.map((invoice) => {
+                paginatedItems.map((invoice) => {
                   const status = statusConfig[invoice.status]
                   return (
                     <tr key={invoice.id} className="group transition-colors hover:bg-ink-50/60">
@@ -249,6 +257,17 @@ export function InvoicesPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredInvoices.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="fatura"
+        />
       </motion.section>
 
       <motion.section

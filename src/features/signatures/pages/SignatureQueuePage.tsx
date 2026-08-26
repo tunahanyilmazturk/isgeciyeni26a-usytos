@@ -10,9 +10,9 @@ import {
   Stamp,
   XCircle,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui'
+import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 type SignatureStatus = 'pending' | 'signed' | 'rejected' | 'expired'
@@ -73,6 +73,8 @@ export function SignatureQueuePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | DocumentType>('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
@@ -83,6 +85,12 @@ export function SignatureQueuePage() {
         (typeFilter === 'all' || item.type === typeFilter)
     })
   }, [search, activeTab, typeFilter])
+
+  useEffect(() => { setCurrentPage(1) }, [search, activeTab, typeFilter])
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1
+  const paginatedItems = paginate(filtered, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filtered.length)
 
   const tabCounts: Record<TabKey, number> = {
     all: records.length,
@@ -166,7 +174,7 @@ export function SignatureQueuePage() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[920px] text-left text-xs">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
@@ -179,7 +187,7 @@ export function SignatureQueuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100">
-              {filtered.map((item) => {
+              {paginatedItems.map((item) => {
                 const Icon = typeIcons[item.type]
                 return (
                   <tr key={item.id} className="group transition-colors hover:bg-brand-50/35">
@@ -231,6 +239,17 @@ export function SignatureQueuePage() {
             </div>
           )}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="belge"
+        />
       </motion.section>
     </div>
   )

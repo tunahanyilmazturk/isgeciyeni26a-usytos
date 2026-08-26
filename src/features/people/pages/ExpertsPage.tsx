@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Expert, type ExpertTitle, readExperts, saveExperts } from '../data/people'
 
@@ -65,6 +65,8 @@ export function ExpertsPage() {
   const [search, setSearch] = useState('')
   const [titleFilter, setTitleFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => saveExperts(experts), [experts])
 
@@ -113,6 +115,12 @@ export function ExpertsPage() {
       return matchesSearch && matchesTitle
     })
   }, [experts, search, titleFilter])
+
+  useEffect(() => { setCurrentPage(1) }, [experts, search, titleFilter])
+
+  const totalPages = Math.ceil(filteredExperts.length / pageSize) || 1
+  const paginatedItems = paginate(filteredExperts, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredExperts.length)
 
   function onSubmit(data: ExpertForm) {
     const expert: Expert = {
@@ -187,7 +195,7 @@ export function ExpertsPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
             <table className="w-full min-w-[820px] text-left text-xs">
               <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
                 <tr>
@@ -200,7 +208,7 @@ export function ExpertsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
-                {filteredExperts.map((expert) => {
+                {paginatedItems.map((expert) => {
                   const percentage = expert.maxServiceDuration ? Math.round((expert.usedServiceDuration / expert.maxServiceDuration) * 100) : 0
                   return (
                     <tr key={expert.id} className="group transition-colors hover:bg-ink-50/50">
@@ -222,6 +230,17 @@ export function ExpertsPage() {
             </table>
             {filteredExperts.length === 0 && <div className="px-6 py-14 text-center"><Search className="mx-auto h-7 w-7 text-ink-300" /><p className="mt-3 text-sm font-medium text-ink-600">Uzman bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama veya unvan filtresini değiştirmeyi deneyin.</p></div>}
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredExperts.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            itemName="uzman"
+          />
         </motion.div>
       </section>
 

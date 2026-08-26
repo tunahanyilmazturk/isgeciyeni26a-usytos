@@ -8,9 +8,9 @@ import {
   Search,
   XCircle,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui'
+import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 type AssignmentStatus = 'pending' | 'in_progress' | 'completed' | 'failed'
@@ -72,6 +72,8 @@ export function AssignmentsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | AssignmentStatus>('all')
   const [riskFilter, setRiskFilter] = useState<'all' | RiskLevel>('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
@@ -83,6 +85,12 @@ export function AssignmentsPage() {
         (riskFilter === 'all' || item.risk === riskFilter)
     })
   }, [search, companyFilter, statusFilter, riskFilter])
+
+  useEffect(() => { setCurrentPage(1) }, [search, companyFilter, statusFilter, riskFilter])
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1
+  const paginatedItems = paginate(filtered, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filtered.length)
 
   function clearFilters() {
     setSearch('')
@@ -167,7 +175,7 @@ export function AssignmentsPage() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[960px] text-left text-xs">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
@@ -180,7 +188,7 @@ export function AssignmentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100">
-              {filtered.map((item) => (
+              {paginatedItems.map((item) => (
                 <tr key={item.id} className="group transition-colors hover:bg-brand-50/35">
                   <td className="px-5 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
@@ -234,6 +242,17 @@ export function AssignmentsPage() {
             </div>
           )}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="atama"
+        />
       </motion.section>
     </div>
   )

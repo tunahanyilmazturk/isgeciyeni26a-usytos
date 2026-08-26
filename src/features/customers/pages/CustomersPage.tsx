@@ -4,7 +4,6 @@ import {
   ArrowDownToLine,
   ArrowRight,
   Building2,
-  CheckCircle2,
   ChevronDown,
   Edit3,
   Mail,
@@ -25,7 +24,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { downloadCustomerList } from '@/lib/excel'
 import { cn } from '@/lib/utils'
 import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus } from '../data/customers'
@@ -87,6 +86,8 @@ export function CustomersPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const navigate = useNavigate()
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CustomerForm>({
@@ -130,6 +131,12 @@ export function CustomersPage() {
       return b.id - a.id
     })
   }, [customers, search, riskFilter, expertFilter, doctorFilter, contractFilter, approvalFilter, statusFilter, sortBy])
+
+  useEffect(() => { setCurrentPage(1) }, [customers, search, riskFilter, expertFilter, doctorFilter, contractFilter, approvalFilter, statusFilter, sortBy])
+
+  const totalPages = Math.ceil(filteredCustomers.length / pageSize) || 1
+  const paginatedItems = paginate(filteredCustomers, currentPage, pageSize)
+  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredCustomers.length)
 
   const activeCustomers = customers.filter((customer) => customer.status === 'active')
 
@@ -232,11 +239,11 @@ export function CustomersPage() {
           </div>}
         </div>
 
-        <div className="relative overflow-x-auto">
+        <div className="relative overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white via-white/80 to-transparent sm:hidden" />
           <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-semibold text-ink-400 shadow-sm sm:hidden">Yatay kaydır</div>
           <table className="w-full min-w-[1080px] text-left text-xs"><thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400"><tr><th className="px-5 py-3.5 font-semibold sm:px-6">Firma</th><th className="px-3 py-3.5 font-semibold">Tehlike sınıfı</th><th className="px-3 py-3.5 font-semibold">Çalışan</th><th className="px-3 py-3.5 font-semibold">İSG atamaları</th><th className="px-3 py-3.5 font-semibold">Sözleşme</th><th className="px-3 py-3.5 font-semibold">Onay</th><th className="px-5 py-3.5 text-right font-semibold sm:px-6">İşlem</th></tr></thead><tbody className="divide-y divide-ink-100">
-          {filteredCustomers.map((customer) => <tr key={customer.id} onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="group cursor-pointer transition-colors hover:bg-brand-50/35">
+          {paginatedItems.map((customer) => <tr key={customer.id} onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="group cursor-pointer transition-colors hover:bg-brand-50/35">
             <td className="px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700">{initials(customer.name)}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-ink-800">{customer.name}</p><p className="mt-0.5 truncate text-[11px] text-ink-400">VKN: {customer.taxNumber} · {customer.sector}</p><p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-ink-400"><MapPin className="h-3 w-3" />{customer.location}</p></div></div></td>
             <td className="px-3 py-4"><span className={cn('inline-flex whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-semibold', riskClass(customer.riskLevel))}>{customer.riskLevel}</span></td>
             <td className="px-3 py-4"><div className="flex items-center gap-2 text-ink-700"><Users className="h-3.5 w-3.5 text-ink-400" /> <span className="font-semibold">{customer.employees ? formatNumber(customer.employees) : '—'}</span></div><p className="mt-1 text-[10px] text-ink-400">aktif çalışan</p></td>
@@ -246,7 +253,17 @@ export function CustomersPage() {
             <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${customer.name} detayları`}><ArrowRight className="h-4 w-4" /></button><button type="button" onClick={() => toast.info('Düzenleme ekranı sıradaki adımda hazırlanacak.')} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label={`${customer.name} düzenle`}><MoreHorizontal className="h-4 w-4" /></button></div></td>
           </tr>)}
         </tbody></table>{filteredCustomers.length === 0 && <div className="px-6 py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Müşteri bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama veya filtre kriterlerini değiştirerek tekrar deneyin.</p><button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-brand-700 hover:text-brand-800">Filtreleri temizle</button></div>}</div>
-        <div className="flex flex-col justify-between gap-3 border-t border-ink-100 px-5 py-4 text-xs text-ink-400 sm:flex-row sm:items-center sm:px-6"><span>{filteredCustomers.length} müşteri gösteriliyor</span><span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Son senkronizasyon: az önce</span></div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredCustomers.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          itemName="müşteri"
+        />
       </motion.section>
 
       {isModalOpen && <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-ink-900/25 p-3 backdrop-blur-[2px] sm:p-8" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsModalOpen(false) }}><motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }} role="dialog" aria-modal="true" aria-labelledby="new-customer-title" className="relative z-10 my-auto max-h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-3xl overflow-y-auto overscroll-contain rounded-xl border border-ink-200 bg-white shadow-[0_24px_80px_-24px_rgba(17,24,39,0.35)] sm:max-h-[calc(100dvh-4rem)] sm:rounded-2xl"><div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-ink-100 bg-white/95 px-4 py-4 backdrop-blur sm:gap-4 sm:px-7 sm:py-5"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Building2 className="h-5 w-5" strokeWidth={1.7} /></span><div><h2 id="new-customer-title" className="text-base font-semibold text-ink-900">Yeni müşteri ekle</h2><p className="mt-1 text-xs text-ink-400">Firma bilgilerini girerek portföyünüze yeni bir kayıt ekleyin.</p></div></div><button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Modalı kapat"><X className="h-5 w-5" /></button></div><form onSubmit={handleSubmit(onSubmit)} className="space-y-6 px-4 py-5 sm:px-7 sm:py-6" noValidate><div><div className="mb-3 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-brand-500" /><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Firma bilgileri</h3></div><div className="grid gap-4 sm:grid-cols-2"><Input label="Firma adı" placeholder="Örn. Quantis Tekstil" error={errors.name?.message} {...register('name')} /><Input label="Vergi numarası" placeholder="10 haneli vergi numarası" error={errors.taxNumber?.message} {...register('taxNumber')} /><Input label="Sektör" placeholder="Örn. Tekstil üretimi" error={errors.sector?.message} {...register('sector')} /><Input label="Merkez / Şube" placeholder="İlçe ve il bilgisi" icon={<MapPin className="h-[18px] w-[18px]" />} error={errors.location?.message} {...register('location')} /><Input label="Çalışan sayısı" type="number" min="0" placeholder="0" error={errors.employees?.message} {...register('employees')} /><div><label htmlFor="customer-risk" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Tehlike sınıfı</label><div className="relative"><select id="customer-risk" className={cn('h-12 w-full appearance-none rounded-xl border bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none transition-all focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10', errors.riskLevel ? 'border-red-400' : 'border-ink-200 hover:border-ink-300')} {...register('riskLevel')}><option value="">Sınıf seçiniz</option>{riskLevels.map((risk) => <option key={risk} value={risk}>{risk}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div>{errors.riskLevel && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.riskLevel.message}</p>}</div></div></div><div className="border-t border-ink-100 pt-5"><div className="mb-3 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-ink-400" strokeWidth={1.8} /><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Hizmet atamaları</h3></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="customer-expert" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">İSG uzmanı</label><div className="relative"><select id="customer-expert" className="h-12 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" {...register('expert')}><option value="">Atama daha sonra yapılacak</option>{experts.map((expert) => <option key={expert} value={expert}>{expert}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div></div><div><label htmlFor="customer-doctor" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">İşyeri hekimi</label><div className="relative"><select id="customer-doctor" className="h-12 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" {...register('doctor')}><option value="">Atama daha sonra yapılacak</option>{doctors.map((doctor) => <option key={doctor} value={doctor}>{doctor}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div></div></div></div><div className="border-t border-ink-100 pt-5"><div className="mb-3 flex items-center gap-2"><Phone className="h-4 w-4 text-ink-400" strokeWidth={1.8} /><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Firma yetkilisi</h3></div><div className="grid gap-4 sm:grid-cols-2"><Input label="Yetkili adı" placeholder="Ad Soyad" error={errors.contactName?.message} {...register('contactName')} /><Input label="E-posta" type="email" placeholder="yetkili@firma.com" icon={<Mail className="h-[18px] w-[18px]" />} error={errors.contactEmail?.message} {...register('contactEmail')} /><Input label="Telefon" type="tel" placeholder="+90 5xx xxx xx xx" icon={<Phone className="h-[18px] w-[18px]" />} error={errors.contactPhone?.message} {...register('contactPhone')} /></div></div><div className="flex flex-col-reverse gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:justify-end"><Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Vazgeç</Button><Button type="submit" loading={isSubmitting} leftIcon={!isSubmitting ? <Plus className="h-4 w-4" /> : undefined}>Müşteriyi kaydet</Button></div></form></motion.div></div>}
