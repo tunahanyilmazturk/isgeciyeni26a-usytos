@@ -109,7 +109,7 @@ export function TrainingPreviewPage() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/egitimler')}>Eğitim listesi</Button>
+          <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/dashboard/egitimler')}>Eğitim listesi</Button>
           <button type="button" onClick={resetPreTest} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100">
             <RotateCcw className="h-3.5 w-3.5" /> Sıfırla
           </button>
@@ -118,7 +118,7 @@ export function TrainingPreviewPage() {
 
       {/* Geri link + ilerleme */}
       <div className="flex items-center justify-between gap-3">
-        <button type="button" onClick={() => navigate('/egitimler')} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition-colors hover:text-brand-700">
+        <button type="button" onClick={() => navigate('/dashboard/egitimler')} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition-colors hover:text-brand-700">
           <ArrowLeft className="h-4 w-4" /> Eğitim listesine dön
         </button>
         <span className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold text-ink-600">
@@ -346,7 +346,7 @@ export function TrainingPreviewPage() {
 
       {/* Alt buton */}
       <div className="flex justify-center pb-8">
-        <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/egitimler')}>Eğitim listesine dön</Button>
+        <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/dashboard/egitimler')}>Eğitim listesine dön</Button>
       </div>
     </div>
   )

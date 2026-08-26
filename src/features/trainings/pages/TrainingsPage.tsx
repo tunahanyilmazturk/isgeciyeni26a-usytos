@@ -103,7 +103,7 @@ export function TrainingsPage() {
   }
 
   const handlePreview = useCallback((training: Training) => {
-    navigate(`/egitimler/${training.id}/katilimci-onizleme`)
+    navigate(`/dashboard/egitimler/${training.id}/katilimci-onizleme`)
   }, [navigate])
 
   return (
