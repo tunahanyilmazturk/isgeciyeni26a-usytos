@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion'
 import {
   ArrowDownToLine,
-  CheckCircle2,
-  Clock3,
   Download,
   Eye,
   FileText,
@@ -10,7 +8,6 @@ import {
   Search,
   Send,
   TrendingUp,
-  Wallet,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
@@ -64,13 +61,6 @@ const statusConfig: Record<InvoiceStatus, { label: string; className: string }> 
   cancelled: { label: 'İptal', className: 'bg-ink-100 text-ink-600' },
 }
 
-const toneStyles = {
-  teal: 'bg-brand-50 text-brand-700',
-  amber: 'bg-amber-50 text-amber-600',
-  green: 'bg-emerald-50 text-emerald-600',
-  violet: 'bg-violet-50 text-violet-600',
-}
-
 const currencyFormatter = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' })
 const formatCurrency = (value: number) => currencyFormatter.format(value)
 
@@ -92,18 +82,6 @@ export function InvoicesPage() {
       return matchesSearch && matchesStatus && matchesCompany
     })
   }, [search, statusFilter, companyFilter])
-
-  const totalBalance = invoices.filter((i) => i.status === 'pending' || i.status === 'overdue').reduce((sum, i) => sum + i.amount, 0)
-  const dueAmount = invoices.filter((i) => i.status === 'overdue').reduce((sum, i) => sum + i.amount, 0)
-  const collectedThisMonth = invoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0)
-  const pendingCount = invoices.filter((i) => i.status === 'pending').length
-
-  const summaryStats = [
-    { label: 'Toplam bakiye', value: formatCurrency(totalBalance), change: `${invoices.filter((i) => i.status !== 'paid' && i.status !== 'cancelled').length} açık fatura`, icon: Wallet, tone: 'teal' },
-    { label: 'Vadesi gelen', value: formatCurrency(dueAmount), change: `${invoices.filter((i) => i.status === 'overdue').length} fatura gecikmiş`, icon: Clock3, tone: 'amber' },
-    { label: 'Bu ay tahsil edilen', value: formatCurrency(collectedThisMonth), change: '2 fatura tahsil edildi', icon: CheckCircle2, tone: 'green' },
-    { label: 'Bekleyen fatura', value: String(pendingCount), change: 'Ödeme bekleniyor', icon: FileText, tone: 'violet' },
-  ]
 
   const handleCreateInvoice = () => {
     toast.success('Yeni fatura oluşturuluyor', { description: 'Fatura sihirbazı birazdan açılacak.' })
@@ -145,27 +123,6 @@ export function InvoicesPage() {
           Fatura oluştur
         </Button>
       </motion.section>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {summaryStats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.1 + index * 0.05 }}
-            className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span className={cn('grid h-9 w-9 place-items-center rounded-xl', toneStyles[stat.tone as keyof typeof toneStyles])}>
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              </span>
-            </div>
-            <p className="mt-4 text-[22px] font-bold tracking-[-0.03em] text-ink-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-ink-400">{stat.change}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <motion.section
         initial={{ opacity: 0, y: 12 }}

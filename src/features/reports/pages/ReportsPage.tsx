@@ -1,16 +1,12 @@
 import { motion } from 'framer-motion'
 import {
-  AlertTriangle,
   ArrowDownToLine,
   BarChart3,
-  Building2,
-  CheckCircle2,
   Download,
   FileText,
   PieChart as PieChartIcon,
   Plus,
   TrendingUp,
-  Users,
 } from 'lucide-react'
 import {
   Area,
@@ -62,20 +58,6 @@ const recentReports = [
   { id: 'RPT-2026-086', name: 'Çalışan Sağlığı Raporu — Marmara Tekstil', type: 'Firma bazlı', date: '28 Ağu 2026', status: 'Hazır' },
 ]
 
-const toneStyles = {
-  teal: 'bg-brand-50 text-brand-700',
-  violet: 'bg-violet-50 text-violet-600',
-  green: 'bg-emerald-50 text-emerald-600',
-  amber: 'bg-amber-50 text-amber-600',
-}
-
-const summaryStats = [
-  { label: 'Toplam firma', value: '28', change: '+1 bu ay', icon: Building2, tone: 'teal' },
-  { label: 'Aktif çalışan', value: '1.420', change: '+38 bu ay', icon: Users, tone: 'violet' },
-  { label: 'Eğitim tamamlama', value: '%74', change: '+%6 geçen aya göre', icon: CheckCircle2, tone: 'green' },
-  { label: 'Açık aksiyon', value: '12', change: '3 yüksek öncelik', icon: AlertTriangle, tone: 'amber' },
-]
-
 const statusStyles: Record<string, string> = {
   'Hazır': 'bg-emerald-50 text-emerald-600',
   'Arşivlendi': 'bg-ink-100 text-ink-600',
@@ -121,27 +103,6 @@ export function ReportsPage() {
           </Button>
         </div>
       </motion.section>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {summaryStats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.1 + index * 0.05 }}
-            className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span className={cn('grid h-9 w-9 place-items-center rounded-xl', toneStyles[stat.tone as keyof typeof toneStyles])}>
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              </span>
-            </div>
-            <p className="mt-4 text-[27px] font-bold tracking-[-0.04em] text-ink-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-ink-400">{stat.change}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
         <motion.div

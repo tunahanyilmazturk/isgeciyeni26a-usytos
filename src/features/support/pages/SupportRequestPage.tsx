@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
-  Clock,
   Eye,
   LifeBuoy,
   MessageSquareReply,
@@ -78,37 +77,6 @@ const supportTickets: SupportTicket[] = [
     status: 'Çözüldü',
     createdAt: '5 gün önce',
     category: 'Sistem',
-  },
-]
-
-const summaryCards = [
-  {
-    label: 'Açık talepler',
-    value: supportTickets.filter((ticket) => ticket.status === 'Açık').length,
-    detail: 'Aksiyon bekleyen kayıt',
-    icon: Ticket,
-    tone: 'blue',
-  },
-  {
-    label: 'Bekleyen yanıt',
-    value: supportTickets.filter((ticket) => ticket.status === 'Yanıt bekliyor').length,
-    detail: 'Ekibinizden yanıt bekleniyor',
-    icon: MessageSquareReply,
-    tone: 'amber',
-  },
-  {
-    label: 'Çözülen bu ay',
-    value: supportTickets.filter((ticket) => ticket.status === 'Çözüldü').length,
-    detail: 'Bu ay kapatılan talep',
-    icon: ShieldCheck,
-    tone: 'emerald',
-  },
-  {
-    label: 'Ortalama yanıt süresi',
-    value: '2s 18d',
-    detail: 'İlk yanıt ortalaması',
-    icon: Clock,
-    tone: 'teal',
   },
 ]
 
@@ -220,37 +188,6 @@ export function SupportRequestPage() {
           </Button>
         </div>
       </motion.div>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span
-                className={cn(
-                  'grid h-9 w-9 place-items-center rounded-xl',
-                  stat.tone === 'blue' && 'bg-sky-50 text-sky-600',
-                  stat.tone === 'amber' && 'bg-amber-50 text-amber-600',
-                  stat.tone === 'emerald' && 'bg-emerald-50 text-emerald-600',
-                  stat.tone === 'teal' && 'bg-brand-50 text-brand-700',
-                )}
-              >
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              </span>
-            </div>
-            <p className="mt-4 text-xl font-bold tracking-[-0.03em] text-ink-900">
-              {stat.value}
-            </p>
-            <p className="mt-1 text-xs text-ink-400">{stat.detail}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <motion.section
         initial={{ opacity: 0, y: 10 }}

@@ -1,9 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import {
-  CheckCircle2,
   ChevronDown,
-  Clock3,
   Edit3,
   FileBadge2,
   HardHat,
@@ -12,10 +10,8 @@ import {
   Phone,
   Plus,
   Search,
-  ShieldCheck,
   Trash2,
   UserPlus,
-  Users,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -118,11 +114,6 @@ export function ExpertsPage() {
     })
   }, [experts, search, titleFilter])
 
-  const totalCapacity = experts.reduce((sum, expert) => sum + expert.maxServiceDuration, 0)
-  const usedCapacity = experts.reduce((sum, expert) => sum + expert.usedServiceDuration, 0)
-  const availableCapacity = totalCapacity - usedCapacity
-  const activeExperts = experts.filter((expert) => expert.status === 'active').length
-
   function onSubmit(data: ExpertForm) {
     const expert: Expert = {
       id: Date.now(),
@@ -171,32 +162,6 @@ export function ExpertsPage() {
           Yeni uzman ekle
         </Button>
       </motion.div>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Toplam uzman', value: experts.length, detail: `${activeExperts} aktif kayıt`, icon: Users, tone: 'teal' },
-          { label: 'Aylık kapasite', value: formatMinutes(totalCapacity), detail: 'Toplam tanımlı süre', icon: Clock3, tone: 'violet' },
-          { label: 'Kullanılabilir süre', value: formatMinutes(availableCapacity), detail: 'Bu dönem kalan', icon: ShieldCheck, tone: 'green' },
-          { label: 'Kapasite kullanımı', value: `${totalCapacity ? Math.round((usedCapacity / totalCapacity) * 100) : 0}%`, detail: 'Aktif hizmet planı', icon: CheckCircle2, tone: 'amber' },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span className={cn('grid h-9 w-9 place-items-center rounded-xl', stat.tone === 'teal' && 'bg-brand-50 text-brand-700', stat.tone === 'violet' && 'bg-violet-50 text-violet-600', stat.tone === 'green' && 'bg-emerald-50 text-emerald-600', stat.tone === 'amber' && 'bg-amber-50 text-amber-600')}>
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-              </span>
-            </div>
-            <p className="mt-4 truncate text-xl font-bold tracking-[-0.03em] text-ink-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-ink-400">{stat.detail}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <section className="space-y-5">
         <motion.div

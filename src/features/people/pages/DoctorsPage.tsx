@@ -1,9 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import {
-  Activity,
   ChevronDown,
-  Clock3,
   Edit3,
   FileBadge2,
   HeartPulse,
@@ -12,11 +10,9 @@ import {
   Phone,
   Plus,
   Search,
-  ShieldCheck,
   Stethoscope,
   Trash2,
   UserPlus,
-  Users,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -116,10 +112,6 @@ export function DoctorsPage() {
     })
   }, [doctors, search, levelFilter])
 
-  const totalCapacity = doctors.reduce((sum, doctor) => sum + doctor.maxServiceDuration, 0)
-  const usedCapacity = doctors.reduce((sum, doctor) => sum + doctor.usedServiceDuration, 0)
-  const activeDoctors = doctors.filter((doctor) => doctor.status === 'active').length
-
   function onSubmit(data: DoctorForm) {
     const doctor: Doctor = {
       id: Date.now(),
@@ -158,20 +150,6 @@ export function DoctorsPage() {
         </div>
         <Button size="md" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setIsModalOpen(true)}>Yeni doktor ekle</Button>
       </motion.div>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Toplam doktor', value: doctors.length, detail: `${activeDoctors} aktif kayıt`, icon: Users, tone: 'teal' },
-          { label: 'Aylık kapasite', value: formatMinutes(totalCapacity), detail: 'Toplam tanımlı süre', icon: Clock3, tone: 'violet' },
-          { label: 'Kullanılabilir süre', value: formatMinutes(totalCapacity - usedCapacity), detail: 'Bu dönem kalan', icon: ShieldCheck, tone: 'green' },
-          { label: 'Kapasite kullanımı', value: `${totalCapacity ? Math.round((usedCapacity / totalCapacity) * 100) : 0}%`, detail: 'Aktif hizmet planı', icon: Activity, tone: 'amber' },
-        ].map((stat, index) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }} className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
-            <div className="flex items-start justify-between gap-3"><p className="text-[13px] font-medium text-ink-500">{stat.label}</p><span className={cn('grid h-9 w-9 place-items-center rounded-xl', stat.tone === 'teal' && 'bg-brand-50 text-brand-700', stat.tone === 'violet' && 'bg-violet-50 text-violet-600', stat.tone === 'green' && 'bg-emerald-50 text-emerald-600', stat.tone === 'amber' && 'bg-amber-50 text-amber-600')}><stat.icon className="h-[18px] w-[18px]" strokeWidth={1.8} /></span></div>
-            <p className="mt-4 truncate text-xl font-bold tracking-[-0.03em] text-ink-900">{stat.value}</p><p className="mt-1 text-xs text-ink-400">{stat.detail}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
         <div className="flex flex-col justify-between gap-4 border-b border-ink-100 p-5 sm:flex-row sm:items-center sm:p-6">

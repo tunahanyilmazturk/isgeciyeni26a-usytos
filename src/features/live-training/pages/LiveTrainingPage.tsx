@@ -2,7 +2,6 @@ import { motion } from 'framer-motion'
 import {
   Bell,
   CalendarClock,
-  CheckCircle2,
   Clock,
   Play,
   Radio,
@@ -51,10 +50,6 @@ const statusConfig: Record<SessionStatus, { label: string; dot: string; badge: s
 export function LiveTrainingPage() {
   const [featured] = useState<Session>(activeSessions[0])
 
-  const totalParticipants = [...activeSessions, ...upcomingSessions].reduce((sum, s) => sum + s.participants, 0)
-  const totalCapacity = [...activeSessions, ...upcomingSessions].reduce((sum, s) => sum + s.capacity, 0)
-  const averageAttendance = totalCapacity ? Math.round((totalParticipants / totalCapacity) * 100) : 0
-
   return (
     <div className="space-y-7">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -70,26 +65,6 @@ export function LiveTrainingPage() {
           <Button size="md" leftIcon={<Video className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.success('Yeni canlı oturum planlama akışı başlatıldı.', { description: 'Eğitmen ve katılımcı seçimi yapabilirsiniz.' })}>Yeni oturum</Button>
         </div>
       </motion.div>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Aktif oturum', value: activeSessions.length, detail: 'Şu an yayında', icon: Radio, tone: 'red' },
-          { label: 'Bugün planlanan', value: activeSessions.length + upcomingSessions.slice(0, 2).length, detail: 'Bugünkü oturumlar', icon: CalendarClock, tone: 'teal' },
-          { label: 'Toplam katılımcı', value: totalParticipants, detail: 'Tüm oturumlar', icon: Users, tone: 'blue' },
-          { label: 'Ortalama katılım', value: `%${averageAttendance}`, detail: 'Doluluk oranı', icon: CheckCircle2, tone: 'green' },
-        ].map((stat, index) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }} className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span className={cn('grid h-9 w-9 place-items-center rounded-xl', stat.tone === 'red' && 'bg-red-50 text-red-600', stat.tone === 'teal' && 'bg-brand-50 text-brand-700', stat.tone === 'blue' && 'bg-blue-50 text-blue-600', stat.tone === 'green' && 'bg-emerald-50 text-emerald-600')}>
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
-              </span>
-            </div>
-            <p className="mt-4 text-xl font-bold tracking-[-0.03em] text-ink-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-ink-400">{stat.detail}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="relative overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
         <div className="grid gap-0 lg:grid-cols-[1.4fr_1fr]">

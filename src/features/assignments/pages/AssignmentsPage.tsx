@@ -1,15 +1,11 @@
 import { motion } from 'framer-motion'
 import {
   CalendarClock,
-  CheckCircle2,
-  CircleAlert,
   Eye,
   Filter,
   Pencil,
-  PlayCircle,
   Plus,
   Search,
-  TimerReset,
   XCircle,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -88,11 +84,6 @@ export function AssignmentsPage() {
     })
   }, [search, companyFilter, statusFilter, riskFilter])
 
-  const total = assignments.length
-  const ongoing = assignments.filter((item) => item.status === 'in_progress').length
-  const completed = assignments.filter((item) => item.status === 'completed').length
-  const overdue = assignments.filter((item) => item.status === 'failed').length
-
   function clearFilters() {
     setSearch('')
     setCompanyFilter('all')
@@ -117,26 +108,6 @@ export function AssignmentsPage() {
           <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.success('Yeni eğitim atama akışı başlatıldı.', { description: 'Katılımcı ve eğitim seçimi yapabilirsiniz.' })}>Eğitim ata</Button>
         </div>
       </motion.div>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Toplam atama', value: total, detail: 'Tüm eğitim kayıtları', icon: PlayCircle, tone: 'teal' },
-          { label: 'Devam eden', value: ongoing, detail: 'Aktif eğitim süreci', icon: TimerReset, tone: 'blue' },
-          { label: 'Tamamlanan', value: completed, detail: 'Başarıyla biten', icon: CheckCircle2, tone: 'green' },
-          { label: 'Geciken', value: overdue, detail: 'Aksiyon gereken', icon: CircleAlert, tone: 'amber' },
-        ].map((stat, index) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.05 }} className="rounded-2xl border border-ink-200/80 bg-white p-5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-[13px] font-medium text-ink-500">{stat.label}</p>
-              <span className={cn('grid h-9 w-9 place-items-center rounded-xl', stat.tone === 'teal' && 'bg-brand-50 text-brand-700', stat.tone === 'blue' && 'bg-blue-50 text-blue-600', stat.tone === 'green' && 'bg-emerald-50 text-emerald-600', stat.tone === 'amber' && 'bg-amber-50 text-amber-600')}>
-                <stat.icon className="h-[18px] w-[18px]" strokeWidth={1.7} />
-              </span>
-            </div>
-            <p className="mt-4 text-xl font-bold tracking-[-0.03em] text-ink-900">{stat.value}</p>
-            <p className="mt-1 text-xs text-ink-400">{stat.detail}</p>
-          </motion.div>
-        ))}
-      </section>
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
         <div className="border-b border-ink-100 p-5 sm:p-6">
