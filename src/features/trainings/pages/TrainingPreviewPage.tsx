@@ -15,13 +15,13 @@ import {
   Send,
   XCircle,
 } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { trainingCatalog } from '../data/trainings'
-import { trainingPreviewData, type QuizQuestion } from '../data/previewData'
+import { buildTrainingPreview, type QuizQuestion } from '../data/previewData'
 
 type AnswerMap = Record<string, number>
 type QuizResult = Record<string, boolean>
@@ -30,7 +30,7 @@ export function TrainingPreviewPage() {
   const { trainingId } = useParams<{ trainingId: string }>()
   const navigate = useNavigate()
   const training = trainingCatalog.find((t) => t.id === trainingId) ?? trainingCatalog[0]
-  const preview = trainingPreviewData
+  const preview = useMemo(() => buildTrainingPreview(training), [training])
 
   const [preTestAnswers, setPreTestAnswers] = useState<AnswerMap>({})
   const [preTestSubmitted, setPreTestSubmitted] = useState(false)
