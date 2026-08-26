@@ -68,7 +68,7 @@ export function DoctorsPage() {
   const [view, setView] = useState<ViewMode>('table')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
-  useEffect(() => saveDoctors(doctors), [doctors])
+  useEffect(() => { saveDoctors(doctors) }, [doctors])
 
   useEffect(() => {
     if (!isModalOpen) return

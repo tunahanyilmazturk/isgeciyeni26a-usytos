@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { readStorage, writeStorage } from '@/lib/storage'
+
 export type RiskLevel = 'Az tehlikeli' | 'Tehlikeli' | 'Çok tehlikeli'
 export type ContractStatus = 'Devam ediyor' | 'Teklif aşamasında' | 'Sonlandırıldı'
 export type ApprovalStatus = 'Onaylandı' | 'Onay bekliyor'
@@ -43,22 +46,36 @@ export interface Customer {
   expertClass?: string
 }
 
+const customerSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  taxNumber: z.string(),
+  sector: z.string(),
+  location: z.string(),
+  employees: z.number(),
+  riskLevel: z.enum(['Az tehlikeli', 'Tehlikeli', 'Çok tehlikeli']),
+  expert: z.string(),
+  doctor: z.string(),
+  expertMinutes: z.number(),
+  doctorMinutes: z.number(),
+  contractStatus: z.enum(['Devam ediyor', 'Teklif aşamasında', 'Sonlandırıldı']),
+  approvalStatus: z.enum(['Onaylandı', 'Onay bekliyor']),
+  status: z.enum(['active', 'passive']),
+  contactName: z.string(),
+  contactEmail: z.string(),
+  contactPhone: z.string(),
+  updatedAt: z.string(),
+}).passthrough()
+const customersSchema = z.array(customerSchema)
+
 export const CUSTOMERS_STORAGE_KEY = 'hantech-customers'
 
 export function readCustomers(): Customer[] {
-  if (typeof window === 'undefined') return initialCustomers
-  try {
-    const stored = window.localStorage.getItem(CUSTOMERS_STORAGE_KEY)
-    const parsed = stored ? JSON.parse(stored) : null
-    return Array.isArray(parsed) ? (parsed as Customer[]) : initialCustomers
-  } catch {
-    return initialCustomers
-  }
+  return readStorage(CUSTOMERS_STORAGE_KEY, initialCustomers, customersSchema)
 }
 
-export function saveCustomers(customers: Customer[]) {
-  if (typeof window !== 'undefined')
-    window.localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers))
+export function saveCustomers(customers: Customer[]): boolean {
+  return writeStorage(CUSTOMERS_STORAGE_KEY, customers)
 }
 
 export function readCustomerById(id: string | number): Customer | undefined {

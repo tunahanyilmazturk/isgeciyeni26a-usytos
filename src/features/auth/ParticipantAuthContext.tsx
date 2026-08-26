@@ -1,4 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { z } from 'zod'
+import { readStorage, writeStorage, removeStorage } from '@/lib/storage'
+import { readParticipants, saveParticipants } from '@/features/participants/data/participants'
 
 export interface ParticipantUser {
   id: number
@@ -16,6 +19,23 @@ export interface ParticipantUser {
   nextTraining: string
   lastLogin: string
 }
+
+const participantUserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  username: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  company: z.string(),
+  department: z.string(),
+  riskLevel: z.string(),
+  trainingStatus: z.string(),
+  progress: z.number(),
+  trainingMinutes: z.number(),
+  lastCompletion: z.string(),
+  nextTraining: z.string(),
+  lastLogin: z.string(),
+})
 
 interface ParticipantAuthState {
   user: ParticipantUser | null
@@ -38,13 +58,7 @@ const CONTACT_UPDATED_KEY = 'hantech-participant-contact-updated'
 const ParticipantAuthContext = createContext<ParticipantAuthState | null>(null)
 
 function readStoredUser(): ParticipantUser | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as ParticipantUser) : null
-  } catch {
-    return null
-  }
+  return readStorage(STORAGE_KEY, null, z.union([participantUserSchema, z.null()]))
 }
 
 function readKvkkApproved(userId?: number): boolean {
@@ -90,8 +104,8 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
   const [mustUpdateContact, setMustUpdateContact] = useState<boolean>(() => !readContactUpdated(readStoredUser()?.id))
 
   useEffect(() => {
-    if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
-    else window.localStorage.removeItem(STORAGE_KEY)
+    if (user) writeStorage(STORAGE_KEY, user)
+    else removeStorage(STORAGE_KEY)
   }, [user])
 
   const login = useCallback((next: ParticipantUser) => {
@@ -119,18 +133,11 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
   const changePassword = useCallback((newPassword: string) => {
     // Şifre localStorage'daki katılımcı kaydında güncellenir
     if (!user) return
-    try {
-      const raw = window.localStorage.getItem('hantech-participants')
-      if (raw) {
-        const participants = JSON.parse(raw) as Array<{ id: number; password?: string }>
-        const updated = participants.map((p) =>
-          p.id === user.id ? { ...p, password: newPassword } : p,
-        )
-        window.localStorage.setItem('hantech-participants', JSON.stringify(updated))
-      }
-    } catch {
-      // Hata durumunda devam et
-    }
+    const participants = readParticipants()
+    const updated = participants.map((p) =>
+      p.id === user.id ? { ...p, password: newPassword } : p,
+    )
+    saveParticipants(updated)
     window.localStorage.setItem(`${PWD_CHANGED_KEY}-${user.id}`, 'true')
     setMustChangePassword(false)
   }, [user])
@@ -139,18 +146,11 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
     if (!user) return
     const nextUser = { ...user, email, phone }
     setUser(nextUser)
-    try {
-      const raw = window.localStorage.getItem('hantech-participants')
-      if (raw) {
-        const participants = JSON.parse(raw) as Array<{ id: number; email?: string; phone?: string }>
-        const updated = participants.map((p) =>
-          p.id === user.id ? { ...p, email, phone } : p,
-        )
-        window.localStorage.setItem('hantech-participants', JSON.stringify(updated))
-      }
-    } catch {
-      // Hata durumunda devam et
-    }
+    const participants = readParticipants()
+    const updated = participants.map((p) =>
+      p.id === user.id ? { ...p, email, phone } : p,
+    )
+    saveParticipants(updated)
     window.localStorage.setItem(`${CONTACT_UPDATED_KEY}-${user.id}`, 'true')
     setMustUpdateContact(false)
   }, [user])

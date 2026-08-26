@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { readStorage, writeStorage } from '@/lib/storage'
 import { readParticipants, type Participant } from '@/features/participants/data/participants'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
 
@@ -16,6 +18,20 @@ export interface TrainingAssignment {
   requiresExpertApproval: boolean
   requiresDoctorApproval: boolean
 }
+
+const assignmentsSchema = z.array(z.object({
+  id: z.string(),
+  participantId: z.number(),
+  trainingId: z.string(),
+  trainingName: z.string(),
+  status: z.enum(['active', 'pending_approval', 'completed', 'expired']),
+  assignedDate: z.string(),
+  dueDate: z.string(),
+  progress: z.number(),
+  preTest: z.boolean(),
+  requiresExpertApproval: z.boolean(),
+  requiresDoctorApproval: z.boolean(),
+}))
 
 export interface ParticipantAssignmentSummary {
   participant: Participant
@@ -65,21 +81,12 @@ function generateAssignments(): TrainingAssignment[] {
 }
 
 export function readAssignments(): TrainingAssignment[] {
-  if (typeof window === 'undefined') return generateAssignments()
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    const parsed = stored ? JSON.parse(stored) : null
-    if (Array.isArray(parsed)) return parsed as TrainingAssignment[]
-    const generated = generateAssignments()
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(generated))
-    return generated
-  } catch {
-    return generateAssignments()
-  }
+  const generated = generateAssignments()
+  return readStorage(STORAGE_KEY, generated, assignmentsSchema)
 }
 
-export function saveAssignments(assignments: TrainingAssignment[]) {
-  if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
+export function saveAssignments(assignments: TrainingAssignment[]): boolean {
+  return writeStorage(STORAGE_KEY, assignments)
 }
 
 /** Atama oluşturma seçenekleri */

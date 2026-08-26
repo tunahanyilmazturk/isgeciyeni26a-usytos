@@ -70,7 +70,7 @@ export function ExpertsPage() {
   const [view, setView] = useState<ViewMode>('table')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
-  useEffect(() => saveExperts(experts), [experts])
+  useEffect(() => { saveExperts(experts) }, [experts])
 
   useEffect(() => {
     if (!isModalOpen) return

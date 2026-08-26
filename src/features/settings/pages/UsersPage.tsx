@@ -108,7 +108,7 @@ export function UsersPage() {
   const [view, setView] = useState<ViewMode>('table')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
 
-  useEffect(() => saveUsers(users), [users])
+  useEffect(() => { saveUsers(users) }, [users])
 
   const userForm = useForm<UserForm>({ resolver: zodResolver(userSchema), defaultValues: { firstName: '', lastName: '', username: '', email: '', phone: '', role: '', company: 'Çetka OSGB', permissions: [], password: '', passwordConfirmation: '' } })
   const roleForm = useForm<RoleForm>({ resolver: zodResolver(roleSchema), defaultValues: { name: '', description: '', permissions: [] } })

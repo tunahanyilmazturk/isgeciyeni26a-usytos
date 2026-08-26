@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { readStorage, writeStorage } from '@/lib/storage'
+
 export type UserStatus = 'active' | 'pending' | 'inactive'
 
 export interface User {
@@ -14,22 +17,28 @@ export interface User {
   status: UserStatus
 }
 
+const usersSchema = z.array(z.object({
+  id: z.number(),
+  firstName: z.string(),
+  lastName: z.string(),
+  username: z.string(),
+  email: z.string(),
+  phone: z.string().optional(),
+  role: z.string(),
+  company: z.string(),
+  permissions: z.array(z.string()).optional(),
+  lastLogin: z.string(),
+  status: z.enum(['active', 'pending', 'inactive']),
+}))
+
 export const USERS_STORAGE_KEY = 'hantech-users'
 
 export function readUsers(): User[] {
-  if (typeof window === 'undefined') return initialUsers
-  try {
-    const stored = window.localStorage.getItem(USERS_STORAGE_KEY)
-    const parsed = stored ? JSON.parse(stored) : null
-    return Array.isArray(parsed) ? (parsed as User[]) : initialUsers
-  } catch {
-    return initialUsers
-  }
+  return readStorage(USERS_STORAGE_KEY, initialUsers, usersSchema)
 }
 
-export function saveUsers(users: User[]) {
-  if (typeof window !== 'undefined')
-    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+export function saveUsers(users: User[]): boolean {
+  return writeStorage(USERS_STORAGE_KEY, users)
 }
 
 export const initialUsers: User[] = [

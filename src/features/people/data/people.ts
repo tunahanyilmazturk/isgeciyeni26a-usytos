@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { readStorage, writeStorage } from '@/lib/storage'
+
 export type ExpertTitle = 'A Sınıfı İş Güvenliği Uzmanı' | 'B Sınıfı İş Güvenliği Uzmanı' | 'C Sınıfı İş Güvenliği Uzmanı'
 
 export interface Expert {
@@ -12,6 +15,20 @@ export interface Expert {
   phone?: string
   status: 'active' | 'inactive'
 }
+
+const expertSchema = z.object({
+  id: z.number(),
+  firstName: z.string(),
+  lastName: z.string(),
+  title: z.enum(['A Sınıfı İş Güvenliği Uzmanı', 'B Sınıfı İş Güvenliği Uzmanı', 'C Sınıfı İş Güvenliği Uzmanı']),
+  certificateNumber: z.string(),
+  maxServiceDuration: z.number(),
+  usedServiceDuration: z.number(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  status: z.enum(['active', 'inactive']),
+})
+const expertsSchema = z.array(expertSchema)
 
 export type DoctorLevel = 'Asistan' | 'Dr.' | 'Prof.'
 
@@ -29,39 +46,38 @@ export interface Doctor {
   status: 'active' | 'inactive'
 }
 
+const doctorSchema = z.object({
+  id: z.number(),
+  doctorLevel: z.enum(['Asistan', 'Dr.', 'Prof.']),
+  firstName: z.string(),
+  lastName: z.string(),
+  title: z.literal('İşyeri Hekimi'),
+  certificateNumber: z.string(),
+  maxServiceDuration: z.number(),
+  usedServiceDuration: z.number(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  status: z.enum(['active', 'inactive']),
+})
+const doctorsSchema = z.array(doctorSchema)
+
 export const EXPERTS_STORAGE_KEY = 'hantech-experts'
 export const DOCTORS_STORAGE_KEY = 'hantech-doctors'
 
 export function readExperts(): Expert[] {
-  if (typeof window === 'undefined') return initialExperts
-  try {
-    const stored = window.localStorage.getItem(EXPERTS_STORAGE_KEY)
-    const parsed = stored ? JSON.parse(stored) : null
-    return Array.isArray(parsed) ? (parsed as Expert[]) : initialExperts
-  } catch {
-    return initialExperts
-  }
+  return readStorage(EXPERTS_STORAGE_KEY, initialExperts, expertsSchema)
 }
 
-export function saveExperts(experts: Expert[]) {
-  if (typeof window !== 'undefined')
-    window.localStorage.setItem(EXPERTS_STORAGE_KEY, JSON.stringify(experts))
+export function saveExperts(experts: Expert[]): boolean {
+  return writeStorage(EXPERTS_STORAGE_KEY, experts)
 }
 
 export function readDoctors(): Doctor[] {
-  if (typeof window === 'undefined') return initialDoctors
-  try {
-    const stored = window.localStorage.getItem(DOCTORS_STORAGE_KEY)
-    const parsed = stored ? JSON.parse(stored) : null
-    return Array.isArray(parsed) ? (parsed as Doctor[]) : initialDoctors
-  } catch {
-    return initialDoctors
-  }
+  return readStorage(DOCTORS_STORAGE_KEY, initialDoctors, doctorsSchema)
 }
 
-export function saveDoctors(doctors: Doctor[]) {
-  if (typeof window !== 'undefined')
-    window.localStorage.setItem(DOCTORS_STORAGE_KEY, JSON.stringify(doctors))
+export function saveDoctors(doctors: Doctor[]): boolean {
+  return writeStorage(DOCTORS_STORAGE_KEY, doctors)
 }
 
 export const initialExperts: Expert[] = [

@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { z } from 'zod'
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage'
 
 export interface AuthUser {
   name: string
@@ -16,23 +18,23 @@ interface AuthState {
 }
 
 const STORAGE_KEY = 'hantech-auth'
+const authUserSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+  company: z.string(),
+  initials: z.string(),
+})
 
 const AuthContext = createContext<AuthState | null>(null)
 
 function readStoredUser(): AuthUser | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as AuthUser) : null
-  } catch {
-    return null
-  }
+  return readStorage(STORAGE_KEY, null, z.union([authUserSchema, z.null()]))
 }
 
 function persistUser(user: AuthUser | null) {
-  if (typeof window === 'undefined') return
-  if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
-  else window.localStorage.removeItem(STORAGE_KEY)
+  if (user) writeStorage(STORAGE_KEY, user)
+  else removeStorage(STORAGE_KEY)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
