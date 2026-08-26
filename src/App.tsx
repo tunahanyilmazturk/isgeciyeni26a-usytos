@@ -140,7 +140,7 @@ function ProtectedRoutes() {
 }
 
 function ParticipantRoutes() {
-  const { isAuthenticated, kvkkApproved, mustChangePassword } = useParticipantAuth()
+  const { isAuthenticated, kvkkApproved, mustChangePassword, mustUpdateContact } = useParticipantAuth()
 
   if (!isAuthenticated) {
     return <Navigate to="/giris" replace />
@@ -150,7 +150,7 @@ function ParticipantRoutes() {
     return <KvkkApprovalPage />
   }
 
-  if (mustChangePassword) {
+  if (mustChangePassword || mustUpdateContact) {
     return <PasswordChangePage />
   }
 

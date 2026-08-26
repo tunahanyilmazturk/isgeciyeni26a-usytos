@@ -35,9 +35,9 @@ type ContactForm = z.infer<typeof contactSchema>
 
 export function PasswordChangePage() {
   const navigate = useNavigate()
-  const { user, changePassword, updateContact } = useParticipantAuth()
+  const { user, changePassword, updateContact, mustChangePassword } = useParticipantAuth()
   const [submitting, setSubmitting] = useState(false)
-  const [step, setStep] = useState<'password' | 'contact'>('password')
+  const [step, setStep] = useState<'password' | 'contact'>(mustChangePassword ? 'password' : 'contact')
 
   const passwordForm = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
@@ -73,15 +73,6 @@ export function PasswordChangePage() {
       })
       navigate('/katilimci', { replace: true })
     }, 600)
-  }
-
-  function skipContact() {
-    setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
-      toast.success('Eğitim panelinize yönlendiriliyorsunuz…')
-      navigate('/katilimci', { replace: true })
-    }, 400)
   }
 
   return (
@@ -242,15 +233,6 @@ export function PasswordChangePage() {
                   >
                     {submitting ? 'Kaydediliyor…' : 'Bilgileri kaydet ve devam et'}
                   </Button>
-
-                  <button
-                    type="button"
-                    onClick={skipContact}
-                    disabled={submitting}
-                    className="w-full text-center text-xs font-medium text-ink-400 transition-colors hover:text-ink-600"
-                  >
-                    Şimdi geç, sonra tamamla
-                  </button>
                 </form>
               </section>
             </>

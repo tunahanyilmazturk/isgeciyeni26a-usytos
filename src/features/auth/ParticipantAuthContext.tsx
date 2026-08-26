@@ -22,6 +22,7 @@ interface ParticipantAuthState {
   isAuthenticated: boolean
   kvkkApproved: boolean
   mustChangePassword: boolean
+  mustUpdateContact: boolean
   login: (user: ParticipantUser) => void
   logout: () => void
   approveKvkk: () => void
@@ -32,6 +33,7 @@ interface ParticipantAuthState {
 const STORAGE_KEY = 'hantech-participant-auth'
 const KVKK_KEY = 'hantech-participant-kvkk'
 const PWD_CHANGED_KEY = 'hantech-participant-pwd-changed'
+const CONTACT_UPDATED_KEY = 'hantech-participant-contact-updated'
 
 const ParticipantAuthContext = createContext<ParticipantAuthState | null>(null)
 
@@ -69,10 +71,23 @@ function readPwdChanged(userId?: number): boolean {
   }
 }
 
+function readContactUpdated(userId?: number): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (userId !== undefined) {
+      return window.localStorage.getItem(`${CONTACT_UPDATED_KEY}-${userId}`) === 'true'
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ParticipantUser | null>(() => readStoredUser())
   const [kvkkApproved, setKvkkApproved] = useState<boolean>(() => readKvkkApproved(readStoredUser()?.id))
   const [mustChangePassword, setMustChangePassword] = useState<boolean>(() => !readPwdChanged(readStoredUser()?.id))
+  const [mustUpdateContact, setMustUpdateContact] = useState<boolean>(() => !readContactUpdated(readStoredUser()?.id))
 
   useEffect(() => {
     if (user) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
@@ -85,12 +100,15 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
     setKvkkApproved(kvkk)
     // Şifre değişikliği yapılmadıysa zorunlu
     setMustChangePassword(!readPwdChanged(next.id))
+    // İletişim bilgileri girilmediyse zorunlu
+    setMustUpdateContact(!readContactUpdated(next.id))
   }, [])
 
   const logout = useCallback(() => {
     setUser(null)
     setKvkkApproved(false)
     setMustChangePassword(false)
+    setMustUpdateContact(false)
   }, [])
 
   const approveKvkk = useCallback(() => {
@@ -133,11 +151,13 @@ export function ParticipantAuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Hata durumunda devam et
     }
+    window.localStorage.setItem(`${CONTACT_UPDATED_KEY}-${user.id}`, 'true')
+    setMustUpdateContact(false)
   }, [user])
 
   const value = useMemo<ParticipantAuthState>(
-    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword, updateContact }),
-    [user, kvkkApproved, mustChangePassword, login, logout, approveKvkk, changePassword, updateContact],
+    () => ({ user, isAuthenticated: Boolean(user), kvkkApproved, mustChangePassword, mustUpdateContact, login, logout, approveKvkk, changePassword, updateContact }),
+    [user, kvkkApproved, mustChangePassword, mustUpdateContact, login, logout, approveKvkk, changePassword, updateContact],
   )
 
   return <ParticipantAuthContext.Provider value={value}>{children}</ParticipantAuthContext.Provider>
