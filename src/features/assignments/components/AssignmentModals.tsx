@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from '@/components/ui'
+import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { readParticipants, type Participant } from '@/features/participants/data/participants'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
@@ -435,6 +435,14 @@ export function BulkAssignmentModal({
   const [companyFilter, setCompanyFilter] = useState('all')
   const [participantSearch, setParticipantSearch] = useState('')
 
+  const companyFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Tüm firmalar' },
+      ...companies.map((c) => ({ value: c, label: c })),
+    ],
+    [companies],
+  )
+
   useEffect(() => {
     if (preselectedParticipantIds) setSelectedParticipantIds(preselectedParticipantIds)
   }, [preselectedParticipantIds])
@@ -530,14 +538,16 @@ export function BulkAssignmentModal({
                         className="h-9 w-full rounded-lg border border-ink-200 bg-white pl-8 pr-3 text-xs text-ink-800 outline-none focus:border-brand-500"
                       />
                     </div>
-                    <select
+                    <SearchableSelect
+                      size="sm"
+                      options={companyFilterOptions}
                       value={companyFilter}
-                      onChange={(e) => setCompanyFilter(e.target.value)}
-                      className="h-9 shrink-0 rounded-lg border border-ink-200 bg-white px-2 text-xs font-medium text-ink-700 outline-none focus:border-brand-500"
-                    >
-                      <option value="all">Tüm firmalar</option>
-                      {companies.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                      onChange={setCompanyFilter}
+                      placeholder="Firma seçin…"
+                      searchPlaceholder="Firma ara…"
+                      emptyText="Firma bulunamadı."
+                      className="w-44 shrink-0"
+                    />
                   </div>
 
                   <button

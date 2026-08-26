@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Button } from '@/components/ui'
+import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { readCustomers } from '@/features/customers/data/customers'
 import { type Participant } from '../data/participants'
@@ -45,6 +45,11 @@ export function BulkParticipantModal({
 }) {
   const [rows, setRows] = useState<BulkParticipantRow[]>(() =>
     Array.from({ length: 5 }, (_, i) => emptyRow(`row-${Date.now()}-${i}`, defaultCompany)),
+  )
+
+  const companyOptions = useMemo(
+    () => companies.map((c) => ({ value: c, label: c })),
+    [companies],
   )
 
   // ESC ile kapatma
@@ -248,13 +253,15 @@ export function BulkParticipantModal({
                       />
                     </td>
                     <td className="px-2 py-1.5">
-                      <select
+                      <SearchableSelect
+                        size="sm"
+                        options={companyOptions}
                         value={row.company}
-                        onChange={(e) => updateRow(row.key, 'company', e.target.value)}
-                        className="h-9 w-full rounded-lg border border-ink-200 bg-white px-2 text-xs font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-                      >
-                        {companies.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                        onChange={(value) => updateRow(row.key, 'company', value)}
+                        placeholder="Firma seçin…"
+                        searchPlaceholder="Firma ara…"
+                        emptyText="Firma bulunamadı."
+                      />
                     </td>
                     <td className="px-2 py-1.5">
                       <input

@@ -3,15 +3,13 @@ import {
   ChevronDown,
   Info,
   KeyRound,
-  Search,
   UserPlus,
   Users,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Button, Input } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Button, Input, SearchableSelect } from '@/components/ui'
 import { readCustomers } from '@/features/customers/data/customers'
 import { saveParticipants, readParticipants, type Participant, type ParticipantStatus } from '../data/participants'
 
@@ -29,107 +27,6 @@ const DEFAULT_PASSWORD = '123456'
 
 const initialForm: ParticipantForm = {
   company: '', name: '', jobTitle: '', username: '', tcNumber: '', status: 'active', password: DEFAULT_PASSWORD,
-}
-
-/** Arama özellikli firma seçici — combobox */
-function SearchableCompanySelect({
-  companies,
-  value,
-  onChange,
-}: {
-  companies: Array<{ id: number; name: string; riskLevel: string }>
-  value: string
-  onChange: (value: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // Dışarıya tıklayınca kapat
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase('tr-TR')
-    if (!q) return companies
-    return companies.filter((c) => c.name.toLocaleLowerCase('tr-TR').includes(q))
-  }, [companies, query])
-
-  function selectCompany(name: string) {
-    onChange(name)
-    setOpen(false)
-    setQuery('')
-  }
-
-  return (
-    <div ref={containerRef} className="relative">
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Alt firma<span className="ml-1 text-brand-600">*</span></span>
-
-      {/* Trigger — seçili firma veya placeholder */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'flex h-12 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 text-sm outline-none transition-all hover:border-ink-300',
-          open ? 'border-brand-500 ring-4 ring-brand-500/10' : 'border-ink-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10',
-        )}
-      >
-        <span className={cn('truncate', value ? 'text-ink-900' : 'text-ink-300')}>
-          {value || 'Seçiniz…'}
-        </span>
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-ink-400 transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl shadow-ink-900/10">
-          {/* Arama input */}
-          <div className="relative border-b border-ink-100 p-2">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" strokeWidth={1.7} />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Firma ara…"
-              autoFocus
-              className="h-9 w-full rounded-lg border border-ink-200 bg-ink-50/40 pl-9 pr-3 text-sm text-ink-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-            />
-          </div>
-
-          {/* Liste */}
-          <div className="max-h-[200px] overflow-y-auto py-1">
-            {filtered.length > 0 ? (
-              filtered.map((company) => (
-                <button
-                  key={company.id}
-                  type="button"
-                  onClick={() => selectCompany(company.name)}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-brand-50/50',
-                    value === company.name ? 'bg-brand-50/70 font-semibold text-brand-700' : 'text-ink-700',
-                  )}
-                >
-                  <span className="truncate">{company.name}</span>
-                  <span className="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-medium text-ink-500">{company.riskLevel}</span>
-                </button>
-              ))
-            ) : (
-              <div className="px-3.5 py-6 text-center text-xs text-ink-400">
-                "{query}" ile eşleşen firma bulunamadı.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 /** Tekil katılımcı ekleme modal'ı — tüm alanlar tek ekranda */
@@ -269,11 +166,17 @@ export function SingleParticipantModal({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {/* Alt firma — arama özellikli */}
-                  <SearchableCompanySelect
-                    companies={companies}
-                    value={form.company}
-                    onChange={(value) => updateField('company', value)}
-                  />
+                  <div>
+                    <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Alt firma<span className="ml-1 text-brand-600">*</span></span>
+                    <SearchableSelect
+                      options={companies.map((company) => ({ value: company.name, label: company.name, hint: company.riskLevel }))}
+                      value={form.company}
+                      onChange={(value) => updateField('company', value)}
+                      placeholder="Seçiniz…"
+                      searchPlaceholder="Firma ara…"
+                      emptyText="Firma bulunamadı."
+                    />
+                  </div>
 
                   {/* Ad soyad */}
                   <Input
