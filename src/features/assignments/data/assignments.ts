@@ -76,6 +76,32 @@ export function saveAssignments(assignments: TrainingAssignment[]) {
   if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
 }
 
+/** Bir katılımcıya yeni eğitim ataması ekler */
+export function addAssignment(participantId: number, trainingId: string, dueDate: string): TrainingAssignment {
+  const assignments = readAssignments()
+  const training = trainingCatalog.find((t) => t.id === trainingId)
+  const newAssignment: TrainingAssignment = {
+    id: `A-${1000 + assignments.length + 1}`,
+    participantId,
+    trainingId,
+    trainingName: training?.name ?? 'Bilinmeyen eğitim',
+    status: 'active',
+    assignedDate: new Date().toLocaleDateString('tr-TR'),
+    dueDate,
+    progress: 0,
+  }
+  const updated = [...assignments, newAssignment]
+  saveAssignments(updated)
+  return newAssignment
+}
+
+/** Bir atamayı kaldırır */
+export function removeAssignment(assignmentId: string): void {
+  const assignments = readAssignments()
+  const updated = assignments.filter((a) => a.id !== assignmentId)
+  saveAssignments(updated)
+}
+
 /** Tüm katılımcıların atama özetini üretir */
 export function getParticipantAssignmentSummaries(): ParticipantAssignmentSummary[] {
   const participants = readParticipants()

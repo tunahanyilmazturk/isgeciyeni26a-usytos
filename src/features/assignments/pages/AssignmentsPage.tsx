@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowRight,
   CalendarClock,
@@ -10,19 +10,28 @@ import {
   FileText,
   Layers3,
   Pencil,
+  Plus,
   Search,
   SlidersHorizontal,
+  Trash2,
   Users,
+  X,
   XCircle,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { readParticipants, type Participant } from '@/features/participants/data/participants'
+import { trainingCatalog } from '@/features/trainings/data/trainings'
 import {
+  addAssignment,
   getParticipantAssignmentSummaries,
   getActiveTrainingCount,
+  readAssignments,
+  removeAssignment,
   type ParticipantAssignmentSummary,
+  type TrainingAssignment,
 } from '../data/assignments'
 
 type AssignmentFilter = 'all' | 'assigned' | 'unassigned'
@@ -38,9 +47,10 @@ export function AssignmentsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [drawerParticipant, setDrawerParticipant] = useState<Participant | null | undefined>(undefined)
 
-  const allSummaries = useMemo(() => getParticipantAssignmentSummaries(), [])
-  const activeTrainingCount = useMemo(() => getActiveTrainingCount(), [])
+  const [allSummaries, setAllSummaries] = useState<ParticipantAssignmentSummary[]>(() => getParticipantAssignmentSummaries())
+  const [activeTrainingCount, setActiveTrainingCount] = useState(() => getActiveTrainingCount())
   const companies = useMemo(
     () => [...new Set(allSummaries.map((s) => s.participant.company))].sort((a, b) => a.localeCompare(b, 'tr')),
     [allSummaries],
@@ -88,9 +98,37 @@ export function AssignmentsPage() {
     })
   }
 
+  function refreshData() {
+    setAllSummaries(getParticipantAssignmentSummaries())
+    setActiveTrainingCount(getActiveTrainingCount())
+  }
+
+  const openDrawer = useCallback((participant: Participant | null) => {
+    setDrawerParticipant(participant)
+  }, [])
+
+  const closeDrawer = useCallback(() => {
+    setDrawerParticipant(null)
+  }, [])
+
   function handleEditAssignment(summary: ParticipantAssignmentSummary) {
-    toast.info(`${summary.participant.name} için atama düzenleme ekranı açılacak.`, {
-      description: `${summary.activeCount} aktif, ${summary.pendingCount} onay bekleyen atama.`,
+    openDrawer(summary.participant)
+  }
+
+  function handleAddAssignment(participantId: number, trainingId: string, dueDate: string) {
+    addAssignment(participantId, trainingId, dueDate)
+    refreshData()
+    const training = trainingCatalog.find((t) => t.id === trainingId)
+    toast.success('Eğitim atandı', {
+      description: `${training?.name ?? 'Eğitim'} başarıyla atandı.`,
+    })
+  }
+
+  function handleRemoveAssignment(assignmentId: string, trainingName: string) {
+    removeAssignment(assignmentId)
+    refreshData()
+    toast.info('Atama kaldırıldı', {
+      description: `${trainingName} ataması kaldırıldı.`,
     })
   }
 
@@ -107,7 +145,8 @@ export function AssignmentsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" leftIcon={<CalendarClock className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.info('Atama takvimi hazırlanacak.')}>Takvim görünümü</Button>
-          <Button size="md" leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />} onClick={handleBulkAssign}>Toplu eğitim atama</Button>
+          <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => openDrawer(null)}>Eğitim ata</Button>
+          <Button variant="outline" size="md" leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />} onClick={handleBulkAssign}>Toplu atama</Button>
         </div>
       </motion.div>
 
@@ -327,6 +366,18 @@ export function AssignmentsPage() {
           itemName="katılımcı"
         />
       </motion.section>
+
+      {/* Bireysel atama drawer'ı */}
+      <AnimatePresence>
+        {drawerParticipant !== undefined && (
+          <AssignmentDrawer
+            participant={drawerParticipant}
+            onClose={closeDrawer}
+            onAddAssignment={handleAddAssignment}
+            onRemoveAssignment={handleRemoveAssignment}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -348,5 +399,224 @@ function CountBadge({ count, variant }: { count: number; variant: 'active' | 'pe
       {count > 0 && icons[variant]}
       {count}
     </span>
+  )
+}
+
+/** Atama durumu etiketleri ve renkleri */
+const assignmentStatusLabels: Record<TrainingAssignment['status'], string> = {
+  active: 'Yürürlükte',
+  pending_approval: 'Onay bekliyor',
+  completed: 'Tamamlandı',
+  expired: 'Süresi doldu',
+}
+
+const assignmentStatusClasses: Record<TrainingAssignment['status'], string> = {
+  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  pending_approval: 'border-amber-200 bg-amber-50 text-amber-700',
+  completed: 'border-brand-200 bg-brand-50 text-brand-700',
+  expired: 'border-rose-200 bg-rose-50 text-rose-700',
+}
+
+/** Bireysel eğitim atama drawer'ı — katılımcı seçimi, mevcut atamalar, yeni atama ekleme */
+function AssignmentDrawer({
+  participant,
+  onClose,
+  onAddAssignment,
+  onRemoveAssignment,
+}: {
+  participant: Participant | null
+  onClose: () => void
+  onAddAssignment: (participantId: number, trainingId: string, dueDate: string) => void
+  onRemoveAssignment: (assignmentId: string, trainingName: string) => void
+}) {
+  const allParticipants = useMemo(() => readParticipants(), [])
+  const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(participant?.id ?? null)
+  const [selectedTrainingId, setSelectedTrainingId] = useState('')
+  const [dueDate, setDueDate] = useState('')
+
+  // Drawer açıldığında participant değişirse güncelle
+  useEffect(() => {
+    setSelectedParticipantId(participant?.id ?? null)
+    setSelectedTrainingId('')
+    setDueDate('')
+  }, [participant])
+
+  const selectedParticipant = allParticipants.find((p) => p.id === selectedParticipantId) ?? null
+  const participantAssignments = useMemo(() => {
+    if (!selectedParticipantId) return []
+    return readAssignments().filter((a) => a.participantId === selectedParticipantId)
+  }, [selectedParticipantId, onAddAssignment, onRemoveAssignment])
+
+  // Katılımcının halihazırda atalı eğitimleri — tekrar atamayı önle
+  const assignedTrainingIds = new Set(participantAssignments.map((a) => a.trainingId))
+  const availableTrainings = trainingCatalog.filter((t) => !assignedTrainingIds.has(t.id))
+
+  const canSubmit = selectedParticipantId !== null && selectedTrainingId && dueDate
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!canSubmit || !selectedParticipantId) return
+    onAddAssignment(selectedParticipantId, selectedTrainingId, dueDate)
+    setSelectedTrainingId('')
+    setDueDate('')
+  }
+
+  return (
+    <>
+      {/* Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-ink-900/20 backdrop-blur-[2px]"
+        role="presentation"
+        onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}
+      />
+
+      {/* Drawer */}
+      <motion.aside
+        initial={{ opacity: 0, x: 32 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 32 }}
+        className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-ink-200 bg-white shadow-[-20px_0_60px_-28px_rgba(17,24,39,0.32)]"
+      >
+        {/* Header */}
+        <div className="border-b border-ink-100 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
+                <ClipboardCheck className="h-5 w-5" strokeWidth={1.8} />
+              </span>
+              <div>
+                <h2 className="text-base font-bold text-ink-900">Eğitim ataması</h2>
+                <p className="mt-1 text-xs text-ink-500">
+                  {participant ? `${participant.name} için atama yönetin` : 'Katılımcı seçip eğitim atayın'}
+                </p>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-xl p-2 text-ink-400 hover:bg-ink-100" aria-label="Kapat">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* İçerik */}
+        <div className="flex-1 space-y-6 p-6">
+          {/* Katılımcı seçimi — participant null ise seçilebilir, değilse sabit */}
+          <div>
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Katılımcı</label>
+            {participant ? (
+              <div className="flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50/50 p-3.5">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-brand-100">
+                  {initials(participant.name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink-800">{participant.name}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-ink-400">{participant.username} · {participant.company}</p>
+                </div>
+              </div>
+            ) : (
+              <select
+                value={selectedParticipantId ?? ''}
+                onChange={(e) => setSelectedParticipantId(e.target.value ? Number(e.target.value) : null)}
+                className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
+              >
+                <option value="">Katılımcı seçin…</option>
+                {allParticipants.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.company}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Mevcut atamalar */}
+          {selectedParticipant && (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-ink-400">Mevcut atamalar</h3>
+                <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-bold text-ink-600">{participantAssignments.length}</span>
+              </div>
+              {participantAssignments.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/30 px-4 py-6 text-center">
+                  <p className="text-xs text-ink-400">Bu katılımcıya henüz eğitim atanmamış.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {participantAssignments.map((assignment) => (
+                    <div key={assignment.id} className="flex items-center justify-between gap-3 rounded-xl border border-ink-200 bg-white p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink-800">{assignment.trainingName}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[assignment.status])}>
+                            {assignmentStatusLabels[assignment.status]}
+                          </span>
+                          <span className="text-[11px] text-ink-400">Son: {assignment.dueDate}</span>
+                          {assignment.progress > 0 && assignment.progress < 100 && (
+                            <span className="text-[11px] text-ink-400">· %{assignment.progress}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveAssignment(assignment.id, assignment.trainingName)}
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        aria-label="Atamayı kaldır"
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={1.7} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Yeni atama formu */}
+          {selectedParticipant && (
+            <form onSubmit={handleSubmit} className="space-y-4 border-t border-ink-100 pt-5">
+              <div>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-400">Yeni eğitim ata</h3>
+              </div>
+
+              {availableTrainings.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-ink-200 bg-ink-50/30 px-4 py-6 text-center">
+                  <p className="text-xs text-ink-400">Tüm eğitimler bu katılımcıya zaten atanmış.</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Eğitim</label>
+                    <select
+                      value={selectedTrainingId}
+                      onChange={(e) => setSelectedTrainingId(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
+                    >
+                      <option value="">Eğitim seçin…</option>
+                      {availableTrainings.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Son tarih</label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <Button type="submit" size="md" disabled={!canSubmit} leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} className="w-full">
+                    Eğitimi ata
+                  </Button>
+                </>
+              )}
+            </form>
+          )}
+        </div>
+      </motion.aside>
+    </>
   )
 }
