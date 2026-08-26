@@ -231,8 +231,12 @@ export type ParticipantListExportRow = {
   name: string
   username: string
   email: string
+  phone: string
+  tcNumber: string
   company: string
+  department: string
   riskLevel: string
+  trainingMinutes: number
   progress: number
   trainingStatus: string
   lastCompletion: string
@@ -241,25 +245,49 @@ export type ParticipantListExportRow = {
   lastLogin: string
 }
 
+const trainingStatusLabels: Record<string, string> = {
+  not_started: 'Başlamadı',
+  in_progress: 'Devam ediyor',
+  failed: 'Başarısız',
+  successful: 'Başarılı',
+}
+
+const participantStatusLabels: Record<string, string> = {
+  active: 'Aktif',
+  passive: 'Pasif',
+}
+
+function formatTrainingMinutes(value: number) {
+  if (!value) return '0 dk'
+  const hours = Math.floor(value / 60)
+  const minutes = value % 60
+  return hours ? `${hours} sa ${minutes} dk` : `${minutes} dk`
+}
+
 export function downloadParticipantList(rows: readonly ParticipantListExportRow[]) {
   const worksheet = XLSX.utils.json_to_sheet(rows.map((row) => ({
-    'Katılımcı': row.name,
+    'Ad Soyad': row.name,
     'Kullanıcı adı': row.username,
     'E-posta': row.email,
+    'Telefon': row.phone,
+    'TC Kimlik No': row.tcNumber,
     'Müşteri': row.company,
+    'Departman': row.department,
     'Tehlike sınıfı': row.riskLevel,
+    'Eğitim süresi': formatTrainingMinutes(row.trainingMinutes),
     'Eğitim ilerlemesi': `%${row.progress}`,
-    'Eğitim durumu': row.trainingStatus,
+    'Eğitim durumu': trainingStatusLabels[row.trainingStatus] ?? row.trainingStatus,
     'Son eğitim tamamlama': row.lastCompletion,
     'Sonraki eğitim tarihi': row.nextTraining,
-    Durum: row.status,
+    'Durum': participantStatusLabels[row.status] ?? row.status,
     'Son giriş': row.lastLogin,
   })))
   worksheet['!cols'] = [
-    { wch: 26 }, { wch: 28 }, { wch: 34 }, { wch: 24 }, { wch: 18 }, { wch: 18 },
-    { wch: 18 }, { wch: 24 }, { wch: 24 }, { wch: 12 }, { wch: 22 },
+    { wch: 26 }, { wch: 18 }, { wch: 30 }, { wch: 16 }, { wch: 16 }, { wch: 24 },
+    { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 22 },
+    { wch: 22 }, { wch: 12 }, { wch: 22 },
   ]
-  worksheet['!autofilter'] = { ref: `A1:K${rows.length + 1}` }
+  worksheet['!autofilter'] = { ref: `A1:O${rows.length + 1}` }
   worksheet['!freeze'] = { ySplit: 1 }
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Katılımcılar')
