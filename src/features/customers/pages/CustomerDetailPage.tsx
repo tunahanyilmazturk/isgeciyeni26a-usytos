@@ -27,7 +27,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { downloadParticipantLoginList } from '@/lib/excel'
+import { downloadParticipantLoginList } from '@/features/participants/lib/excel'
 import { readCustomerById, type Customer } from '../data/customers'
 
 type CompanyDetails = Customer

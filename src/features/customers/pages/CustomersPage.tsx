@@ -25,7 +25,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Input, Pagination, ViewToggle, type ViewMode, BulkActionBar, paginate, getPaginationIndices } from '@/components/ui'
-import { downloadCustomerList } from '@/lib/excel'
+import { downloadCustomerList } from '../lib/excel'
 import { cn } from '@/lib/utils'
 import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus } from '../data/customers'
 

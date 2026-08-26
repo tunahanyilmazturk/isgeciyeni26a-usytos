@@ -21,7 +21,7 @@ import { useRef, useState, type DragEvent, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
-import { downloadCustomerTemplate, parseIsgWorkbook, type ImportedCustomerRow, type IsgImportSummary } from '@/lib/excel'
+import { downloadCustomerTemplate, parseIsgWorkbook, type ImportedCustomerRow, type IsgImportSummary } from '../lib/excel'
 import { cn } from '@/lib/utils'
 
 type ImportStage = 'idle' | 'ready' | 'validating' | 'validated' | 'importing' | 'complete'
