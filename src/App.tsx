@@ -76,9 +76,6 @@ const VideoPage = lazy(() =>
 const SupportRequestPage = lazy(() =>
   import('./features/support').then((m) => ({ default: m.SupportRequestPage })),
 )
-const ParticipantLoginPage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.ParticipantLoginPage })),
-)
 const KvkkApprovalPage = lazy(() =>
   import('./features/auth').then((m) => ({ default: m.KvkkApprovalPage })),
 )
@@ -146,7 +143,7 @@ function ParticipantRoutes() {
   const { isAuthenticated, kvkkApproved, mustChangePassword } = useParticipantAuth()
 
   if (!isAuthenticated) {
-    return <Navigate to="/katilimci/giris" replace />
+    return <Navigate to="/giris" replace />
   }
 
   if (!kvkkApproved) {
@@ -185,7 +182,7 @@ export default function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/giris" element={<LoginPage />} />
           <Route path="/dashboard/*" element={<ProtectedRoutes />} />
-          <Route path="/katilimci/giris" element={<ParticipantLoginPage />} />
+          <Route path="/katilimci/giris" element={<Navigate to="/giris" replace />} />
           <Route path="/katilimci/*" element={<ParticipantRoutes />} />
         </Routes>
       </ParticipantAuthProvider>

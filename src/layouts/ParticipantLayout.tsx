@@ -47,7 +47,7 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
   function handleLogout() {
     logout()
     toast.info('Oturum kapatıldı', { description: 'Güvenle çıkış yaptınız.' })
-    navigate('/katilimci/giris', { replace: true })
+    navigate('/giris', { replace: true })
   }
 
   return (

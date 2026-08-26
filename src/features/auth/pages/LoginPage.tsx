@@ -13,13 +13,15 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
+import { readParticipants } from '@/features/participants/data/participants'
 import { useAuth, type AuthUser } from '../AuthContext'
+import { useParticipantAuth, type ParticipantUser } from '../ParticipantAuthContext'
 
-const DEMO_USER: AuthUser = {
+const DEMO_ADMIN: AuthUser = {
   name: 'Savaş Akay',
   email: 'demo@hantech.com',
   role: 'Yönetici',
@@ -30,15 +32,16 @@ const DEMO_USER: AuthUser = {
 const loginSchema = z.object({
   login: z
     .string()
-    .min(1, 'E-posta veya TC Kimlik No gerekli.')
+    .min(1, 'E-posta, TC Kimlik No veya kullanıcı adı gerekli.')
     .refine((value) => {
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
       const isTc = /^\d{11}$/.test(value)
-      return isEmail || isTc
-    }, 'Geçerli bir e-posta veya 11 haneli TC girin.'),
+      const isUsername = /^[a-zA-Z0-9._-]{3,}$/.test(value)
+      return isEmail || isTc || isUsername
+    }, 'Geçerli bir e-posta, 11 haneli TC veya kullanıcı adı girin.'),
   password: z
     .string()
-    .min(6, 'Şifre en az 6 karakter olmalı.')
+    .min(1, 'Şifre gerekli.')
     .max(64, 'Şifre çok uzun.'),
   remember: z.boolean(),
 })
@@ -48,7 +51,8 @@ type LoginForm = z.infer<typeof loginSchema>
 export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login: adminLogin } = useAuth()
+  const { login: participantLogin } = useParticipantAuth()
 
   const {
     register,
@@ -60,26 +64,108 @@ export function LoginPage() {
     defaultValues: { login: '', password: '', remember: false },
   })
 
-  function fillDemo() {
+  function fillDemoAdmin() {
     setValue('login', 'demo@hantech.com', { shouldValidate: true })
     setValue('password', 'demo1234', { shouldValidate: true })
     setValue('remember', true)
-    toast.info('Demo hesap bilgileri dolduruldu', {
+    toast.info('Demo yönetici bilgileri dolduruldu', {
       description: 'Giriş yap butonuna basabilirsiniz.',
     })
   }
 
-  function onSubmit(_data: LoginForm) {
-    setSubmitting(true)
-    // TODO: backend bağlanınca API çağrısı buraya
-    setTimeout(() => {
-      login(DEMO_USER)
-      setSubmitting(false)
-      toast.success('Giriş başarılı', {
-        description: 'Yönetim paneline yönlendiriliyorsunuz…',
+  function fillDemoParticipant() {
+    const participants = readParticipants()
+    if (participants.length === 0) {
+      toast.error('Demo katılımcı bulunamadı', {
+        description: 'Önce yönetim panelinden bir katılımcı oluşturun.',
       })
-      navigate('/dashboard')
-    }, 1400)
+      return
+    }
+    const first = participants.find((p) => p.status === 'active') ?? participants[0]
+    setValue('login', first.username, { shouldValidate: true })
+    setValue('password', first.password ?? 'demo1234', { shouldValidate: true })
+    toast.info('Demo katılımcı bilgileri dolduruldu', {
+      description: `${first.name} (${first.company})`,
+    })
+  }
+
+  function onSubmit(data: LoginForm) {
+    setSubmitting(true)
+
+    setTimeout(() => {
+      const loginValue = data.login.trim()
+
+      // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı eşleşmesi)
+      const participants = readParticipants()
+      const foundParticipant = participants.find((p) => p.username === loginValue)
+
+      if (foundParticipant) {
+        // Katılımcı bulundu — katılımcı girişi
+        if (foundParticipant.status !== 'active') {
+          setSubmitting(false)
+          toast.error('Hesap pasif', {
+            description: 'Hesabınız pasif durumda. Yöneticinizle iletişime geçin.',
+          })
+          return
+        }
+        if (foundParticipant.password && foundParticipant.password !== data.password) {
+          setSubmitting(false)
+          toast.error('Giriş başarısız', {
+            description: 'Şifre hatalı.',
+          })
+          return
+        }
+
+        const participantUser: ParticipantUser = {
+          id: foundParticipant.id,
+          name: foundParticipant.name,
+          username: foundParticipant.username,
+          email: foundParticipant.email,
+          phone: foundParticipant.phone,
+          company: foundParticipant.company,
+          department: foundParticipant.department,
+          riskLevel: foundParticipant.riskLevel,
+          trainingStatus: foundParticipant.trainingStatus,
+          progress: foundParticipant.progress,
+          trainingMinutes: foundParticipant.trainingMinutes,
+          lastCompletion: foundParticipant.lastCompletion,
+          nextTraining: foundParticipant.nextTraining,
+          lastLogin: new Date().toLocaleDateString('tr-TR') + ', ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        }
+        participantLogin(participantUser)
+        setSubmitting(false)
+        toast.success('Giriş başarılı', {
+          description: 'Eğitim panelinize yönlendiriliyorsunuz…',
+        })
+        navigate('/katilimci')
+        return
+      }
+
+      // 2) Yönetici girişi (demo — backend bağlanınca API çağrısı buraya)
+      // Şimdilik demo yönetici hesabını kabul ediyoruz
+      if (loginValue === DEMO_ADMIN.email || loginValue === 'demo@hantech.com') {
+        if (data.password !== 'demo1234') {
+          setSubmitting(false)
+          toast.error('Giriş başarısız', {
+            description: 'Şifre hatalı.',
+          })
+          return
+        }
+        adminLogin(DEMO_ADMIN)
+        setSubmitting(false)
+        toast.success('Giriş başarılı', {
+          description: 'Yönetim paneline yönlendiriliyorsunuz…',
+        })
+        navigate('/dashboard')
+        return
+      }
+
+      // 3) Eşleşme yok
+      setSubmitting(false)
+      toast.error('Giriş başarısız', {
+        description: 'Kullanıcı adı, e-posta veya TC bulunamadı.',
+      })
+    }, 1200)
   }
 
   return (
@@ -131,14 +217,14 @@ export function LoginPage() {
                 Hoş geldiniz
               </h1>
               <p className="mt-2 text-sm leading-6 text-ink-500">
-                İSG süreçlerinizi yönetmek için hesabınıza giriş yapın.
+                Yönetici veya katılımcı hesabınızla giriş yapın. Sistem, hesap türünüzü otomatik tanır.
               </p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
               <Input
-                label="E-posta veya TC Kimlik No"
-                placeholder="ornek@hantech.com"
+                label="E-posta, TC Kimlik No veya kullanıcı adı"
+                placeholder="ornek@hantech.com veya kullanici.adi"
                 autoComplete="username"
                 icon={<Mail className="h-[18px] w-[18px]" strokeWidth={1.8} />}
                 error={errors.login?.message}
@@ -178,23 +264,44 @@ export function LoginPage() {
 
             {/* Demo erişimi — yalnızca geliştirme ortamında */}
             {import.meta.env.DEV && (
-            <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 px-4 py-3.5">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
-                  <Wand2 className="h-4 w-4" strokeWidth={1.8} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-ink-700">Demo hesabı</p>
-                  <p className="mt-0.5 truncate text-[11px] text-ink-400">Formu örnek bilgilerle doldur</p>
+            <div className="mt-6 space-y-2.5">
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 px-4 py-3.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
+                    <Wand2 className="h-4 w-4" strokeWidth={1.8} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-ink-700">Demo yönetici</p>
+                    <p className="mt-0.5 truncate text-[11px] text-ink-400">demo@hantech.com / demo1234</p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={fillDemoAdmin}
+                  className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
+                >
+                  Doldur
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={fillDemo}
-                className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
-              >
-                Doldur
-              </button>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 px-4 py-3.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
+                    <UserRound className="h-4 w-4" strokeWidth={1.8} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-ink-700">Demo katılımcı</p>
+                    <p className="mt-0.5 truncate text-[11px] text-ink-400">İlk aktif katılımcı ile doldur</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={fillDemoParticipant}
+                  className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
+                >
+                  Doldur
+                </button>
+              </div>
             </div>
             )}
           </section>
@@ -206,23 +313,6 @@ export function LoginPage() {
               Kayıt talebi oluşturun
             </a>
           </p>
-
-          {/* Katılımcı girişi */}
-          <div className="mt-5 flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50/50 px-4 py-3.5">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-brand-600 ring-1 ring-ink-200">
-              <UserRound className="h-4 w-4" strokeWidth={1.8} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-ink-700">Katılımcı girişi</p>
-              <p className="mt-0.5 truncate text-[11px] text-ink-400">İSG eğitim portalına giriş için</p>
-            </div>
-            <Link
-              to="/katilimci/giris"
-              className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
-            >
-              Giriş yap →
-            </Link>
-          </div>
 
           <div className="mt-9 flex items-center justify-center gap-5 text-[11px] text-ink-400">
             <span className="inline-flex items-center gap-1.5">
