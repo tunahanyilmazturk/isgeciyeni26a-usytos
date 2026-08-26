@@ -189,7 +189,7 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* İçerik */}
-        <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:py-8 sm:pb-12 lg:px-10 lg:py-12">
+        <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-12 lg:px-10 lg:py-12">
           {children}
         </main>
       </div>
