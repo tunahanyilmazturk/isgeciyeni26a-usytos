@@ -24,7 +24,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
+import { Button, Input, Pagination, ViewToggle, type ViewMode, BulkActionBar, paginate, getPaginationIndices } from '@/components/ui'
 import { downloadCustomerList } from '@/lib/excel'
 import { cn } from '@/lib/utils'
 import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus } from '../data/customers'
@@ -88,6 +88,8 @@ export function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('table')
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const navigate = useNavigate()
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CustomerForm>({
@@ -137,6 +139,10 @@ export function CustomersPage() {
   const totalPages = Math.ceil(filteredCustomers.length / pageSize) || 1
   const paginatedItems = paginate(filteredCustomers, currentPage, pageSize)
   const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredCustomers.length)
+
+  const toggleSelection = (id: number) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
+  const handleBulkDelete = () => { setCustomers((current) => current.filter((item) => !selectedIds.includes(item.id))); toast.success(`${selectedIds.length} müşteri silindi`); setSelectedIds([]) }
 
   const activeCustomers = customers.filter((customer) => customer.status === 'active')
 
@@ -224,7 +230,7 @@ export function CustomersPage() {
         <div className="border-b border-ink-100 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div><div className="flex items-center gap-2"><h2 className="text-sm font-semibold text-ink-900">Müşteri portföyü</h2><span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filteredCustomers.length} kayıt</span></div><p className="mt-1 text-xs text-ink-400">Firma bilgilerine, atamalara ve sözleşme durumuna hızlıca erişin.</p></div>
-            <div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Firma, vergi no veya sektör ara..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-3 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-64" /></div><button type="button" onClick={() => setShowFilters((current) => !current)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition-colors', showFilters || filterCount ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 bg-white text-ink-600 hover:border-ink-300 hover:bg-ink-50')}><SlidersHorizontal className="h-4 w-4" /> Filtreler {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] text-white">{filterCount}</span>}</button></div>
+            <div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Firma, vergi no veya sektör ara..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-3 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-64" /></div><button type="button" onClick={() => setShowFilters((current) => !current)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition-colors', showFilters || filterCount ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 bg-white text-ink-600 hover:border-ink-300 hover:bg-ink-50')}><SlidersHorizontal className="h-4 w-4" /> Filtreler {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] text-white">{filterCount}</span>}</button><ViewToggle view={view} onChange={setView} /></div>
           </div>
           {showFilters && <div className="mt-5 grid min-w-0 gap-3 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {[
@@ -239,11 +245,22 @@ export function CustomersPage() {
           </div>}
         </div>
 
+        {selectedIds.length > 0 && (
+          <BulkActionBar
+            selectedCount={selectedIds.length}
+            itemName="müşteri"
+            onClear={() => setSelectedIds([])}
+            onDelete={handleBulkDelete}
+          />
+        )}
+
+        {view === 'table' && (
         <div className="relative overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white via-white/80 to-transparent sm:hidden" />
           <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-full bg-white/95 px-2 py-1 text-[10px] font-semibold text-ink-400 shadow-sm sm:hidden">Yatay kaydır</div>
-          <table className="w-full min-w-[1080px] text-left text-xs"><thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400"><tr><th className="px-5 py-3.5 font-semibold sm:px-6">Firma</th><th className="px-3 py-3.5 font-semibold">Tehlike sınıfı</th><th className="px-3 py-3.5 font-semibold">Çalışan</th><th className="px-3 py-3.5 font-semibold">İSG atamaları</th><th className="px-3 py-3.5 font-semibold">Sözleşme</th><th className="px-3 py-3.5 font-semibold">Onay</th><th className="px-5 py-3.5 text-right font-semibold sm:px-6">İşlem</th></tr></thead><tbody className="divide-y divide-ink-100">
+          <table className="w-full min-w-[1080px] text-left text-xs"><thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400"><tr><th className="w-12 px-5 py-3.5 sm:px-6"><input type="checkbox" checked={paginatedItems.length > 0 && selectedIds.length === paginatedItems.length} onChange={toggleAll} aria-label="Tümünü seç" className="h-4 w-4 rounded border-ink-300" /></th><th className="px-5 py-3.5 font-semibold sm:px-6">Firma</th><th className="px-3 py-3.5 font-semibold">Tehlike sınıfı</th><th className="px-3 py-3.5 font-semibold">Çalışan</th><th className="px-3 py-3.5 font-semibold">İSG atamaları</th><th className="px-3 py-3.5 font-semibold">Sözleşme</th><th className="px-3 py-3.5 font-semibold">Onay</th><th className="px-5 py-3.5 text-right font-semibold sm:px-6">İşlem</th></tr></thead><tbody className="divide-y divide-ink-100">
           {paginatedItems.map((customer) => <tr key={customer.id} onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="group cursor-pointer transition-colors hover:bg-brand-50/35">
+            <td className="px-5 py-4 sm:px-6" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={() => toggleSelection(customer.id)} aria-label={`${customer.name} seç`} className="h-4 w-4 rounded border-ink-300" /></td>
             <td className="px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700">{initials(customer.name)}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-ink-800">{customer.name}</p><p className="mt-0.5 truncate text-[11px] text-ink-400">VKN: {customer.taxNumber} · {customer.sector}</p><p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-ink-400"><MapPin className="h-3 w-3" />{customer.location}</p></div></div></td>
             <td className="px-3 py-4"><span className={cn('inline-flex whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-semibold', riskClass(customer.riskLevel))}>{customer.riskLevel}</span></td>
             <td className="px-3 py-4"><div className="flex items-center gap-2 text-ink-700"><Users className="h-3.5 w-3.5 text-ink-400" /> <span className="font-semibold">{customer.employees ? formatNumber(customer.employees) : '—'}</span></div><p className="mt-1 text-[10px] text-ink-400">aktif çalışan</p></td>
@@ -253,6 +270,35 @@ export function CustomersPage() {
             <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${customer.name} detayları`}><ArrowRight className="h-4 w-4" /></button><button type="button" onClick={() => toast.info('Düzenleme ekranı sıradaki adımda hazırlanacak.')} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label={`${customer.name} düzenle`}><MoreHorizontal className="h-4 w-4" /></button></div></td>
           </tr>)}
         </tbody></table>{filteredCustomers.length === 0 && <div className="px-6 py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Müşteri bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama veya filtre kriterlerini değiştirerek tekrar deneyin.</p><button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-brand-700 hover:text-brand-800">Filtreleri temizle</button></div>}</div>
+        )}
+
+        {view === 'card' && (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+            {paginatedItems.map((customer) => (
+              <div key={customer.id} onClick={() => navigate(`/dashboard/firmalar/${customer.id}`)} className="group cursor-pointer rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-sm font-bold text-brand-700">{initials(customer.name)}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink-800">{customer.name}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-ink-400">VKN: {customer.taxNumber}</p>
+                    </div>
+                  </div>
+                  <input type="checkbox" checked={selectedIds.includes(customer.id)} onChange={() => toggleSelection(customer.id)} onClick={(event) => event.stopPropagation()} aria-label={`${customer.name} seç`} className="h-4 w-4 rounded border-ink-300" />
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2 text-[11px] text-ink-500"><MapPin className="h-3.5 w-3.5 text-ink-400" />{customer.location}</div>
+                  <div className="flex items-center gap-2 text-[11px] text-ink-500"><Users className="h-3.5 w-3.5 text-ink-400" />{customer.employees ? formatNumber(customer.employees) : '—'} çalışan</div>
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3">
+                  <span className={cn('inline-flex whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-semibold', riskClass(customer.riskLevel))}>{customer.riskLevel}</span>
+                  <span className={cn('text-[11px] font-semibold', contractClass(customer.contractStatus))}>{customer.contractStatus}</span>
+                </div>
+              </div>
+            ))}
+            {paginatedItems.length === 0 && <div className="col-span-full py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Müşteri bulunamadı</p></div>}
+          </div>
+        )}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

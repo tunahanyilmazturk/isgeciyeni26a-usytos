@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
+import { Button, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar, Checkbox } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 type SignatureStatus = 'pending' | 'signed' | 'rejected' | 'expired'
@@ -75,6 +75,8 @@ export function SignatureQueuePage() {
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('table')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
@@ -106,6 +108,10 @@ export function SignatureQueuePage() {
   }
 
   const hasActiveFilters = search || activeTab !== 'all' || typeFilter !== 'all'
+
+  const toggleSelection = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
+  const handleBulkDelete = () => { toast.info(`${selectedIds.length} belge silindi`); setSelectedIds([]) }
 
   return (
     <div className="space-y-7">
@@ -141,6 +147,7 @@ export function SignatureQueuePage() {
               <button type="button" onClick={() => setShowFilters((current) => !current)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold', showFilters ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}>
                 <Filter className="h-4 w-4" strokeWidth={1.7} /> Filtreler
               </button>
+              <ViewToggle view={view} onChange={setView} />
             </div>
           </div>
 
@@ -174,10 +181,26 @@ export function SignatureQueuePage() {
           )}
         </div>
 
+        <BulkActionBar
+          selectedCount={selectedIds.length}
+          itemName="belge"
+          onClear={() => setSelectedIds([])}
+          onDelete={handleBulkDelete}
+        />
+
+        {view === 'table' && (
         <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[920px] text-left text-xs">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
+                <th className="px-3 py-3.5 sm:px-5">
+                  <Checkbox
+                    checked={paginatedItems.length > 0 && selectedIds.length === paginatedItems.length}
+                    onChange={toggleAll}
+                    aria-label="Tümünü seç"
+                    label={null}
+                  />
+                </th>
                 <th className="px-5 py-3.5 font-semibold sm:px-6">Belge</th>
                 <th className="px-3 py-3.5 font-semibold">Firma</th>
                 <th className="px-3 py-3.5 font-semibold">Tür</th>
@@ -191,6 +214,14 @@ export function SignatureQueuePage() {
                 const Icon = typeIcons[item.type]
                 return (
                   <tr key={item.id} className="group transition-colors hover:bg-brand-50/35">
+                    <td className="px-3 py-4 sm:px-5">
+                      <Checkbox
+                        checked={selectedIds.includes(item.id)}
+                        onChange={() => toggleSelection(item.id)}
+                        aria-label={`${item.document} seç`}
+                        label={null}
+                      />
+                    </td>
                     <td className="px-5 py-4 sm:px-6">
                       <div className="flex items-center gap-3">
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon className="h-[18px] w-[18px]" strokeWidth={1.7} /></span>
@@ -239,6 +270,34 @@ export function SignatureQueuePage() {
             </div>
           )}
         </div>
+        )}
+
+        {view === 'card' && (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+            {paginatedItems.map((item) => {
+              const Icon = typeIcons[item.type]
+              return (
+                <div key={item.id} className="rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon className="h-5 w-5" strokeWidth={1.7} /></span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-800">{item.document}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.company}</p>
+                      </div>
+                    </div>
+                    <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelection(item.id)} aria-label={`${item.document} seç`} className="h-4 w-4 rounded border-ink-300" />
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3">
+                    <span className={cn('inline-flex whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-semibold', statusClasses[item.status])}>{statusLabels[item.status]}</span>
+                    <span className="text-[11px] text-ink-400">Son: {item.dueDate}</span>
+                  </div>
+                </div>
+              )
+            })}
+            {paginatedItems.length === 0 && <div className="col-span-full py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Belge bulunamadı</p></div>}
+          </div>
+        )}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

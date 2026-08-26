@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
+import { Button, Pagination, ViewToggle, type ViewMode, BulkActionBar, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 type AssignmentStatus = 'pending' | 'in_progress' | 'completed' | 'failed'
@@ -74,6 +74,8 @@ export function AssignmentsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('table')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
@@ -91,6 +93,10 @@ export function AssignmentsPage() {
   const totalPages = Math.ceil(filtered.length / pageSize) || 1
   const paginatedItems = paginate(filtered, currentPage, pageSize)
   const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filtered.length)
+
+  const toggleSelection = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
+  const handleBulkDelete = () => { toast.info(`${selectedIds.length} atama silindi`); setSelectedIds([]) }
 
   function clearFilters() {
     setSearch('')
@@ -135,6 +141,7 @@ export function AssignmentsPage() {
               <button type="button" onClick={() => setShowFilters((current) => !current)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold', showFilters ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}>
                 <Filter className="h-4 w-4" strokeWidth={1.7} /> Filtreler
               </button>
+              <ViewToggle view={view} onChange={setView} />
             </div>
           </div>
 
@@ -175,10 +182,21 @@ export function AssignmentsPage() {
           )}
         </div>
 
+        {selectedIds.length > 0 && (
+          <BulkActionBar
+            selectedCount={selectedIds.length}
+            itemName="atama"
+            onClear={() => setSelectedIds([])}
+            onDelete={handleBulkDelete}
+          />
+        )}
+
+        {view === 'table' && (
         <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[960px] text-left text-xs">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
+                <th className="w-12 px-5 py-3.5 sm:px-6"><input type="checkbox" checked={paginatedItems.length > 0 && selectedIds.length === paginatedItems.length} onChange={toggleAll} aria-label="Tümünü seç" className="h-4 w-4 rounded border-ink-300" /></th>
                 <th className="px-5 py-3.5 font-semibold sm:px-6">Katılımcı</th>
                 <th className="px-3 py-3.5 font-semibold">Firma</th>
                 <th className="px-3 py-3.5 font-semibold">Eğitim</th>
@@ -190,6 +208,7 @@ export function AssignmentsPage() {
             <tbody className="divide-y divide-ink-100">
               {paginatedItems.map((item) => (
                 <tr key={item.id} className="group transition-colors hover:bg-brand-50/35">
+                  <td className="px-5 py-4 sm:px-6" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelection(item.id)} aria-label={`${item.participant} seç`} className="h-4 w-4 rounded border-ink-300" /></td>
                   <td className="px-5 py-4 sm:px-6">
                     <div className="flex items-center gap-3">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700">{initials(item.participant)}</span>
@@ -242,6 +261,35 @@ export function AssignmentsPage() {
             </div>
           )}
         </div>
+        )}
+
+        {view === 'card' && (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+            {paginatedItems.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700">{initials(item.participant)}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink-800">{item.participant}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{item.company}</p>
+                    </div>
+                  </div>
+                  <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelection(item.id)} aria-label={`${item.participant} seç`} className="h-4 w-4 rounded border-ink-300" />
+                </div>
+                <div className="mt-4 space-y-2">
+                  <p className="truncate text-[11px] text-ink-500">{item.training}</p>
+                  <div className="flex items-center justify-between">
+                    <span className={cn('inline-flex whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-semibold', statusClasses[item.status])}>{statusLabels[item.status]}</span>
+                    <span className="text-[11px] text-ink-400">Son: {item.dueDate}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-ink-100"><div className={cn('h-full rounded-full', item.status === 'completed' ? 'bg-emerald-500' : item.status === 'failed' ? 'bg-rose-400' : 'bg-amber-400')} style={{ width: `${item.progress}%` }} /></div>
+                </div>
+              </div>
+            ))}
+            {paginatedItems.length === 0 && <div className="col-span-full py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Atama bulunamadı</p></div>}
+          </div>
+        )}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

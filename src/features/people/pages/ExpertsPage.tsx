@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
+import { Button, Input, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Expert, type ExpertTitle, readExperts, saveExperts } from '../data/people'
 
@@ -67,6 +67,8 @@ export function ExpertsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('table')
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   useEffect(() => saveExperts(experts), [experts])
 
@@ -149,6 +151,10 @@ export function ExpertsPage() {
     toast.success('Uzman kaydı silindi')
   }
 
+  const toggleSelection = (id: number) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
+  const handleBulkDelete = () => { setExperts((current) => current.filter((item) => !selectedIds.includes(item.id))); toast.success(`${selectedIds.length} uzman silindi`); setSelectedIds([]) }
+
   return (
     <div className="space-y-7">
       <motion.div
@@ -192,13 +198,18 @@ export function ExpertsPage() {
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               </div>
+              <ViewToggle view={view} onChange={setView} />
             </div>
           </div>
 
+          <BulkActionBar selectedCount={selectedIds.length} itemName="uzman" onClear={() => setSelectedIds([])} onDelete={handleBulkDelete} />
+
+          {view === 'table' && (
           <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
             <table className="w-full min-w-[820px] text-left text-xs">
               <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
                 <tr>
+                  <th className="px-5 py-3.5 sm:px-6"><input type="checkbox" checked={paginatedItems.length > 0 && selectedIds.length === paginatedItems.length} onChange={toggleAll} aria-label="Tüm uzmanları seç" className="h-4 w-4 rounded border-ink-300" /></th>
                   <th className="px-5 py-3.5 font-semibold sm:px-6">Uzman</th>
                   <th className="px-3 py-3.5 font-semibold">Unvan</th>
                   <th className="px-3 py-3.5 font-semibold">Sertifika</th>
@@ -212,6 +223,7 @@ export function ExpertsPage() {
                   const percentage = expert.maxServiceDuration ? Math.round((expert.usedServiceDuration / expert.maxServiceDuration) * 100) : 0
                   return (
                     <tr key={expert.id} className="group transition-colors hover:bg-ink-50/50">
+                      <td className="px-5 py-4 sm:px-6"><input type="checkbox" checked={selectedIds.includes(expert.id)} onChange={() => toggleSelection(expert.id)} aria-label={`${expert.firstName} ${expert.lastName} seç`} className="h-4 w-4 rounded border-ink-300" /></td>
                       <td className="px-5 py-4 sm:px-6">
                         <div className="flex items-center gap-3">
                           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-700">{initials(expert)}</span>
@@ -230,6 +242,36 @@ export function ExpertsPage() {
             </table>
             {filteredExperts.length === 0 && <div className="px-6 py-14 text-center"><Search className="mx-auto h-7 w-7 text-ink-300" /><p className="mt-3 text-sm font-medium text-ink-600">Uzman bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama veya unvan filtresini değiştirmeyi deneyin.</p></div>}
           </div>
+          )}
+          {view === 'card' && (
+            <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+              {paginatedItems.map((expert) => {
+                const percentage = expert.maxServiceDuration ? Math.round((expert.usedServiceDuration / expert.maxServiceDuration) * 100) : 0
+                return (
+                  <div key={expert.id} className="rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-sm font-bold text-brand-700">{initials(expert)}</span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-ink-800">{expert.firstName} {expert.lastName}</p>
+                          <p className="mt-0.5 truncate text-[11px] text-ink-400">{expert.title.split(' ')[0]} Sınıfı</p>
+                        </div>
+                      </div>
+                      <input type="checkbox" checked={selectedIds.includes(expert.id)} onChange={() => toggleSelection(expert.id)} aria-label={`${expert.firstName} ${expert.lastName} seç`} className="h-4 w-4 rounded border-ink-300" />
+                    </div>
+                    <div className="mt-4 space-y-3 border-t border-ink-100 pt-3">
+                      <p className="text-[11px] text-ink-500">Sertifika: {expert.certificateNumber}</p>
+                      <div>
+                        <div className="mb-1.5 flex items-center justify-between text-[11px]"><span className="text-ink-400">Kapasite</span><span className="font-semibold text-ink-600">%{percentage}</span></div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-ink-100"><div className={cn('h-full rounded-full', percentage > 80 ? 'bg-rose-500' : percentage > 60 ? 'bg-amber-500' : 'bg-emerald-500')} style={{ width: `${percentage}%` }} /></div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {paginatedItems.length === 0 && <div className="col-span-full py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Uzman bulunamadı</p></div>}
+            </div>
+          )}
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

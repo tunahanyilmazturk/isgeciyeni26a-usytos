@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
+import { Button, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar, Checkbox } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -71,6 +71,8 @@ export function InvoicesPage() {
   const [dateFilter, setDateFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('table')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const companies = useMemo(() => Array.from(new Set(invoices.map((i) => i.company))), [])
 
@@ -106,6 +108,10 @@ export function InvoicesPage() {
   const handleSend = (invoice: Invoice) => {
     toast.success(`"${invoice.number}" gönderildi`, { description: `${invoice.company} firmasına e-posta olarak iletildi.` })
   }
+
+  const toggleSelection = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  const toggleAll = () => setSelectedIds((current) => current.length === paginatedItems.length ? [] : paginatedItems.map((item) => item.id))
+  const handleBulkDelete = () => { toast.info(`${selectedIds.length} fatura silindi`); setSelectedIds([]) }
 
   const selectClass =
     'h-9 rounded-xl border border-ink-200 bg-white px-3 text-xs font-medium text-ink-700 outline-none transition-colors hover:border-ink-300 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15'
@@ -176,13 +182,30 @@ export function InvoicesPage() {
               <option value="quarter">Son 3 ay</option>
               <option value="year">Bu yıl</option>
             </select>
+            <ViewToggle view={view} onChange={setView} />
           </div>
         </div>
 
+        <BulkActionBar
+          selectedCount={selectedIds.length}
+          itemName="fatura"
+          onClear={() => setSelectedIds([])}
+          onDelete={handleBulkDelete}
+        />
+
+        {view === 'table' && (
         <div className="overflow-x-auto max-h-[calc(100dvh-380px)] overflow-y-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="border-b border-ink-100 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
               <tr>
+                <th className="pb-3 font-semibold">
+                  <Checkbox
+                    checked={paginatedItems.length > 0 && selectedIds.length === paginatedItems.length}
+                    onChange={toggleAll}
+                    aria-label="Tümünü seç"
+                    label={null}
+                  />
+                </th>
                 <th className="pb-3 font-semibold">Fatura no</th>
                 <th className="pb-3 font-semibold">Firma</th>
                 <th className="pb-3 font-semibold">Tutar</th>
@@ -194,7 +217,7 @@ export function InvoicesPage() {
             <tbody className="divide-y divide-ink-100">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-ink-400">
+                  <td colSpan={7} className="py-10 text-center text-ink-400">
                     Filtrelere uygun fatura bulunamadı.
                   </td>
                 </tr>
@@ -203,6 +226,14 @@ export function InvoicesPage() {
                   const status = statusConfig[invoice.status]
                   return (
                     <tr key={invoice.id} className="group transition-colors hover:bg-ink-50/60">
+                      <td className="py-3.5">
+                        <Checkbox
+                          checked={selectedIds.includes(invoice.id)}
+                          onChange={() => toggleSelection(invoice.id)}
+                          aria-label={`${invoice.company} seç`}
+                          label={null}
+                        />
+                      </td>
                       <td className="py-3.5">
                         <div className="flex items-center gap-3">
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
@@ -257,6 +288,35 @@ export function InvoicesPage() {
             </tbody>
           </table>
         </div>
+        )}
+
+        {view === 'card' && (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+            {paginatedItems.map((invoice) => {
+              const status = statusConfig[invoice.status]
+              return (
+                <div key={invoice.id} className="rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-sm font-bold text-brand-700">{invoice.company[0]}</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-800">{invoice.company}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-ink-400">{invoice.id}</p>
+                      </div>
+                    </div>
+                    <input type="checkbox" checked={selectedIds.includes(invoice.id)} onChange={() => toggleSelection(invoice.id)} aria-label={`${invoice.company} seç`} className="h-4 w-4 rounded border-ink-300" />
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-ink-100 pt-3">
+                    <span className={cn('inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-semibold', status.className)}>{status.label}</span>
+                    <span className="text-sm font-bold text-ink-800">{invoice.amount.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-ink-400">Vade: {invoice.dueDate}</p>
+                </div>
+              )
+            })}
+            {paginatedItems.length === 0 && <div className="col-span-full py-16 text-center"><Search className="mx-auto h-8 w-8 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Fatura bulunamadı</p></div>}
+          </div>
+        )}
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
