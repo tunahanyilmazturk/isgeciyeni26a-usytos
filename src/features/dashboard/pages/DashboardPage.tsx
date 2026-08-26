@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { readCustomers } from '@/features/customers/data/customers'
 import { readParticipants } from '@/features/participants/data/participants'
+import { readAssignments } from '@/features/assignments/data/assignments'
 import {
   Area,
   AreaChart,
@@ -31,22 +32,6 @@ import {
 } from 'recharts'
 import { Button } from '@/components/ui'
 
-const activityData = [
-  { name: '01 Ağu', tamamlanan: 18, atanan: 26 },
-  { name: '05 Ağu', tamamlanan: 24, atanan: 31 },
-  { name: '09 Ağu', tamamlanan: 31, atanan: 38 },
-  { name: '13 Ağu', tamamlanan: 29, atanan: 44 },
-  { name: '17 Ağu', tamamlanan: 42, atanan: 51 },
-  { name: '21 Ağu', tamamlanan: 48, atanan: 58 },
-  { name: '25 Ağu', tamamlanan: 56, atanan: 64 },
-]
-
-const actions = [
-  { icon: FileWarning, title: '3 risk değerlendirmesi yenilenmeli', detail: 'Son tarih: 28 Ağustos', tone: 'warning' },
-  { icon: ClipboardCheck, title: '2 denetim raporu onay bekliyor', detail: 'Bugün oluşturuldu', tone: 'neutral' },
-  { icon: BookOpen, title: '12 çalışanın eğitimi tamamlanmadı', detail: 'Son tarih: 30 Ağustos', tone: 'danger' },
-]
-
 const toneStyles = {
   teal: 'bg-brand-50 text-brand-700',
   violet: 'bg-violet-50 text-violet-600',
@@ -57,18 +42,26 @@ const toneStyles = {
 export function DashboardPage() {
   const customers = useMemo(() => readCustomers(), [])
   const participants = useMemo(() => readParticipants(), [])
+  const assignments = useMemo(() => readAssignments(), [])
+  const todayLabel = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' }).format(new Date())
 
   const activeCustomers = customers.filter((c) => c.status === 'active')
   const totalEmployees = customers.reduce((sum, c) => sum + c.employees, 0)
 
-  const trainingCompleted = participants.filter((p) => p.trainingStatus === 'successful').length
-  const trainingCompletionRate = participants.length > 0
-    ? Math.round((trainingCompleted / participants.length) * 100)
+  const trainingCompleted = assignments.filter((assignment) => assignment.status === 'completed').length
+  const trainingCompletionRate = assignments.length > 0
+    ? Math.round((trainingCompleted / assignments.length) * 100)
     : 0
-
-  const overdueParticipants = participants.filter(
-    (p) => p.trainingStatus === 'failed' || (p.trainingStatus !== 'successful' && p.nextTraining === '—'),
-  ).length
+  const overdueParticipantIds = new Set(
+    assignments.filter((assignment) => assignment.status === 'expired').map((assignment) => assignment.participantId),
+  )
+  const overdueParticipants = overdueParticipantIds.size
+  const activityData = [{ name: 'Mevcut', tamamlanan: trainingCompleted, atanan: assignments.length }]
+  const actions = [
+    { icon: FileWarning, title: `${overdueParticipants} katılımcının ataması takip edilmeli`, detail: 'Güncel atama verisi', tone: 'warning' },
+    { icon: ClipboardCheck, title: `${assignments.filter((assignment) => assignment.status === 'pending_approval').length} atama onay bekliyor`, detail: 'Güncel atama verisi', tone: 'neutral' },
+    { icon: BookOpen, title: `${Math.max(assignments.length - trainingCompleted, 0)} eğitim tamamlanmadı`, detail: 'Güncel atama verisi', tone: 'danger' },
+  ]
 
   // Risk distribution for pie chart
   const lowRisk = customers.filter((c) => c.riskLevel === 'Az tehlikeli').length
@@ -76,10 +69,11 @@ export function DashboardPage() {
   const highRisk = customers.filter((c) => c.riskLevel === 'Çok tehlikeli').length
 
   const riskData = [
-    { name: 'Düşük', value: lowRisk, color: '#1c9f94' },
-    { name: 'Orta', value: mediumRisk, color: '#e5b454' },
-    { name: 'Yüksek', value: highRisk, color: '#dc7b6f' },
+    { name: 'Az tehlikeli', value: lowRisk, color: '#1c9f94' },
+    { name: 'Tehlikeli', value: mediumRisk, color: '#e5b454' },
+    { name: 'Çok tehlikeli', value: highRisk, color: '#dc7b6f' },
   ]
+  const riskTotal = riskData.reduce((sum, risk) => sum + risk.value, 0)
 
   const topCompanies = activeCustomers.slice(0, 4).map((c) => {
     const companyParticipants = participants.filter((p) => p.company === c.name)
@@ -92,10 +86,10 @@ export function DashboardPage() {
   })
 
   const stats = [
-    { label: 'Toplam firma', value: String(activeCustomers.length), change: '+1 bu ay', icon: Building2, tone: 'teal' },
-    { label: 'Aktif çalışan', value: String(totalEmployees), change: '+8 bu ay', icon: Users, tone: 'violet' },
-    { label: 'Eğitim tamamlama', value: `%${trainingCompletionRate}`, change: '+%12 geçen aya göre', icon: CheckCircle2, tone: 'green' },
-    { label: 'Açık aksiyon', value: String(overdueParticipants), change: '3 yüksek öncelik', icon: AlertTriangle, tone: 'amber' },
+    { label: 'Toplam firma', value: String(activeCustomers.length), change: 'Aktif kayıt', icon: Building2, tone: 'teal' },
+    { label: 'Aktif çalışan', value: String(totalEmployees), change: 'Firma kayıtlarından', icon: Users, tone: 'violet' },
+    { label: 'Eğitim tamamlama', value: `%${trainingCompletionRate}`, change: `${trainingCompleted}/${assignments.length} atama`, icon: CheckCircle2, tone: 'green' },
+    { label: 'Açık aksiyon', value: String(overdueParticipants), change: 'Süresi geçen atama', icon: AlertTriangle, tone: 'amber' },
   ]
 
   return (
@@ -107,7 +101,7 @@ export function DashboardPage() {
         className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"
       >
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-600">25 Ağustos 2026, Salı</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-brand-600">{todayLabel}</p>
           <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Günaydın, Savaş</h1>
           <p className="mt-1.5 text-sm text-ink-500">İSG süreçlerinizin bugünkü durumuna genel bir bakış.</p>
         </div>
@@ -131,7 +125,7 @@ export function DashboardPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.13em] text-brand-700">Çalışma alanı özeti</p>
               <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.02em] text-ink-900">İSG yönetiminiz kontrol altında</h2>
-              <p className="mt-1 text-sm text-ink-500">Son 30 günde 64 eğitim ataması yapıldı, 56'sı tamamlandı.</p>
+              <p className="mt-1 text-sm text-ink-500">Toplam {assignments.length} eğitim atamasının {trainingCompleted} tanesi tamamlandı.</p>
             </div>
           </div>
           <Link to="/dashboard/raporlar" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800">
@@ -167,7 +161,7 @@ export function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-ink-900">Eğitim aktivitesi</h2>
-              <p className="mt-1 text-xs text-ink-400">Son 30 gündeki atama ve tamamlanma durumu</p>
+              <p className="mt-1 text-xs text-ink-400">Mevcut atama ve tamamlanma durumu</p>
             </div>
             <button type="button" className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-700" aria-label="Daha fazla seçenek">
               <MoreHorizontal className="h-5 w-5" />
@@ -222,14 +216,14 @@ export function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
-              <div><p className="text-2xl font-bold tracking-[-0.04em] text-ink-900">100</p><p className="text-[11px] text-ink-400">toplam risk</p></div>
+              <div><p className="text-2xl font-bold tracking-[-0.04em] text-ink-900">{riskTotal}</p><p className="text-[11px] text-ink-400">toplam firma</p></div>
             </div>
           </div>
           <div className="space-y-2.5">
             {riskData.map((risk) => (
               <div key={risk.name} className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-2 text-ink-600"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: risk.color }} />{risk.name}</span>
-                <span className="font-semibold text-ink-800">{risk.value}%</span>
+                <span className="font-semibold text-ink-800">{risk.value} firma</span>
               </div>
             ))}
           </div>

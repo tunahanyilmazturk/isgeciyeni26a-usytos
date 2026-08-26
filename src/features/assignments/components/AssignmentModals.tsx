@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { parseDateInput } from '@/lib/date'
 import { readParticipants, type Participant } from '@/features/participants/data/participants'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
 import {
@@ -92,7 +93,7 @@ export function AssignmentModal({
   const baseTrainings = trainingCatalog.filter((t) => t.package === 'Temel Paket' && !assignedTrainingIds.has(t.id))
   const sectorTrainings = trainingCatalog.filter((t) => t.package === 'Sektör Paketi' && !assignedTrainingIds.has(t.id))
 
-  const canSubmit = selectedParticipantId !== null && selectedTrainingIds.length > 0 && dueDate
+  const canSubmit = selectedParticipantId !== null && selectedTrainingIds.length > 0 && Boolean(parseDateInput(dueDate))
 
   function toggleTraining(id: string) {
     setSelectedTrainingIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
@@ -494,7 +495,7 @@ export function BulkAssignmentModal({
     setSelectedTrainingIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
   }
 
-  const canSubmit = selectedParticipantIds.length > 0 && selectedTrainingIds.length > 0 && dueDate
+  const canSubmit = selectedParticipantIds.length > 0 && selectedTrainingIds.length > 0 && Boolean(parseDateInput(dueDate))
   const totalAssignments = selectedParticipantIds.length * selectedTrainingIds.length
 
   function handleSubmit(e: React.FormEvent) {

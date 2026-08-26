@@ -29,6 +29,7 @@ import { naceCodes } from '@/data/naceCodes'
 import { turkeyLocations } from '@/data/turkeyLocations'
 import { cn } from '@/lib/utils'
 import { readStorage, removeStorage, writeStorage } from '@/lib/storage'
+import { isDateRangeValid, parseDateInput } from '@/lib/date'
 import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus, type ApprovalStatus, type CompanyStatus } from '../data/customers'
 
 type FormData = {
@@ -160,6 +161,9 @@ export function CustomerCreatePage() {
     }
     if (step === 2) {
       if (!form.contractStart) return 'Sözleşme başlangıç tarihini seçin.'
+      if (!parseDateInput(form.contractStart)) return 'Geçerli bir sözleşme başlangıç tarihi seçin.'
+      if (form.contractEnd && !parseDateInput(form.contractEnd)) return 'Geçerli bir sözleşme bitiş tarihi seçin.'
+      if (!isDateRangeValid(form.contractStart, form.contractEnd)) return 'Sözleşme bitiş tarihi başlangıç tarihinden önce olamaz.'
       if (!form.contractStatus) return 'Sözleşme durumunu seçin.'
     }
     return ''

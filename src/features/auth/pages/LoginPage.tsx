@@ -84,8 +84,7 @@ export function LoginPage() {
   function onSubmit(data: LoginForm) {
     setSubmitting(true)
 
-    setTimeout(() => {
-      const loginValue = data.login.trim()
+    const loginValue = data.login.trim()
 
       // Backend yok: auth yalnızca development demo akışında kullanılabilir.
       if (!import.meta.env.DEV) {
@@ -176,7 +175,6 @@ export function LoginPage() {
       toast.error('Giriş başarısız', {
         description: 'Kullanıcı adı, e-posta veya TC bulunamadı.',
       })
-    }, 1200)
   }
 
   return (

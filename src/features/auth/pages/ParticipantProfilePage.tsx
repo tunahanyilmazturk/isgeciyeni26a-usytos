@@ -49,21 +49,17 @@ export function ParticipantProfilePage() {
 
   function onContactSubmit(data: ContactForm) {
     setSubmittingContact(true)
-    setTimeout(() => {
-      updateContact(data.email, data.phone)
-      setSubmittingContact(false)
-      toast.success('İletişim bilgileri güncellendi')
-    }, 600)
+    updateContact(data.email, data.phone)
+    setSubmittingContact(false)
+    toast.success('İletişim bilgileri güncellendi')
   }
 
   function onPasswordSubmit(data: PasswordForm) {
     setSubmittingPassword(true)
-    setTimeout(() => {
-      changePassword(data.newPassword)
-      setSubmittingPassword(false)
-      passwordForm.reset({ newPassword: '' })
-      toast.success('Şifre güncellendi')
-    }, 600)
+    changePassword(data.newPassword)
+    setSubmittingPassword(false)
+    passwordForm.reset({ newPassword: '' })
+    toast.success('Şifre güncellendi')
   }
 
   const infoItems = [

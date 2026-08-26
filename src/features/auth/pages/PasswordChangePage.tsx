@@ -56,23 +56,19 @@ export function PasswordChangePage() {
 
   function onPasswordSubmit(data: PasswordForm) {
     setSubmitting(true)
-    setTimeout(() => {
-      changePassword(data.newPassword)
-      setSubmitting(false)
-      setStep('contact')
-    }, 600)
+    changePassword(data.newPassword)
+    setSubmitting(false)
+    setStep('contact')
   }
 
   function onContactSubmit(data: ContactForm) {
     setSubmitting(true)
-    setTimeout(() => {
-      updateContact(data.email, data.phone)
-      setSubmitting(false)
-      toast.success('Bilgileriniz kaydedildi', {
-        description: 'Eğitim panelinize yönlendiriliyorsunuz…',
-      })
-      navigate('/katilimci', { replace: true })
-    }, 600)
+    updateContact(data.email, data.phone)
+    setSubmitting(false)
+    toast.success('Bilgileriniz kaydedildi', {
+      description: 'Eğitim panelinize yönlendiriliyorsunuz…',
+    })
+    navigate('/katilimci', { replace: true })
   }
 
   return (
