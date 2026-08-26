@@ -23,10 +23,12 @@ import {
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { Button, Input } from '@/components/ui'
 import { naceCodes } from '@/data/naceCodes'
 import { turkeyLocations } from '@/data/turkeyLocations'
 import { cn } from '@/lib/utils'
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage'
 import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus, type ApprovalStatus, type CompanyStatus } from '../data/customers'
 
 type FormData = {
@@ -65,6 +67,19 @@ type FormData = {
 const initialForm: FormData = {
   companyName: '', taxNumber: '', sgkNumber: '', naceCode: '', naceTitle: '', riskLevel: '', branchType: 'Merkez', city: '', district: '', address: '', contactName: '', signatory: '', email: '', phone: '', accountantName: '', accountantPhone: '', accountantEmail: '', employees: '', expert: '', doctor: '', expertMinutes: '720', doctorMinutes: '360', contractStart: '', contractEnd: '', contractStatus: 'Teklif aşamasında', sms: false, loginSms: false, loginWhatsapp: false, trainingWhatsapp: false, loginEmail: true,
 }
+
+const customerDraftSchema = z.object({
+  form: z.object({
+    companyName: z.string(), taxNumber: z.string(), sgkNumber: z.string(), naceCode: z.string(), naceTitle: z.string(),
+    riskLevel: z.string(), branchType: z.string(), city: z.string(), district: z.string(), address: z.string(),
+    contactName: z.string(), signatory: z.string(), email: z.string(), phone: z.string(), accountantName: z.string(),
+    accountantPhone: z.string(), accountantEmail: z.string(), employees: z.string(), expert: z.string(), doctor: z.string(),
+    expertMinutes: z.string(), doctorMinutes: z.string(), contractStart: z.string(), contractEnd: z.string(), contractStatus: z.string(),
+    sms: z.boolean(), loginSms: z.boolean(), loginWhatsapp: z.boolean(), trainingWhatsapp: z.boolean(), loginEmail: z.boolean(),
+  }),
+  activeStep: z.number().int().min(0).max(4),
+})
+const CUSTOMER_DRAFT_KEY = 'hantech-customer-create-draft'
 
 const experts = ['Demo Uzman 01', 'Demo Uzman 02', 'Demo Uzman 03', 'Demo Uzman 04', 'Demo Uzman 05']
 const doctors = ['Demo Hekim 01', 'Demo Hekim 02']
@@ -117,8 +132,9 @@ function SectionHeading({ icon: Icon, title, description }: { icon: typeof Build
 
 export function CustomerCreatePage() {
   const navigate = useNavigate()
-  const [activeStep, setActiveStep] = useState(0)
-  const [form, setForm] = useState(initialForm)
+  const savedDraft = readStorage(`${CUSTOMER_DRAFT_KEY}`, null, customerDraftSchema.nullable())
+  const [activeStep, setActiveStep] = useState(() => savedDraft?.activeStep ?? 0)
+  const [form, setForm] = useState<FormData>(() => savedDraft?.form ?? initialForm)
   const [stepError, setStepError] = useState('')
   const districtOptions = useMemo(() => turkeyLocations.find((location) => location.province === form.city)?.districts ?? [], [form.city])
 
@@ -127,30 +143,42 @@ export function CustomerCreatePage() {
     setStepError('')
   }
 
-  function validateStep() {
-    if (activeStep === 0) {
+  function validateStep(step: number) {
+    if (step === 0) {
       if (!form.companyName.trim()) return 'Firma adı alanını doldurun.'
       if (!form.taxNumber.trim()) return 'Vergi numarası alanını doldurun.'
       if (!form.sgkNumber.trim()) return 'SGK işyeri sicil numarasını girin.'
       if (!form.naceCode) return 'NACE kodu seçin.'
       if (!form.riskLevel) return 'Tehlike sınıfı seçin.'
     }
-    if (activeStep === 1) {
+    if (step === 1) {
       if (!form.city || !form.district) return 'İl ve ilçe bilgilerini seçin.'
       if (!form.address.trim()) return 'Açık adres alanını doldurun.'
       if (!form.contactName.trim()) return 'Firma yetkilisini girin.'
       if (!form.email.trim() || !form.email.includes('@')) return 'Geçerli bir e-posta adresi girin.'
       if (!form.phone.trim()) return 'Telefon numarasını girin.'
     }
-    if (activeStep === 2) {
+    if (step === 2) {
       if (!form.contractStart) return 'Sözleşme başlangıç tarihini seçin.'
       if (!form.contractStatus) return 'Sözleşme durumunu seçin.'
     }
     return ''
   }
 
+  function validateCurrentStep() {
+    return validateStep(activeStep)
+  }
+
+  function validateEntireForm() {
+    for (let step = 0; step <= 2; step += 1) {
+      const error = validateStep(step)
+      if (error) return { step, error }
+    }
+    return null
+  }
+
   function goNext() {
-    const error = validateStep()
+    const error = validateCurrentStep()
     if (error) {
       setStepError(error)
       toast.error('Eksik bilgileri tamamlayın', { description: error })
@@ -165,15 +193,28 @@ export function CustomerCreatePage() {
   }
 
   function saveDraft() {
-    toast.success('Taslak kaydedildi', { description: 'Firma bilgileri bu oturum için saklandı.' })
+    const saved = writeStorage(CUSTOMER_DRAFT_KEY, { form, activeStep })
+    if (!saved) {
+      toast.error('Taslak kaydedilemedi', { description: 'Tarayıcı depolama alanına erişilemedi.' })
+      return
+    }
+    toast.success('Taslak kaydedildi', { description: 'Form bilgileri bu tarayıcıda saklandı.' })
+  }
+
+  function clearDraft() {
+    removeStorage(CUSTOMER_DRAFT_KEY)
+    setForm(initialForm)
+    setActiveStep(0)
+    setStepError('')
+    toast.info('Taslak temizlendi')
   }
 
   function submitCustomer() {
-    const error = validateStep()
-    if (error) {
-      setActiveStep(activeStep === 4 ? 0 : activeStep)
-      setStepError(error)
-      toast.error('Firma oluşturulamadı', { description: error })
+    const validation = validateEntireForm()
+    if (validation) {
+      setActiveStep(validation.step)
+      setStepError(validation.error)
+      toast.error('Firma oluşturulamadı', { description: validation.error })
       return
     }
     const existing = readCustomers()
@@ -216,6 +257,7 @@ export function CustomerCreatePage() {
       expertClass: '—',
     }
     saveCustomers([...existing, newCustomer])
+    removeStorage(CUSTOMER_DRAFT_KEY)
     toast.success('Firma oluşturuldu', { description: `${form.companyName} Firma portföyüne eklendi.` })
     navigate('/dashboard/firmalar')
   }
@@ -228,7 +270,12 @@ export function CustomerCreatePage() {
     return <motion.div key="review" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6"><div className="rounded-2xl border border-brand-200 bg-brand-50/60 p-5"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700"><CheckCircle2 className="h-5 w-5" /></span><div><h2 className="text-sm font-semibold text-brand-900">Firma oluşturmaya hazır</h2><p className="mt-1 text-xs leading-5 text-brand-800/70">Aşağıdaki bilgileri kontrol edin. Kaydettiğinizde firma Firma portföyünüze eklenecek.</p></div></div></div><div className="grid gap-4 md:grid-cols-2"><div className="rounded-2xl border border-ink-200 bg-white p-5"><div className="flex items-center justify-between"><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">Firma özeti</h3><button type="button" onClick={() => setActiveStep(0)} className="text-xs font-semibold text-brand-700 hover:text-brand-800">Düzenle</button></div><dl className="mt-3"><ReviewItem label="Firma adı" value={form.companyName || '—'} /><ReviewItem label="Vergi no" value={form.taxNumber || '—'} /><ReviewItem label="SGK sicil no" value={form.sgkNumber || '—'} /><ReviewItem label="NACE" value={form.naceCode ? `${form.naceCode} — ${form.naceTitle}` : '—'} /><ReviewItem label="Tehlike sınıfı" value={form.riskLevel || '—'} /></dl></div><div className="rounded-2xl border border-ink-200 bg-white p-5"><div className="flex items-center justify-between"><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">İletişim</h3><button type="button" onClick={() => setActiveStep(1)} className="text-xs font-semibold text-brand-700 hover:text-brand-800">Düzenle</button></div><dl className="mt-3"><ReviewItem label="Konum" value={form.city && form.district ? `${form.district} / ${form.city}` : '—'} /><ReviewItem label="Yetkili" value={form.contactName || '—'} /><ReviewItem label="E-posta" value={form.email || '—'} /><ReviewItem label="Telefon" value={form.phone || '—'} /></dl></div><div className="rounded-2xl border border-ink-200 bg-white p-5"><div className="flex items-center justify-between"><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">İSG hizmeti</h3><button type="button" onClick={() => setActiveStep(2)} className="text-xs font-semibold text-brand-700 hover:text-brand-800">Düzenle</button></div><dl className="mt-3"><ReviewItem label="Çalışan" value={form.employees || '0'} /><ReviewItem label="Uzman" value={form.expert || 'Atanmamış'} /><ReviewItem label="Hekim" value={form.doctor || 'Atanmamış'} /><ReviewItem label="Sözleşme" value={form.contractStatus || '—'} /></dl></div><div className="rounded-2xl border border-ink-200 bg-white p-5"><div className="flex items-center justify-between"><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">Bildirim kanalları</h3><button type="button" onClick={() => setActiveStep(3)} className="text-xs font-semibold text-brand-700 hover:text-brand-800">Düzenle</button></div><p className="mt-4 text-sm font-semibold text-ink-800">{[form.sms, form.loginSms, form.loginWhatsapp, form.trainingWhatsapp, form.loginEmail].filter(Boolean).length} kanal aktif</p><p className="mt-1 text-xs leading-5 text-ink-400">Seçtiğiniz iletişim kanalları firma oluşturulduktan sonra uygulanır.</p></div></div><div className="flex items-start gap-3 rounded-xl border border-ink-200 bg-ink-50/60 p-4"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /><p className="text-xs leading-5 text-ink-600">Firma oluşturulduktan sonra katılımcı ekleyebilir, eğitim atayabilir ve sözleşme belgelerini firma kartından yönetebilirsiniz.</p></div></motion.div>
   }
 
-  return <div className="space-y-6"><motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}><Link to="/dashboard/firmalar" className="inline-flex items-center gap-2 text-xs font-semibold text-ink-500 transition-colors hover:text-brand-700"><ArrowLeft className="h-4 w-4" /> Firma listesine dön</Link><div className="mt-5 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Firmalar</span><ChevronRight className="h-3.5 w-3.5" /><span className="text-ink-600">Yeni Firma</span></div><div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Yeni Firma oluştur</h1><p className="mt-1.5 text-sm text-ink-500">Firma bilgilerini adım adım tamamlayarak güvenli bir Firma kaydı oluşturun.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold text-ink-500"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Taslak</span></div></motion.div><div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]"><aside className="rounded-2xl border border-ink-200/80 bg-white p-4 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] lg:sticky lg:top-[100px]"><div className="mb-5 flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-ink-400">Oluşturma akışı</p><p className="mt-1 text-xs font-semibold text-ink-700">Adım {activeStep + 1} / {steps.length}</p></div><span className="text-xs font-bold text-brand-700">%{Math.round(((activeStep + 1) / steps.length) * 100)}</span></div><div className="mb-6 h-1.5 overflow-hidden rounded-full bg-ink-100"><div className="h-full rounded-full bg-brand-500 transition-all duration-300" style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }} /></div><nav className="flex gap-2 overflow-x-auto lg:block lg:space-y-1">{steps.map((step, index) => <button key={step.title} type="button" onClick={() => { if (index <= activeStep) setActiveStep(index) }} disabled={index > activeStep} className={cn('group flex min-w-[190px] items-center gap-3 rounded-xl p-3 text-left transition-colors lg:w-full', activeStep === index ? 'bg-brand-50' : index < activeStep ? 'hover:bg-ink-50' : 'cursor-not-allowed opacity-50')}><span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-bold', index < activeStep ? 'bg-brand-600 text-white' : activeStep === index ? 'bg-white text-brand-700 shadow-sm ring-1 ring-brand-100' : 'bg-ink-100 text-ink-400')}>{index < activeStep ? <Check className="h-4 w-4" /> : <step.icon className="h-4 w-4" strokeWidth={1.8} />}</span><span className="min-w-0"><span className={cn('block truncate text-xs font-semibold', activeStep === index ? 'text-brand-800' : 'text-ink-700')}>{step.title}</span><span className="mt-0.5 block truncate text-[10px] text-ink-400">{step.detail}</span></span></button>)}</nav><div className="mt-5 hidden items-start gap-2 rounded-xl bg-ink-50 p-3 lg:flex"><Save className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" /><p className="text-[11px] leading-5 text-ink-500">İlerlemeniz otomatik olarak korunur. İstediğiniz zaman taslak olarak kaydedebilirsiniz.</p></div></aside><section className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"><div className="min-h-[580px] p-5 sm:p-7">{renderStep()}{stepError && <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs font-medium text-rose-700">{stepError}</div>}</div><div className="flex flex-col-reverse justify-between gap-3 border-t border-ink-100 bg-ink-50/35 px-5 py-4 sm:flex-row sm:items-center sm:px-7"><button type="button" onClick={saveDraft} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-ink-500 transition-colors hover:bg-white hover:text-ink-800 sm:mr-auto"><Save className="h-4 w-4" /> Taslağı kaydet</button><div className="flex flex-col-reverse gap-2 sm:flex-row">{activeStep > 0 && <Button type="button" variant="outline" onClick={goBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>Geri</Button>}{activeStep < steps.length - 1 ? <Button type="button" onClick={goNext} rightIcon={<ArrowRight className="h-4 w-4" />}>Devam et</Button> : <Button type="button" onClick={submitCustomer} leftIcon={<CheckCircle2 className="h-4 w-4" />}>Firmayi oluştur</Button>}</div></div></section></div></div>
+  return <div className="space-y-6">
+    <div className="flex justify-end gap-2">
+      <Button type="button" variant="outline" size="sm" onClick={clearDraft}>Taslağı temizle</Button>
+      <Button type="button" variant="outline" size="sm" leftIcon={<Save className="h-4 w-4" />} onClick={saveDraft}>Taslağı kaydet</Button>
+    </div>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}><Link to="/dashboard/firmalar" className="inline-flex items-center gap-2 text-xs font-semibold text-ink-500 transition-colors hover:text-brand-700"><ArrowLeft className="h-4 w-4" /> Firma listesine dön</Link><div className="mt-5 flex items-center gap-2 text-xs font-medium text-ink-400"><span>Firmalar</span><ChevronRight className="h-3.5 w-3.5" /><span className="text-ink-600">Yeni Firma</span></div><div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Yeni Firma oluştur</h1><p className="mt-1.5 text-sm text-ink-500">Firma bilgilerini adım adım tamamlayarak güvenli bir Firma kaydı oluşturun.</p></div><span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold text-ink-500"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Taslak</span></div></motion.div><div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]"><aside className="rounded-2xl border border-ink-200/80 bg-white p-4 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)] lg:sticky lg:top-[100px]"><div className="mb-5 flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-ink-400">Oluşturma akışı</p><p className="mt-1 text-xs font-semibold text-ink-700">Adım {activeStep + 1} / {steps.length}</p></div><span className="text-xs font-bold text-brand-700">%{Math.round(((activeStep + 1) / steps.length) * 100)}</span></div><div className="mb-6 h-1.5 overflow-hidden rounded-full bg-ink-100"><div className="h-full rounded-full bg-brand-500 transition-all duration-300" style={{ width: `${((activeStep + 1) / steps.length) * 100}%` }} /></div><nav className="flex gap-2 overflow-x-auto lg:block lg:space-y-1">{steps.map((step, index) => <button key={step.title} type="button" onClick={() => { if (index <= activeStep) setActiveStep(index) }} disabled={index > activeStep} className={cn('group flex min-w-[190px] items-center gap-3 rounded-xl p-3 text-left transition-colors lg:w-full', activeStep === index ? 'bg-brand-50' : index < activeStep ? 'hover:bg-ink-50' : 'cursor-not-allowed opacity-50')}><span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-bold', index < activeStep ? 'bg-brand-600 text-white' : activeStep === index ? 'bg-white text-brand-700 shadow-sm ring-1 ring-brand-100' : 'bg-ink-100 text-ink-400')}>{index < activeStep ? <Check className="h-4 w-4" /> : <step.icon className="h-4 w-4" strokeWidth={1.8} />}</span><span className="min-w-0"><span className={cn('block truncate text-xs font-semibold', activeStep === index ? 'text-brand-800' : 'text-ink-700')}>{step.title}</span><span className="mt-0.5 block truncate text-[10px] text-ink-400">{step.detail}</span></span></button>)}</nav><div className="mt-5 hidden items-start gap-2 rounded-xl bg-ink-50 p-3 lg:flex"><Save className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" /><p className="text-[11px] leading-5 text-ink-500">İlerlemeniz otomatik olarak korunur. İstediğiniz zaman taslak olarak kaydedebilirsiniz.</p></div></aside><section className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]"><div className="min-h-[580px] p-5 sm:p-7">{renderStep()}{stepError && <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-xs font-medium text-rose-700">{stepError}</div>}</div><div className="flex flex-col-reverse justify-between gap-3 border-t border-ink-100 bg-ink-50/35 px-5 py-4 sm:flex-row sm:items-center sm:px-7"><button type="button" onClick={saveDraft} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold text-ink-500 transition-colors hover:bg-white hover:text-ink-800 sm:mr-auto"><Save className="h-4 w-4" /> Taslağı kaydet</button><div className="flex flex-col-reverse gap-2 sm:flex-row">{activeStep > 0 && <Button type="button" variant="outline" onClick={goBack} leftIcon={<ArrowLeft className="h-4 w-4" />}>Geri</Button>}{activeStep < steps.length - 1 ? <Button type="button" onClick={goNext} rightIcon={<ArrowRight className="h-4 w-4" />}>Devam et</Button> : <Button type="button" onClick={submitCustomer} leftIcon={<CheckCircle2 className="h-4 w-4" />}>Firmayi oluştur</Button>}</div></div></section></div></div>
 }
 
 function ReviewItem({ label, value }: { label: string; value: string }) {
