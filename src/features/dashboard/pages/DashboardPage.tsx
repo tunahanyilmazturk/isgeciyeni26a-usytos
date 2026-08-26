@@ -13,7 +13,10 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { readCustomers } from '@/features/customers/data/customers'
+import { readParticipants } from '@/features/participants/data/participants'
 import {
   Area,
   AreaChart,
@@ -38,30 +41,10 @@ const activityData = [
   { name: '25 Ağu', tamamlanan: 56, atanan: 64 },
 ]
 
-const riskData = [
-  { name: 'Düşük', value: 58, color: '#1c9f94' },
-  { name: 'Orta', value: 27, color: '#e5b454' },
-  { name: 'Yüksek', value: 15, color: '#dc7b6f' },
-]
-
-const companies = [
-  { name: 'Asteria Lojistik', employees: 18, progress: 86, status: 'İyi durumda' },
-  { name: 'Nexora Kimya', employees: 12, progress: 72, status: 'Takipte' },
-  { name: 'Pelion Gıda', employees: 9, progress: 64, status: 'Takipte' },
-  { name: 'Vortan Metal', employees: 11, progress: 48, status: 'Aksiyon gerekli' },
-]
-
 const actions = [
   { icon: FileWarning, title: '3 risk değerlendirmesi yenilenmeli', detail: 'Son tarih: 28 Ağustos', tone: 'warning' },
   { icon: ClipboardCheck, title: '2 denetim raporu onay bekliyor', detail: 'Bugün oluşturuldu', tone: 'neutral' },
   { icon: BookOpen, title: '12 çalışanın eğitimi tamamlanmadı', detail: 'Son tarih: 30 Ağustos', tone: 'danger' },
-]
-
-const stats = [
-  { label: 'Toplam firma', value: '5', change: '+1 bu ay', icon: Building2, tone: 'teal' },
-  { label: 'Aktif çalışan', value: '50', change: '+8 bu ay', icon: Users, tone: 'violet' },
-  { label: 'Eğitim tamamlama', value: '%74', change: '+%12 geçen aya göre', icon: CheckCircle2, tone: 'green' },
-  { label: 'Açık aksiyon', value: '12', change: '3 yüksek öncelik', icon: AlertTriangle, tone: 'amber' },
 ]
 
 const toneStyles = {
@@ -72,6 +55,49 @@ const toneStyles = {
 }
 
 export function DashboardPage() {
+  const customers = useMemo(() => readCustomers(), [])
+  const participants = useMemo(() => readParticipants(), [])
+
+  const activeCustomers = customers.filter((c) => c.status === 'active')
+  const totalEmployees = customers.reduce((sum, c) => sum + c.employees, 0)
+
+  const trainingCompleted = participants.filter((p) => p.trainingStatus === 'successful').length
+  const trainingCompletionRate = participants.length > 0
+    ? Math.round((trainingCompleted / participants.length) * 100)
+    : 0
+
+  const overdueParticipants = participants.filter(
+    (p) => p.trainingStatus === 'failed' || (p.trainingStatus !== 'successful' && p.nextTraining === '—'),
+  ).length
+
+  // Risk distribution for pie chart
+  const lowRisk = customers.filter((c) => c.riskLevel === 'Az tehlikeli').length
+  const mediumRisk = customers.filter((c) => c.riskLevel === 'Tehlikeli').length
+  const highRisk = customers.filter((c) => c.riskLevel === 'Çok tehlikeli').length
+
+  const riskData = [
+    { name: 'Düşük', value: lowRisk, color: '#1c9f94' },
+    { name: 'Orta', value: mediumRisk, color: '#e5b454' },
+    { name: 'Yüksek', value: highRisk, color: '#dc7b6f' },
+  ]
+
+  const topCompanies = activeCustomers.slice(0, 4).map((c) => {
+    const companyParticipants = participants.filter((p) => p.company === c.name)
+    const completed = companyParticipants.filter((p) => p.trainingStatus === 'successful').length
+    const progress = companyParticipants.length > 0
+      ? Math.round((completed / companyParticipants.length) * 100)
+      : 0
+    const status = progress >= 75 ? 'İyi durumda' : progress >= 50 ? 'Takipte' : 'Aksiyon gerekli'
+    return { name: c.name, employees: companyParticipants.length, progress, status }
+  })
+
+  const stats = [
+    { label: 'Toplam firma', value: String(activeCustomers.length), change: '+1 bu ay', icon: Building2, tone: 'teal' },
+    { label: 'Aktif çalışan', value: String(totalEmployees), change: '+8 bu ay', icon: Users, tone: 'violet' },
+    { label: 'Eğitim tamamlama', value: `%${trainingCompletionRate}`, change: '+%12 geçen aya göre', icon: CheckCircle2, tone: 'green' },
+    { label: 'Açık aksiyon', value: String(overdueParticipants), change: '3 yüksek öncelik', icon: AlertTriangle, tone: 'amber' },
+  ]
+
   return (
     <div className="space-y-7">
       <motion.section
@@ -225,7 +251,7 @@ export function DashboardPage() {
                 <tr><th className="pb-3 font-semibold">Firma</th><th className="pb-3 font-semibold">Çalışan</th><th className="pb-3 font-semibold">İlerleme</th><th className="pb-3 text-right font-semibold">Durum</th></tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
-                {companies.map((company) => (
+                {topCompanies.map((company) => (
                   <tr key={company.name} className="group">
                     <td className="py-3.5 font-semibold text-ink-700">{company.name}</td>
                     <td className="py-3.5 text-ink-500">{company.employees}</td>

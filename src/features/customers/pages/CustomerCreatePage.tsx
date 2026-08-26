@@ -27,6 +27,7 @@ import { Button, Input } from '@/components/ui'
 import { naceCodes } from '@/data/naceCodes'
 import { turkeyLocations } from '@/data/turkeyLocations'
 import { cn } from '@/lib/utils'
+import { readCustomers, saveCustomers, type Customer, type RiskLevel, type ContractStatus, type ApprovalStatus, type CompanyStatus } from '../data/customers'
 
 type FormData = {
   companyName: string
@@ -175,6 +176,46 @@ export function CustomerCreatePage() {
       toast.error('Firma oluşturulamadı', { description: error })
       return
     }
+    const existing = readCustomers()
+    const newCustomer: Customer = {
+      id: Date.now(),
+      name: form.companyName,
+      taxNumber: form.taxNumber,
+      sector: form.naceTitle || 'Belirtilmedi',
+      location: form.city && form.district ? `${form.city} / ${form.district}` : '—',
+      employees: Number(form.employees) || 0,
+      riskLevel: (form.riskLevel as RiskLevel) || 'Az tehlikeli',
+      expert: form.expert || '',
+      doctor: form.doctor || '',
+      expertMinutes: Number(form.expertMinutes) || 0,
+      doctorMinutes: Number(form.doctorMinutes) || 0,
+      contractStatus: form.contractStatus as ContractStatus,
+      approvalStatus: 'Onay bekliyor' as ApprovalStatus,
+      status: 'active' as CompanyStatus,
+      contactName: form.contactName,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+      updatedAt: new Date().toLocaleDateString('tr-TR') + ', ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      socialSecurityNumber: form.sgkNumber,
+      naceCode: form.naceCode ? `${form.naceCode} — ${form.naceTitle}` : '—',
+      participants: 0,
+      contractStart: form.contractStart || '—',
+      contractEnd: form.contractEnd || '—',
+      approver: 'Henüz onaylanmadı',
+      signatory: form.signatory || form.contactName,
+      city: form.city,
+      district: form.district,
+      address: form.address,
+      accountant: form.accountantName || '—',
+      accountantPhone: form.accountantPhone || '—',
+      accountantEmail: form.accountantEmail || '—',
+      visitPeriod: 'Aylık',
+      completedVisits: 0,
+      plannedVisits: 0,
+      nextVisit: '—',
+      expertClass: '—',
+    }
+    saveCustomers([...existing, newCustomer])
     toast.success('Müşteri oluşturuldu', { description: `${form.companyName} müşteri portföyüne eklendi.` })
     navigate('/dashboard/firmalar')
   }

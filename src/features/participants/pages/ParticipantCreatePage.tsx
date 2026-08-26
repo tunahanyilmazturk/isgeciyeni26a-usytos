@@ -14,11 +14,12 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button, Input } from '@/components/ui'
 import { saveParticipants, readParticipants, type Participant, type ParticipantStatus } from '../data/participants'
+import { readCustomers } from '@/features/customers/data/customers'
 
 type ParticipantForm = {
   company: string
@@ -32,14 +33,6 @@ type ParticipantForm = {
   password: string
   passwordConfirmation: string
 }
-
-const companies = [
-  { id: 1, name: 'Quantis Tekstil', riskLevel: 'Tehlikeli' as const },
-  { id: 2, name: 'Pelion Gıda', riskLevel: 'Az tehlikeli' as const },
-  { id: 3, name: 'Nexora Kimya', riskLevel: 'Tehlikeli' as const },
-  { id: 4, name: 'Vortan Metal', riskLevel: 'Çok tehlikeli' as const },
-  { id: 5, name: 'Asteria Lojistik', riskLevel: 'Az tehlikeli' as const },
-]
 
 const initialForm: ParticipantForm = {
   company: '', name: '', jobTitle: '', username: '', email: '', phone: '', tcNumber: '', status: 'active', password: '', passwordConfirmation: '',
@@ -68,6 +61,12 @@ export function ParticipantCreatePage() {
   const [activeStep, setActiveStep] = useState(0)
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState('')
+  const companies = useMemo(() => {
+    const customers = readCustomers()
+    return customers
+      .filter((c) => c.status === 'active')
+      .map((c) => ({ id: c.id, name: c.name, riskLevel: c.riskLevel }))
+  }, [])
 
   function updateField<K extends keyof ParticipantForm>(field: K, value: ParticipantForm[K]) {
     setForm((current) => ({ ...current, [field]: value }))

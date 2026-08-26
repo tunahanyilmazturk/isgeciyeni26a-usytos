@@ -42,6 +42,30 @@ const CompanyInfoPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('./features/settings').then((m) => ({ default: m.UsersPage })),
 )
+const AssignmentsPage = lazy(() =>
+  import('./features/assignments').then((m) => ({ default: m.AssignmentsPage })),
+)
+const SignatureQueuePage = lazy(() =>
+  import('./features/signatures').then((m) => ({ default: m.SignatureQueuePage })),
+)
+const LiveTrainingPage = lazy(() =>
+  import('./features/live-training').then((m) => ({ default: m.LiveTrainingPage })),
+)
+const ReportsPage = lazy(() =>
+  import('./features/reports').then((m) => ({ default: m.ReportsPage })),
+)
+const InvoicesPage = lazy(() =>
+  import('./features/invoices').then((m) => ({ default: m.InvoicesPage })),
+)
+const GuidePage = lazy(() =>
+  import('./features/support').then((m) => ({ default: m.GuidePage })),
+)
+const VideoPage = lazy(() =>
+  import('./features/support').then((m) => ({ default: m.VideoPage })),
+)
+const SupportRequestPage = lazy(() =>
+  import('./features/support').then((m) => ({ default: m.SupportRequestPage })),
+)
 
 function ProtectedRoutes() {
   const { isAuthenticated } = useAuth()
@@ -72,16 +96,16 @@ function ProtectedRoutes() {
           <Route path="osgb-bilgileri/egiticiler" element={<ExpertsPage />} />
           <Route path="osgb-bilgileri/doktorlar" element={<DoctorsPage />} />
           <Route path="osgb-bilgileri/kullanicilar" element={<UsersPage />} />
-          <Route path="osgb-bilgileri/faturalar" element={<DashboardPlaceholderPage title="Faturalar" />} />
-          <Route path="egitim-atamalari" element={<DashboardPlaceholderPage title="Eğitim Atamaları" />} />
-          <Route path="egitim-atamalari/onay-kuyrugu" element={<DashboardPlaceholderPage title="Bekleyen Onaylar" />} />
-          <Route path="egitim-atamalari/onay-kuyrugu/gecmis" element={<DashboardPlaceholderPage title="Geçmiş Onaylar" />} />
-          <Route path="imza-kuyrugu" element={<DashboardPlaceholderPage title="E-İmza Kuyruğu" />} />
-          <Route path="canli-egitim" element={<DashboardPlaceholderPage title="Canlı Eğitim" />} />
-          <Route path="raporlar" element={<DashboardPlaceholderPage title="Raporlar" />} />
-          <Route path="destek/kilavuz" element={<DashboardPlaceholderPage title="Kullanım Kılavuzu" />} />
-          <Route path="destek/video" element={<DashboardPlaceholderPage title="Kullanım Videosu" />} />
-          <Route path="destek/talepler" element={<DashboardPlaceholderPage title="Destek Talebi" />} />
+          <Route path="osgb-bilgileri/faturalar" element={<InvoicesPage />} />
+          <Route path="egitim-atamalari" element={<AssignmentsPage />} />
+          <Route path="egitim-atamalari/onay-kuyrugu" element={<AssignmentsPage />} />
+          <Route path="egitim-atamalari/onay-kuyrugu/gecmis" element={<AssignmentsPage />} />
+          <Route path="imza-kuyrugu" element={<SignatureQueuePage />} />
+          <Route path="canli-egitim" element={<LiveTrainingPage />} />
+          <Route path="raporlar" element={<ReportsPage />} />
+          <Route path="destek/kilavuz" element={<GuidePage />} />
+          <Route path="destek/video" element={<VideoPage />} />
+          <Route path="destek/talepler" element={<SupportRequestPage />} />
           <Route path="*" element={<DashboardPlaceholderPage />} />
         </Routes>
       </Suspense>
