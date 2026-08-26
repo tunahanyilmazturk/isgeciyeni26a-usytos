@@ -26,7 +26,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/features/auth'
+import { useAuth } from '@/features/auth/AuthContext'
 import { MobileBottomBar, type BottomBarItem } from '@/components/ui'
 
 interface NavigationItem {

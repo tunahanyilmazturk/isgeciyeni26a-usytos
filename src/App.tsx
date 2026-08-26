@@ -2,13 +2,9 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { ParticipantLayout } from './layouts/ParticipantLayout'
-import {
-  AuthProvider,
-  LoginPage,
-  ParticipantAuthProvider,
-  useAuth,
-  useParticipantAuth,
-} from './features/auth'
+import { AuthProvider, useAuth } from './features/auth/AuthContext'
+import { ParticipantAuthProvider, useParticipantAuth } from './features/auth/ParticipantAuthContext'
+import { LoginPage } from './features/auth/pages/LoginPage'
 
 const DashboardPage = lazy(() =>
   import('./features/dashboard').then((m) => ({ default: m.DashboardPage })),
@@ -74,19 +70,19 @@ const SupportRequestPage = lazy(() =>
   import('./features/support').then((m) => ({ default: m.SupportRequestPage })),
 )
 const KvkkApprovalPage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.KvkkApprovalPage })),
+  import('./features/auth/pages/KvkkApprovalPage').then((m) => ({ default: m.KvkkApprovalPage })),
 )
 const PasswordChangePage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.PasswordChangePage })),
+  import('./features/auth/pages/PasswordChangePage').then((m) => ({ default: m.PasswordChangePage })),
 )
 const ParticipantDashboardPage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.ParticipantDashboardPage })),
+  import('./features/auth/pages/ParticipantDashboardPage').then((m) => ({ default: m.ParticipantDashboardPage })),
 )
 const ParticipantTrainingsPage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.ParticipantTrainingsPage })),
+  import('./features/auth/pages/ParticipantTrainingsPage').then((m) => ({ default: m.ParticipantTrainingsPage })),
 )
 const ParticipantProfilePage = lazy(() =>
-  import('./features/auth').then((m) => ({ default: m.ParticipantProfilePage })),
+  import('./features/auth/pages/ParticipantProfilePage').then((m) => ({ default: m.ParticipantProfilePage })),
 )
 
 type AdminModule = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'signatures' | 'liveTraining' | 'reports' | 'trainings' | 'companyInfo' | 'support'
