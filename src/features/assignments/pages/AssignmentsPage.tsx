@@ -1,14 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowRight,
-  CalendarClock,
+  Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Clock,
   Download,
   FileSpreadsheet,
   FileText,
   Layers3,
+  List,
   Pencil,
   Plus,
   Search,
@@ -35,6 +38,7 @@ import {
 } from '../data/assignments'
 
 type AssignmentFilter = 'all' | 'assigned' | 'unassigned'
+type ViewMode = 'list' | 'calendar'
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
@@ -47,6 +51,7 @@ export function AssignmentsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [view, setView] = useState<ViewMode>('list')
   const [drawerParticipant, setDrawerParticipant] = useState<Participant | null | undefined>(undefined)
 
   const [allSummaries, setAllSummaries] = useState<ParticipantAssignmentSummary[]>(() => getParticipantAssignmentSummaries())
@@ -144,7 +149,23 @@ export function AssignmentsPage() {
           <p className="mt-1.5 max-w-2xl text-sm text-ink-500">Global eğitimleri katılımcılara atayın, atama durumlarını tek ekrandan takip edin.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" leftIcon={<CalendarClock className="h-4 w-4" strokeWidth={1.7} />} onClick={() => toast.info('Atama takvimi hazırlanacak.')}>Takvim görünümü</Button>
+          {/* View toggle */}
+          <div className="inline-flex rounded-xl border border-ink-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              className={cn('inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors', view === 'list' ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-50')}
+            >
+              <List className="h-3.5 w-3.5" strokeWidth={1.8} /> Liste
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('calendar')}
+              className={cn('inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors', view === 'calendar' ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-50')}
+            >
+              <Calendar className="h-3.5 w-3.5" strokeWidth={1.8} /> Takvim
+            </button>
+          </div>
           <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => openDrawer(null)}>Eğitim ata</Button>
           <Button variant="outline" size="md" leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />} onClick={handleBulkAssign}>Toplu atama</Button>
         </div>
@@ -268,7 +289,8 @@ export function AssignmentsPage() {
           </div>
         </div>
 
-        {/* Tablo */}
+        {/* Tablo (liste görünümü) */}
+        {view === 'list' && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-ink-100 bg-ink-50/40 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
@@ -352,8 +374,10 @@ export function AssignmentsPage() {
             </div>
           )}
         </div>
+        )}
 
-        {/* Pagination */}
+        {/* Pagination (liste görünümü) */}
+        {view === 'list' && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -365,6 +389,14 @@ export function AssignmentsPage() {
           endIndex={endIndex}
           itemName="katılımcı"
         />
+        )}
+
+        {/* Takvim görünümü */}
+        {view === 'calendar' && (
+          <AssignmentCalendar
+            summaries={filtered}
+          />
+        )}
       </motion.section>
 
       {/* Bireysel atama drawer'ı */}
@@ -378,6 +410,271 @@ export function AssignmentsPage() {
           />
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/** Atama durumu etiketleri ve renkleri (takvimde de kullanılır) */
+const assignmentStatusLabels: Record<TrainingAssignment['status'], string> = {
+  active: 'Yürürlükte',
+  pending_approval: 'Onay bekliyor',
+  completed: 'Tamamlandı',
+  expired: 'Süresi doldu',
+}
+
+const assignmentStatusClasses: Record<TrainingAssignment['status'], string> = {
+  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  pending_approval: 'border-amber-200 bg-amber-50 text-amber-700',
+  completed: 'border-brand-200 bg-brand-50 text-brand-700',
+  expired: 'border-rose-200 bg-rose-50 text-rose-700',
+}
+
+const assignmentStatusDot: Record<TrainingAssignment['status'], string> = {
+  active: 'bg-emerald-500',
+  pending_approval: 'bg-amber-500',
+  completed: 'bg-brand-500',
+  expired: 'bg-rose-500',
+}
+
+/** Türkçe ay isimleri */
+const MONTH_NAMES = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+]
+
+/** Türkçe gün kısaltmaları (Pazartesi'den başlar) */
+const DAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+
+/** "30.11.2026" formatını "2026-11-30" formatına çevirir (takvim için) */
+function parseDueDate(dueDate: string): string | null {
+  const match = dueDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (!match) return null
+  const [, day, month, year] = match
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
+
+/** Aylık takvim grid'i — atamaları son tarihlere göre gösterir */
+function AssignmentCalendar({
+  summaries,
+}: {
+  summaries: ParticipantAssignmentSummary[]
+}) {
+  const today = new Date()
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth())
+  const [currentYear, setCurrentYear] = useState(today.getFullYear())
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  // Tüm atamaları topla — participant bilgisini ekle
+  const allAssignments = useMemo(() => {
+    const result: Array<TrainingAssignment & { participantName: string; participantId: number; company: string }> = []
+    summaries.forEach((summary) => {
+      summary.assignments.forEach((a) => {
+        result.push({
+          ...a,
+          participantName: summary.participant.name,
+          participantId: summary.participant.id,
+          company: summary.participant.company,
+        })
+      })
+    })
+    return result
+  }, [summaries])
+
+  // Atamaları tarihe göre grupla
+  const assignmentsByDate = useMemo(() => {
+    const map = new Map<string, typeof allAssignments>()
+    allAssignments.forEach((a) => {
+      const dateStr = parseDueDate(a.dueDate)
+      if (!dateStr) return
+      const existing = map.get(dateStr) ?? []
+      existing.push(a)
+      map.set(dateStr, existing)
+    })
+    return map
+  }, [allAssignments])
+
+  // Takvim grid'ini oluştur
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(currentYear, currentMonth, 1)
+    const lastDay = new Date(currentYear, currentMonth + 1, 0)
+    const startWeekday = (firstDay.getDay() + 6) % 7 // Pazartesi=0
+    const daysInMonth = lastDay.getDate()
+
+    const days: Array<{ date: string | null; day: number | null; isToday: boolean }> = []
+    // Önceki aydan gelen boş günler
+    for (let i = 0; i < startWeekday; i++) {
+      days.push({ date: null, day: null, isToday: false })
+    }
+    // Ayın günleri
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()
+      days.push({ date: dateStr, day: d, isToday })
+    }
+    // Sonraki aydan gelen boş günler (grid'i tamamla)
+    while (days.length % 7 !== 0) {
+      days.push({ date: null, day: null, isToday: false })
+    }
+    return days
+  }, [currentYear, currentMonth])
+
+  function prevMonth() {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear((y) => y - 1)
+    } else {
+      setCurrentMonth((m) => m - 1)
+    }
+    setSelectedDay(null)
+  }
+
+  function nextMonth() {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear((y) => y + 1)
+    } else {
+      setCurrentMonth((m) => m + 1)
+    }
+    setSelectedDay(null)
+  }
+
+  function goToToday() {
+    setCurrentMonth(today.getMonth())
+    setCurrentYear(today.getFullYear())
+    setSelectedDay(null)
+  }
+
+  const selectedDayAssignments = selectedDay ? (assignmentsByDate.get(selectedDay) ?? []) : []
+  const monthAssignmentsCount = allAssignments.filter((a) => {
+    const dateStr = parseDueDate(a.dueDate)
+    if (!dateStr) return false
+    const [y, m] = dateStr.split('-')
+    return Number(y) === currentYear && Number(m) === currentMonth + 1
+  }).length
+
+  return (
+    <div className="p-5 sm:p-6">
+      {/* Takvim header — ay navigasyonu */}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-bold text-ink-900">{MONTH_NAMES[currentMonth]} {currentYear}</h3>
+          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-bold text-brand-700">{monthAssignmentsCount} atama</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={goToToday} className="inline-flex h-9 items-center rounded-xl border border-ink-200 px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">Bugün</button>
+          <button type="button" onClick={prevMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Önceki ay">
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+          <button type="button" onClick={nextMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Sonraki ay">
+            <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
+
+      {/* Gün başlıkları */}
+      <div className="mb-2 grid grid-cols-7 gap-1.5">
+        {DAY_LABELS.map((label) => (
+          <div key={label} className="pb-2 text-center text-[10px] font-bold uppercase tracking-wide text-ink-400">{label}</div>
+        ))}
+      </div>
+
+      {/* Takvim grid'i */}
+      <div className="grid grid-cols-7 gap-1.5">
+        {calendarDays.map((cell, idx) => {
+          if (!cell.date) {
+            return <div key={idx} className="min-h-[88px] rounded-xl border border-dashed border-ink-100 bg-ink-50/20" />
+          }
+          const dayAssignments = assignmentsByDate.get(cell.date) ?? []
+          const isSelected = selectedDay === cell.date
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setSelectedDay(isSelected ? null : cell.date)}
+              className={cn(
+                'min-h-[88px] rounded-xl border p-2 text-left transition-all',
+                isSelected ? 'border-brand-400 bg-brand-50/50 ring-2 ring-brand-500/15' :
+                dayAssignments.length > 0 ? 'border-ink-200 bg-white hover:border-brand-300 hover:bg-brand-50/20' :
+                'border-ink-100 bg-ink-50/20 hover:border-ink-200',
+              )}
+            >
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className={cn('text-xs font-bold tabular-nums', cell.isToday ? 'grid h-6 w-6 place-items-center rounded-full bg-brand-600 text-white' : 'text-ink-600')}>
+                  {cell.day}
+                </span>
+                {dayAssignments.length > 0 && (
+                  <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[9px] font-bold text-ink-600">{dayAssignments.length}</span>
+                )}
+              </div>
+              {/* Atama noktaları (max 3 göster) */}
+              <div className="space-y-1">
+                {dayAssignments.slice(0, 3).map((a) => (
+                  <div key={a.id} className="flex items-center gap-1 truncate">
+                    <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', assignmentStatusDot[a.status])} />
+                    <span className="truncate text-[10px] font-medium text-ink-600">{a.trainingName}</span>
+                  </div>
+                ))}
+                {dayAssignments.length > 3 && (
+                  <p className="text-[10px] font-semibold text-ink-400">+{dayAssignments.length - 3} daha</p>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Seçili günün detayları */}
+      {selectedDay && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-5 rounded-2xl border border-brand-200 bg-brand-50/30 p-5"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-ink-900">
+                {selectedDay.split('-').reverse().map((p, i) => i === 1 ? MONTH_NAMES[Number(p) - 1] : p).join(' ')}
+              </h4>
+              <p className="mt-0.5 text-xs text-ink-500">{selectedDayAssignments.length} atama bu tarihte sona eriyor</p>
+            </div>
+            <button type="button" onClick={() => setSelectedDay(null)} className="rounded-lg p-1.5 text-ink-400 hover:bg-white">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {selectedDayAssignments.length === 0 ? (
+            <p className="text-xs text-ink-400">Bu tarihte atama yok.</p>
+          ) : (
+            <div className="space-y-2">
+              {selectedDayAssignments.map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-3 rounded-xl border border-ink-200 bg-white p-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={cn('h-2 w-2 shrink-0 rounded-full', assignmentStatusDot[a.status])} />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink-800">{a.trainingName}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{a.participantName} · {a.company}</p>
+                    </div>
+                  </div>
+                  <span className={cn('inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold', assignmentStatusClasses[a.status])}>
+                    {assignmentStatusLabels[a.status]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Lejant */}
+      <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-ink-100 pt-4">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-ink-400">Durum:</p>
+        {(['active', 'pending_approval', 'completed', 'expired'] as const).map((status) => (
+          <span key={status} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-600">
+            <span className={cn('h-2 w-2 rounded-full', assignmentStatusDot[status])} />
+            {assignmentStatusLabels[status]}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -400,21 +697,6 @@ function CountBadge({ count, variant }: { count: number; variant: 'active' | 'pe
       {count}
     </span>
   )
-}
-
-/** Atama durumu etiketleri ve renkleri */
-const assignmentStatusLabels: Record<TrainingAssignment['status'], string> = {
-  active: 'Yürürlükte',
-  pending_approval: 'Onay bekliyor',
-  completed: 'Tamamlandı',
-  expired: 'Süresi doldu',
-}
-
-const assignmentStatusClasses: Record<TrainingAssignment['status'], string> = {
-  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  pending_approval: 'border-amber-200 bg-amber-50 text-amber-700',
-  completed: 'border-brand-200 bg-brand-50 text-brand-700',
-  expired: 'border-rose-200 bg-rose-50 text-rose-700',
 }
 
 /** Bireysel eğitim atama drawer'ı — katılımcı seçimi, mevcut atamalar, yeni atama ekleme */
