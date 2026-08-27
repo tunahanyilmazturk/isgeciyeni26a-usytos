@@ -75,7 +75,7 @@ export function LoginPage() {
     }
     const first = participants.find((p) => p.status === 'active') ?? participants[0]
     setValue('login', first.username, { shouldValidate: true })
-    setValue('password', first.password ?? 'dev-demo-1234', { shouldValidate: true })
+    setValue('password', first.password ?? '123456', { shouldValidate: true })
     toast.info('Demo katılımcı bilgileri dolduruldu', {
       description: `${first.name} (${first.company})`,
     })
@@ -97,10 +97,12 @@ export function LoginPage() {
 
       // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı/e-posta/TC eşleşmesi)
       const participants = readParticipants()
-      const normalizedLogin = loginValue.toLocaleLowerCase('tr-TR')
+      // Kullanıcı adları ASCII-only olduğu için en-US locale kullanıyoruz.
+      // tr-TR locale'inde 'I' → 'ı' dönüşümü yanlış eşleşmeye neden olur.
+      const normalizedLogin = loginValue.toLocaleLowerCase('en-US')
       const foundParticipant = participants.find((p) =>
-        p.username.toLocaleLowerCase('tr-TR') === normalizedLogin
-        || (p.email !== '—' && p.email.toLocaleLowerCase('tr-TR') === normalizedLogin)
+        p.username.toLocaleLowerCase('en-US') === normalizedLogin
+        || (p.email !== '—' && p.email.toLocaleLowerCase('en-US') === normalizedLogin)
         || (p.tcNumber !== '—' && p.tcNumber === loginValue),
       )
 

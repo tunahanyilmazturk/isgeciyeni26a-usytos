@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { readCustomers } from '@/features/customers/data/customers'
-import { type Participant } from '../data/participants'
+import { readParticipants, type Participant } from '../data/participants'
 
 export interface BulkParticipantRow {
   key: string
@@ -193,16 +193,25 @@ export function BulkParticipantModal({
   const invalidCount = rows.length - validRows.length
   const canSubmit = validRows.length > 0
 
-  // Duplicate username kontrolü
+  // Duplicate username kontrolü — hem batch içi hem mevcut katılımcılarla
+  const existingUsernames = useMemo(() => {
+    const set = new Set<string>()
+    readParticipants().forEach((p) => set.add(p.username.toLocaleLowerCase('en-US')))
+    return set
+  }, [])
   const usernameCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     validRows.forEach((r) => {
-      const u = r.username.trim().toLocaleLowerCase('tr-TR')
+      const u = r.username.trim().toLocaleLowerCase('en-US')
       counts[u] = (counts[u] ?? 0) + 1
     })
     return counts
   }, [validRows])
   const duplicateUsernames = Object.entries(usernameCounts).filter(([, c]) => c > 1).map(([u]) => u)
+  const conflictingUsernames = useMemo(
+    () => validRows.filter((r) => existingUsernames.has(r.username.trim().toLocaleLowerCase('en-US'))).map((r) => r.username.trim()),
+    [validRows, existingUsernames],
+  )
 
   // TC Kimlik No validasyonu (11 hane)
   const invalidTcCount = useMemo(
@@ -211,7 +220,7 @@ export function BulkParticipantModal({
   )
 
   function handleSubmit() {
-    if (!canSubmit || duplicateUsernames.length > 0) return
+    if (!canSubmit || duplicateUsernames.length > 0 || conflictingUsernames.length > 0) return
     const customers = readCustomers()
     const now = Date.now()
     const participants: Participant[] = validRows.map((r, i) => {
@@ -319,6 +328,7 @@ export function BulkParticipantModal({
             {validRows.length} geçerli
             {invalidCount > 0 && <span className="text-amber-600"> · {invalidCount} eksik</span>}
             {duplicateUsernames.length > 0 && <span className="text-rose-600"> · {duplicateUsernames.length} tekrarlanan kullanıcı adı</span>}
+            {conflictingUsernames.length > 0 && <span className="text-rose-600"> · {conflictingUsernames.length} kullanılan kullanıcı adı</span>}
             {invalidTcCount > 0 && <span className="text-amber-600"> · {invalidTcCount} hatalı TC</span>}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -383,7 +393,8 @@ export function BulkParticipantModal({
             <tbody className="divide-y divide-ink-100">
               {rows.map((row, idx) => {
                 const isValid = row.name.trim() && row.username.trim() && row.jobTitle.trim()
-                const isDuplicate = row.username.trim() && usernameCounts[row.username.trim().toLocaleLowerCase('tr-TR')] > 1
+                const isDuplicate = row.username.trim() && usernameCounts[row.username.trim().toLocaleLowerCase('en-US')] > 1
+                const isConflict = row.username.trim() && existingUsernames.has(row.username.trim().toLocaleLowerCase('en-US'))
                 const isAutoUsername = row.username === generateUsername(row.name)
                 const isInvalidTc = row.tcNumber && row.tcNumber.length !== 11
                 return (
@@ -406,11 +417,14 @@ export function BulkParticipantModal({
                         placeholder="ahmet.yilmaz"
                         className={cn(
                           'h-9 w-full rounded-lg border bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:ring-2 focus:ring-brand-500/10',
-                          isDuplicate ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/10' : 'border-ink-200 focus:border-brand-500',
+                          (isDuplicate || isConflict) ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/10' : 'border-ink-200 focus:border-brand-500',
                         )}
                       />
-                      {isAutoUsername && row.name && (
+                      {isAutoUsername && row.name && !isDuplicate && !isConflict && (
                         <p className="mt-0.5 text-[9px] text-ink-300">otomatik</p>
+                      )}
+                      {isConflict && (
+                        <p className="mt-0.5 text-[9px] text-rose-500">zaten kullanımda</p>
                       )}
                     </td>
                     <td className="px-2 py-1.5">
@@ -506,13 +520,16 @@ export function BulkParticipantModal({
               {duplicateUsernames.length > 0 && (
                 <span className="ml-2 text-rose-500">· {duplicateUsernames.length} tekrarlanan kullanıcı adı var</span>
               )}
+              {conflictingUsernames.length > 0 && (
+                <span className="ml-2 text-rose-500">· {conflictingUsernames.length} kullanılan kullanıcı adı var</span>
+              )}
               {invalidTcCount > 0 && (
                 <span className="ml-2 text-amber-600">· {invalidTcCount} hatalı TC (11 hane olmalı)</span>
               )}
             </div>
             <div className="flex gap-2.5">
               <Button type="button" variant="outline" size="md" onClick={onClose}>İptal</Button>
-              <Button type="button" size="md" disabled={!canSubmit || duplicateUsernames.length > 0} leftIcon={<UserPlus className="h-4 w-4" strokeWidth={1.7} />} onClick={handleSubmit}>
+              <Button type="button" size="md" disabled={!canSubmit || duplicateUsernames.length > 0 || conflictingUsernames.length > 0} leftIcon={<UserPlus className="h-4 w-4" strokeWidth={1.7} />} onClick={handleSubmit}>
                 {validRows.length} katılımcı ekle
               </Button>
             </div>
