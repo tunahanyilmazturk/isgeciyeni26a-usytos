@@ -17,7 +17,7 @@ export interface BulkParticipantRow {
   jobTitle: string
 }
 
-const DEFAULT_PASSWORD = import.meta.env.DEV ? 'dev-demo-1234' : ''
+const DEFAULT_PASSWORD = '123456'
 
 /** Türkçe karakterleri ASCII'ye çevir ve ad.soyad formatında kullanıcı adı oluştur */
 function generateUsername(name: string): string {
