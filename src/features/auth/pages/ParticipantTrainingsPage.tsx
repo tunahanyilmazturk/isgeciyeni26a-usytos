@@ -74,7 +74,7 @@ export function ParticipantTrainingsPage() {
     toast.info('Eğitim detay sayfası çok yakında', {
       description: 'Faz 3 ile içerik detayları ve quiz ekranı eklenecek.',
     })
-    navigate(`/panel/egitimler/${trainingId}`)
+    navigate(`/katilimci/egitimler/${trainingId}`)
   }
 
   return (
