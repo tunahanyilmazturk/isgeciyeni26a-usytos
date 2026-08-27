@@ -44,16 +44,18 @@ function formFromParticipant(participant: Participant): ParticipantForm {
 /** Tekil katılımcı ekleme/düzenleme modal'ı — tüm alanlar tek ekranda */
 export function SingleParticipantModal({
   participant,
+  defaultCompany,
   onClose,
   onCreate,
   onUpdate,
 }: {
   participant?: Participant
+  defaultCompany?: string
   onClose: () => void
   onCreate?: (participant: Participant) => void
   onUpdate?: (participant: Participant) => void
 }) {
-  const [form, setForm] = useState<ParticipantForm>(() => participant ? formFromParticipant(participant) : initialForm)
+  const [form, setForm] = useState<ParticipantForm>(() => participant ? formFromParticipant(participant) : { ...initialForm, company: defaultCompany ?? '' })
   const [error, setError] = useState('')
 
   const companies = useMemo(() => {
@@ -79,9 +81,9 @@ export function SingleParticipantModal({
 
   useEffect(() => {
     if (participant) setForm(formFromParticipant(participant))
-    else setForm(initialForm)
+    else setForm({ ...initialForm, company: defaultCompany ?? '' })
     setError('')
-  }, [participant])
+  }, [participant, defaultCompany])
 
   // İlk firma otomatik seçili olsun
   useEffect(() => {

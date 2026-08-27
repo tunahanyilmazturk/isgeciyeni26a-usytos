@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { downloadParticipantList } from '../lib/excel'
 import { cn } from '@/lib/utils'
@@ -84,6 +85,16 @@ export function ParticipantsPage() {
   const [showBulkParticipantModal, setShowBulkParticipantModal] = useState(false)
   const [showSingleParticipantModal, setShowSingleParticipantModal] = useState(false)
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null)
+  const [requestedCompany, setRequestedCompany] = useState<string | undefined>()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const company = searchParams.get('company')
+    if (!company) return
+    setRequestedCompany(company)
+    setShowSingleParticipantModal(true)
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     saveParticipants(participants)
@@ -287,7 +298,8 @@ export function ParticipantsPage() {
     <AnimatePresence>
       {showSingleParticipantModal && (
         <SingleParticipantModal
-          onClose={() => setShowSingleParticipantModal(false)}
+          defaultCompany={requestedCompany}
+          onClose={() => { setShowSingleParticipantModal(false); setRequestedCompany(undefined) }}
           onCreate={handleCreateParticipant}
         />
       )}
