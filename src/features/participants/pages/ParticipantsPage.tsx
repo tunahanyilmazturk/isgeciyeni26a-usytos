@@ -22,6 +22,7 @@ import { Button, Input, Pagination, paginate, getPaginationIndices } from '@/com
 import { downloadParticipantList } from '../lib/excel'
 import { cn } from '@/lib/utils'
 import { readParticipants, saveParticipants, type Participant, type ParticipantStatus, type TrainingStatus } from '../data/participants'
+import { readCustomers } from '@/features/customers/data/customers'
 import { addAssignment, bulkAssign, removeAssignment, type AssignmentOptions } from '@/features/assignments/data/assignments'
 import { AssignmentModal, BulkAssignmentModal } from '@/features/assignments/components/AssignmentModals'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
@@ -76,7 +77,7 @@ export function ParticipantsPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [newParticipant, setNewParticipant] = useState({ name: '', email: '', company: 'Quantis Tekstil', department: '' })
+  const [newParticipant, setNewParticipant] = useState({ name: '', email: '', company: '', department: '' })
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [assignmentParticipant, setAssignmentParticipant] = useState<Participant | null | undefined>(undefined)
@@ -100,7 +101,7 @@ export function ParticipantsPage() {
     saveParticipants(participants)
   }, [participants])
 
-  const companies = useMemo(() => [...new Set(participants.map((participant) => participant.company))].sort((a, b) => a.localeCompare(b, 'tr')), [participants])
+  const companies = useMemo(() => readCustomers().map((customer) => customer.name).sort((a, b) => a.localeCompare(b, 'tr')), [])
   const filteredParticipants = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
     const from = completionFrom ? new Date(`${completionFrom}T00:00:00`).getTime() : 0
@@ -178,7 +179,7 @@ export function ParticipantsPage() {
       id: Date.now(), name: newParticipant.name, username: `katilimci${Date.now().toString().slice(-4)}`, email: newParticipant.email, phone: '—', tcNumber: '—', companyId: companies.indexOf(company) + 1, company, riskLevel: company === 'Pelion Gıda' ? 'Az tehlikeli' : 'Tehlikeli', department: newParticipant.department, trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı',
     }
     setParticipants((current) => [participant, ...current])
-    setNewParticipant({ name: '', email: '', company: 'Quantis Tekstil', department: '' })
+    setNewParticipant({ name: '', email: '', company: '', department: '' })
     setIsModalOpen(false)
     toast.success('Katılımcı başarıyla eklendi')
   }
@@ -287,7 +288,7 @@ export function ParticipantsPage() {
       {showBulkParticipantModal && (
         <BulkParticipantModal
           companies={companies}
-          defaultCompany={companies[0] ?? 'Quantis Tekstil'}
+          defaultCompany={companies[0] ?? ''}
           onClose={() => setShowBulkParticipantModal(false)}
           onCreate={handleBulkCreateParticipants}
         />
