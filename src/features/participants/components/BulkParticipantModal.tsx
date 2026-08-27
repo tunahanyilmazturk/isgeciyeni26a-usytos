@@ -15,7 +15,6 @@ export interface BulkParticipantRow {
   tcNumber: string
   company: string
   jobTitle: string
-  email: string
 }
 
 const DEFAULT_PASSWORD = import.meta.env.DEV ? 'dev-demo-1234' : ''
@@ -40,13 +39,12 @@ function emptyRow(key: string, defaultCompany: string): BulkParticipantRow {
     tcNumber: '',
     company: defaultCompany,
     jobTitle: '',
-    email: '',
   }
 }
 
 /** Excel/clipboard yapıştırma verisini satırlara parse et.
  *  Beklenen kolon sırası (tab veya virgülle ayrılmış):
- *  Ad Soyad, Kullanıcı adı, Şifre, TC, Firma, Ünvan, E-posta
+ *  Ad Soyad, Kullanıcı adı, Şifre, TC, Firma, Ünvan
  *  En az 1 kolon (Ad Soyad) yeterli; eksik kolonlar boş bırakılır.
  */
 function parsePastedData(text: string, defaultCompany: string): BulkParticipantRow[] {
@@ -61,7 +59,6 @@ function parsePastedData(text: string, defaultCompany: string): BulkParticipantR
     const tcNumber = (cols[3] ?? '').trim().replace(/\D/g, '')
     const company = (cols[4] ?? '').trim() || defaultCompany
     const jobTitle = (cols[5] ?? '').trim()
-    const email = (cols[6] ?? '').trim()
     return {
       key: `paste-${now}-${idx}`,
       name,
@@ -70,7 +67,6 @@ function parsePastedData(text: string, defaultCompany: string): BulkParticipantR
       tcNumber,
       company,
       jobTitle,
-      email,
     }
   })
 }
@@ -214,12 +210,6 @@ export function BulkParticipantModal({
     [validRows],
   )
 
-  // E-posta validasyonu (basit)
-  const invalidEmailCount = useMemo(
-    () => validRows.filter((r) => r.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)).length,
-    [validRows],
-  )
-
   function handleSubmit() {
     if (!canSubmit || duplicateUsernames.length > 0) return
     const customers = readCustomers()
@@ -231,7 +221,7 @@ export function BulkParticipantModal({
         id: now + i,
         name: r.name.trim(),
         username: r.username.trim(),
-        email: r.email.trim() || '—',
+        email: '—',
         phone: '—',
         tcNumber: r.tcNumber.trim() || '—',
         companyId: customer?.id ?? companies.indexOf(r.company) + 1,
@@ -285,7 +275,7 @@ export function BulkParticipantModal({
               <div>
                 <h2 id="bulk-participant-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Toplu katılımcı ekle</h2>
                 <p id="bulk-participant-modal-description" className="mt-0.5 text-sm text-ink-500">
-                  Tabloya bilgileri girin veya Excel'den yapıştırın. Kullanıcı adı ad soyaddan otomatik oluşturulur.
+                  Tabloya bilgileri girin veya Excel'den yapıştırın. Telefonu katılımcı ilk girişte kendisi girecek. Kullanıcı adı ad soyaddan otomatik oluşturulur.
                 </p>
               </div>
             </div>
@@ -330,7 +320,6 @@ export function BulkParticipantModal({
             {invalidCount > 0 && <span className="text-amber-600"> · {invalidCount} eksik</span>}
             {duplicateUsernames.length > 0 && <span className="text-rose-600"> · {duplicateUsernames.length} tekrarlanan kullanıcı adı</span>}
             {invalidTcCount > 0 && <span className="text-amber-600"> · {invalidTcCount} hatalı TC</span>}
-            {invalidEmailCount > 0 && <span className="text-amber-600"> · {invalidEmailCount} hatalı e-posta</span>}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {/* Tüm satırlara firma uygula */}
@@ -388,7 +377,6 @@ export function BulkParticipantModal({
                 <th className="min-w-[110px] px-2 py-3">TC Kimlik</th>
                 <th className="min-w-[150px] px-2 py-3">Firma</th>
                 <th className="min-w-[130px] px-2 py-3">Ünvan <span className="text-rose-400">*</span></th>
-                <th className="min-w-[150px] px-2 py-3">E-posta</th>
                 <th className="w-16 px-2 py-3 text-center">İşlem</th>
               </tr>
             </thead>
@@ -398,7 +386,6 @@ export function BulkParticipantModal({
                 const isDuplicate = row.username.trim() && usernameCounts[row.username.trim().toLocaleLowerCase('tr-TR')] > 1
                 const isAutoUsername = row.username === generateUsername(row.name)
                 const isInvalidTc = row.tcNumber && row.tcNumber.length !== 11
-                const isInvalidEmail = row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)
                 return (
                   <tr key={row.key} className={cn('transition-colors', isValid ? 'bg-white' : 'bg-amber-50/20')}>
                     <td className="px-3 py-2 text-center text-[10px] font-semibold text-ink-300 tabular-nums">{idx + 1}</td>
@@ -470,18 +457,6 @@ export function BulkParticipantModal({
                       />
                     </td>
                     <td className="px-2 py-1.5">
-                      <input
-                        type="email"
-                        value={row.email}
-                        onChange={(e) => updateRow(row.key, 'email', e.target.value)}
-                        placeholder="opsiyonel"
-                        className={cn(
-                          'h-9 w-full rounded-lg border bg-white px-2.5 text-xs font-medium text-ink-800 outline-none transition-colors focus:ring-2 focus:ring-brand-500/10',
-                          isInvalidEmail ? 'border-amber-300 focus:border-amber-500 focus:ring-amber-500/10' : 'border-ink-200 focus:border-brand-500',
-                        )}
-                      />
-                    </td>
-                    <td className="px-2 py-1.5">
                       <div className="flex items-center justify-center gap-0.5">
                         <button
                           type="button"
@@ -533,9 +508,6 @@ export function BulkParticipantModal({
               )}
               {invalidTcCount > 0 && (
                 <span className="ml-2 text-amber-600">· {invalidTcCount} hatalı TC (11 hane olmalı)</span>
-              )}
-              {invalidEmailCount > 0 && (
-                <span className="ml-2 text-amber-600">· {invalidEmailCount} hatalı e-posta</span>
               )}
             </div>
             <div className="flex gap-2.5">
