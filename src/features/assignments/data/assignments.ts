@@ -43,46 +43,15 @@ export interface ParticipantAssignmentSummary {
 
 const STORAGE_KEY = 'hantech-assignments'
 
-/** Katılımcı ve eğitim kataloğundan demo atama verisi üretir */
+/** Atamalar yalnızca manuel olarak (addAssignment/bulkAssign) oluşturulur.
+ *  Otomatik/demo atama üretimi kaldırıldı — yeni katılımcılara eğitim
+ *  atanmadan eğitimler sayfasında görünmemeli. */
 function generateAssignments(): TrainingAssignment[] {
-  const participants = readParticipants()
-  const trainings = trainingCatalog
-  const assignments: TrainingAssignment[] = []
-
-  // Her katılımcıya 1-3 rastgele eğitim ata
-  participants.forEach((p, pIdx) => {
-    const seed = p.id + pIdx
-    const numAssignments = 1 + (seed % 3) // 1-3 atama
-    for (let i = 0; i < numAssignments; i++) {
-      const training = trainings[(seed + i) % trainings.length]
-      const statusRoll = (seed + i) % 5
-      const status: AssignmentStatus =
-        statusRoll === 0 ? 'pending_approval' :
-        statusRoll === 1 ? 'completed' :
-        statusRoll === 2 ? 'expired' :
-        'active'
-      assignments.push({
-        id: `A-${1000 + assignments.length + 1}`,
-        participantId: p.id,
-        trainingId: training.id,
-        trainingName: training.name,
-        status,
-        assignedDate: '01.09.2026',
-        dueDate: status === 'expired' ? '15.07.2026' : '30.11.2026',
-        progress: status === 'completed' ? 100 : status === 'active' ? 20 + ((seed + i) % 60) : 0,
-        preTest: (seed + i) % 3 === 0,
-        requiresExpertApproval: status === 'pending_approval',
-        requiresDoctorApproval: false,
-      })
-    }
-  })
-
-  return assignments
+  return []
 }
 
 export function readAssignments(): TrainingAssignment[] {
-  const generated = generateAssignments()
-  return readStorage(STORAGE_KEY, generated, assignmentsSchema)
+  return readStorage(STORAGE_KEY, generateAssignments(), assignmentsSchema)
 }
 
 export function saveAssignments(assignments: TrainingAssignment[]): boolean {
