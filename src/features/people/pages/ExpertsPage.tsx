@@ -65,6 +65,7 @@ export function ExpertsPage() {
   const [search, setSearch] = useState('')
   const [titleFilter, setTitleFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingExpertId, setEditingExpertId] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [view, setView] = useState<ViewMode>('table')
@@ -124,24 +125,49 @@ export function ExpertsPage() {
   const paginatedItems = paginate(filteredExperts, currentPage, pageSize)
   const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredExperts.length)
 
+  function openNewExpertModal() {
+    setEditingExpertId(null)
+    reset()
+    setIsModalOpen(true)
+  }
+
+  function openEditExpertModal(expert: Expert) {
+    setEditingExpertId(expert.id)
+    reset({
+      firstName: expert.firstName,
+      lastName: expert.lastName,
+      title: expert.title,
+      certificateNumber: expert.certificateNumber,
+      maxServiceDuration: String(expert.maxServiceDuration),
+      username: '',
+      email: expert.email ?? '',
+      phone: expert.phone ?? '',
+      password: '',
+      passwordConfirmation: '',
+    })
+    setIsModalOpen(true)
+  }
+
   function onSubmit(data: ExpertForm) {
+    const existing = editingExpertId === null ? undefined : experts.find((item) => item.id === editingExpertId)
     const expert: Expert = {
-      id: Date.now(),
+      id: existing?.id ?? Date.now(),
       firstName: data.firstName,
       lastName: data.lastName,
       title: data.title as ExpertTitle,
       certificateNumber: data.certificateNumber,
       maxServiceDuration: Number(data.maxServiceDuration),
-      usedServiceDuration: 0,
+      usedServiceDuration: existing?.usedServiceDuration ?? 0,
       email: data.email || undefined,
       phone: data.phone || undefined,
-      status: 'active',
+      status: existing?.status ?? 'active',
     }
-    setExperts((current) => [expert, ...current])
+    setExperts((current) => existing ? current.map((item) => item.id === existing.id ? expert : item) : [expert, ...current])
     reset()
+    setEditingExpertId(null)
     setIsModalOpen(false)
-    toast.success('Uzman başarıyla eklendi', {
-      description: `${expert.firstName} ${expert.lastName} uzman listesine eklendi.`,
+    toast.success(existing ? 'Uzman bilgileri güncellendi' : 'Uzman başarıyla eklendi', {
+      description: `${expert.firstName} ${expert.lastName} uzman listesine ${existing ? 'kaydedildi' : 'eklendi'}.`,
     })
   }
 
@@ -172,7 +198,7 @@ export function ExpertsPage() {
           <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Uzmanlar</h1>
           <p className="mt-1.5 text-sm text-ink-500">OSGB bünyesindeki iş güvenliği uzmanlarını ve hizmet kapasitelerini yönetin.</p>
         </div>
-        <Button size="md" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setIsModalOpen(true)}>
+        <Button size="md" leftIcon={<UserPlus className="h-4 w-4" />} onClick={openNewExpertModal}>
           Yeni uzman ekle
         </Button>
       </motion.div>
@@ -234,7 +260,7 @@ export function ExpertsPage() {
                       <td className="px-3 py-4 font-medium text-ink-600">{expert.certificateNumber}</td>
                       <td className="px-3 py-4 text-ink-600">{formatMinutes(expert.maxServiceDuration)}</td>
                       <td className="px-3 py-4"><div className="w-28"><div className="mb-1.5 flex items-center justify-between gap-2"><span className="text-[11px] text-ink-500">{percentage}%</span><span className={cn('text-[10px] font-medium', percentage >= 90 ? 'text-rose-500' : 'text-brand-600')}>{formatMinutes(Math.max(expert.maxServiceDuration - expert.usedServiceDuration, 0))} kaldı</span></div><div className="h-1.5 overflow-hidden rounded-full bg-ink-100"><div className={cn('h-full rounded-full', percentage >= 90 ? 'bg-rose-400' : 'bg-brand-500')} style={{ width: `${percentage}%` }} /></div></div></td>
-                      <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1"><button type="button" onClick={() => toast.info('Düzenleme ekranı sıradaki adımda hazırlanacak.')} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${expert.firstName} ${expert.lastName} düzenle`}><Edit3 className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(expert)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-rose-50 hover:text-rose-600" aria-label={`${expert.firstName} ${expert.lastName} sil`}><Trash2 className="h-4 w-4" /></button><button type="button" className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Daha fazla seçenek"><MoreHorizontal className="h-4 w-4" /></button></div></td>
+                      <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1"><button type="button" onClick={() => openEditExpertModal(expert)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${expert.firstName} ${expert.lastName} düzenle`}><Edit3 className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(expert)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-rose-50 hover:text-rose-600" aria-label={`${expert.firstName} ${expert.lastName} sil`}><Trash2 className="h-4 w-4" /></button><button type="button" className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Daha fazla seçenek"><MoreHorizontal className="h-4 w-4" /></button></div></td>
                     </tr>
                   )
                 })}
@@ -309,7 +335,7 @@ export function ExpertsPage() {
                   <HardHat className="h-5 w-5" strokeWidth={1.7} />
                 </span>
                 <div>
-                  <h2 id="new-expert-title" className="text-base font-semibold text-ink-900">Yeni uzman ekle</h2>
+                  <h2 id="new-expert-title" className="text-base font-semibold text-ink-900">{editingExpertId === null ? 'Yeni uzman ekle' : 'Uzmanı düzenle'}</h2>
                   <p className="mt-1 text-xs text-ink-400">Uzman bilgilerini eksiksiz doldurun.</p>
                 </div>
               </div>
@@ -374,7 +400,7 @@ export function ExpertsPage() {
                   Vazgeç
                 </Button>
                 <Button type="submit" loading={isSubmitting} leftIcon={!isSubmitting ? <Plus className="h-4 w-4" /> : undefined}>
-                  Uzmanı kaydet
+                  {editingExpertId === null ? 'Uzmanı kaydet' : 'Değişiklikleri kaydet'}
                 </Button>
               </div>
             </form>

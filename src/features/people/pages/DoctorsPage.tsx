@@ -63,6 +63,7 @@ export function DoctorsPage() {
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingDoctorId, setEditingDoctorId] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [view, setView] = useState<ViewMode>('table')
@@ -122,25 +123,51 @@ export function DoctorsPage() {
   const paginatedItems = paginate(filteredDoctors, currentPage, pageSize)
   const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredDoctors.length)
 
+  function openNewDoctorModal() {
+    setEditingDoctorId(null)
+    reset()
+    setIsModalOpen(true)
+  }
+
+  function openEditDoctorModal(doctor: Doctor) {
+    setEditingDoctorId(doctor.id)
+    reset({
+      doctorLevel: doctor.doctorLevel,
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      title: doctor.title,
+      certificateNumber: doctor.certificateNumber,
+      maxServiceDuration: String(doctor.maxServiceDuration),
+      username: '',
+      email: doctor.email ?? '',
+      phone: doctor.phone ?? '',
+      password: '',
+      passwordConfirmation: '',
+    })
+    setIsModalOpen(true)
+  }
+
   function onSubmit(data: DoctorForm) {
+    const existing = editingDoctorId === null ? undefined : doctors.find((item) => item.id === editingDoctorId)
     const doctor: Doctor = {
-      id: Date.now(),
+      id: existing?.id ?? Date.now(),
       doctorLevel: data.doctorLevel as DoctorLevel,
       firstName: data.firstName,
       lastName: data.lastName,
       title: 'İşyeri Hekimi',
       certificateNumber: data.certificateNumber,
       maxServiceDuration: Number(data.maxServiceDuration),
-      usedServiceDuration: 0,
+      usedServiceDuration: existing?.usedServiceDuration ?? 0,
       email: data.email || undefined,
       phone: data.phone || undefined,
-      status: 'active',
+      status: existing?.status ?? 'active',
     }
-    setDoctors((current) => [doctor, ...current])
+    setDoctors((current) => existing ? current.map((item) => item.id === existing.id ? doctor : item) : [doctor, ...current])
     reset()
+    setEditingDoctorId(null)
     setIsModalOpen(false)
-    toast.success('Doktor başarıyla eklendi', {
-      description: `${doctor.firstName} ${doctor.lastName} doktor listesine eklendi.`,
+    toast.success(existing ? 'Doktor bilgileri güncellendi' : 'Doktor başarıyla eklendi', {
+      description: `${doctor.firstName} ${doctor.lastName} doktor listesine ${existing ? 'kaydedildi' : 'eklendi'}.`,
     })
   }
 
@@ -162,7 +189,7 @@ export function DoctorsPage() {
           <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Doktorlar</h1>
           <p className="mt-1.5 text-sm text-ink-500">OSGB bünyesindeki işyeri hekimlerini ve hizmet kapasitelerini yönetin.</p>
         </div>
-        <Button size="md" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => setIsModalOpen(true)}>Yeni doktor ekle</Button>
+        <Button size="md" leftIcon={<UserPlus className="h-4 w-4" />} onClick={openNewDoctorModal}>Yeni doktor ekle</Button>
       </motion.div>
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
@@ -192,7 +219,7 @@ export function DoctorsPage() {
                   <td className="px-3 py-4 font-medium text-ink-600">{doctor.certificateNumber}</td>
                   <td className="px-3 py-4 text-ink-600">{formatMinutes(doctor.maxServiceDuration)}</td>
                   <td className="px-3 py-4"><div className="w-28"><div className="mb-1.5 flex items-center justify-between gap-2"><span className="text-[11px] text-ink-500">{percentage}%</span><span className={cn('text-[10px] font-medium', percentage >= 90 ? 'text-rose-500' : 'text-brand-600')}>{formatMinutes(Math.max(doctor.maxServiceDuration - doctor.usedServiceDuration, 0))} kaldı</span></div><div className="h-1.5 overflow-hidden rounded-full bg-ink-100"><div className={cn('h-full rounded-full', percentage >= 90 ? 'bg-rose-400' : 'bg-brand-500')} style={{ width: `${percentage}%` }} /></div></div></td>
-                  <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1"><button type="button" onClick={() => toast.info('Düzenleme ekranı sıradaki adımda hazırlanacak.')} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${doctor.firstName} ${doctor.lastName} düzenle`}><Edit3 className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(doctor)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-rose-50 hover:text-rose-600" aria-label={`${doctor.firstName} ${doctor.lastName} sil`}><Trash2 className="h-4 w-4" /></button><button type="button" className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Daha fazla seçenek"><MoreHorizontal className="h-4 w-4" /></button></div></td>
+                  <td className="px-5 py-4 text-right sm:px-6"><div className="inline-flex items-center gap-1"><button type="button" onClick={() => openEditDoctorModal(doctor)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label={`${doctor.firstName} ${doctor.lastName} düzenle`}><Edit3 className="h-4 w-4" /></button><button type="button" onClick={() => handleDelete(doctor)} className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-rose-50 hover:text-rose-600" aria-label={`${doctor.firstName} ${doctor.lastName} sil`}><Trash2 className="h-4 w-4" /></button><button type="button" className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Daha fazla seçenek"><MoreHorizontal className="h-4 w-4" /></button></div></td>
                 </tr>
               })}
             </tbody>
@@ -245,12 +272,12 @@ export function DoctorsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/25 p-4 backdrop-blur-[2px] sm:p-8" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsModalOpen(false) }}>
           <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.2 }} role="dialog" aria-modal="true" aria-labelledby="new-doctor-title" className="relative z-10 my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-[0_24px_80px_-24px_rgba(17,24,39,0.35)] sm:max-h-[calc(100vh-4rem)]">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-ink-100 bg-white/95 px-6 py-5 backdrop-blur sm:px-7"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Stethoscope className="h-5 w-5" strokeWidth={1.7} /></span><div><h2 id="new-doctor-title" className="text-base font-semibold text-ink-900">Yeni doktor ekle</h2><p className="mt-1 text-xs text-ink-400">İşyeri hekimi bilgilerini eksiksiz doldurun.</p></div></div><button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Modalı kapat"><X className="h-5 w-5" /></button></div>
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-ink-100 bg-white/95 px-6 py-5 backdrop-blur sm:px-7"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Stethoscope className="h-5 w-5" strokeWidth={1.7} /></span><div><h2 id="new-doctor-title" className="text-base font-semibold text-ink-900">{editingDoctorId === null ? 'Yeni doktor ekle' : 'Doktoru düzenle'}</h2><p className="mt-1 text-xs text-ink-400">İşyeri hekimi bilgilerini eksiksiz doldurun.</p></div></div><button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Modalı kapat"><X className="h-5 w-5" /></button></div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 px-6 py-6 sm:px-7" noValidate>
               <div><div className="mb-3 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-brand-500" /><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Doktor bilgileri</h3></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="doctor-level" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Doktor tipi</label><div className="relative"><select id="doctor-level" className={cn('h-12 w-full appearance-none rounded-xl border bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none transition-all focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10', errors.doctorLevel ? 'border-red-400' : 'border-ink-200 hover:border-ink-300')} {...register('doctorLevel')}><option value="">Tip seçiniz</option>{doctorLevels.map((level) => <option key={level} value={level}>{level}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div>{errors.doctorLevel && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.doctorLevel.message}</p>}</div><Input label="İsim" placeholder="Onur" error={errors.firstName?.message} {...register('firstName')} /><Input label="Soyisim" placeholder="Polat" error={errors.lastName?.message} {...register('lastName')} /><div><label htmlFor="doctor-title" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Unvan</label><div className="relative"><select id="doctor-title" className="h-12 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" {...register('title')}><option value="İşyeri Hekimi">İşyeri Hekimi</option></select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div></div></div></div>
               <div className="grid gap-4 sm:grid-cols-2"><Input label="Sertifika numarası" placeholder="Örn. HEK-2024-0108" icon={<FileBadge2 className="h-[18px] w-[18px]" />} error={errors.certificateNumber?.message} {...register('certificateNumber')} /><Input label="Aylık hizmet süresi" type="number" min="1" max="99999" hint="Maksimum hizmet süresi, dakika cinsinden." error={errors.maxServiceDuration?.message} {...register('maxServiceDuration')} /></div>
               <div className="border-t border-ink-100 pt-5"><div className="mb-4 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-ink-400" strokeWidth={1.8} /><div><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Panel hesabı</h3><p className="mt-1 text-[11px] text-ink-400">İşyeri hekiminin sisteme giriş yapabilmesi için isteğe bağlıdır.</p></div></div><div className="grid gap-4 sm:grid-cols-2"><Input label="Kullanıcı adı" placeholder="Panel hesabı için" {...register('username')} /><Input label="E-posta" type="email" placeholder="doktor@ornek.com" icon={<Mail className="h-[18px] w-[18px]" />} error={errors.email?.message} {...register('email')} /><Input label="Telefon" type="tel" placeholder="+90 5xx xxx xx xx" icon={<Phone className="h-[18px] w-[18px]" />} {...register('phone')} /><Input label="Şifre" type="password" placeholder="Panel hesabı için" {...register('password')} /><Input label="Şifre tekrar" type="password" placeholder="Şifreyi tekrar girin" error={errors.passwordConfirmation?.message} {...register('passwordConfirmation')} /></div></div>
-              <div className="flex flex-col-reverse gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:justify-end"><Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Vazgeç</Button><Button type="submit" loading={isSubmitting} leftIcon={!isSubmitting ? <Plus className="h-4 w-4" /> : undefined}>Doktoru kaydet</Button></div>
+              <div className="flex flex-col-reverse gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:justify-end"><Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Vazgeç</Button><Button type="submit" loading={isSubmitting} leftIcon={!isSubmitting ? <Plus className="h-4 w-4" /> : undefined}>{editingDoctorId === null ? 'Doktoru kaydet' : 'Değişiklikleri kaydet'}</Button></div>
             </form>
           </motion.div>
         </div>
