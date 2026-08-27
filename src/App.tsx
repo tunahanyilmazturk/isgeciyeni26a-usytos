@@ -87,6 +87,9 @@ const ParticipantTrainingsPage = lazy(() =>
 const ParticipantTrainingDetailPage = lazy(() =>
   import('./features/auth/pages/ParticipantTrainingDetailPage').then((m) => ({ default: m.ParticipantTrainingDetailPage })),
 )
+const ParticipantTrainingContentPage = lazy(() =>
+  import('./features/auth/pages/ParticipantTrainingContentPage').then((m) => ({ default: m.ParticipantTrainingContentPage })),
+)
 const ParticipantProfilePage = lazy(() =>
   import('./features/auth/pages/ParticipantProfilePage').then((m) => ({ default: m.ParticipantProfilePage })),
 )
@@ -199,6 +202,7 @@ function ParticipantRoutes() {
           <Route index element={<ParticipantDashboardPage />} />
           <Route path="egitimler" element={<ParticipantTrainingsPage />} />
           <Route path="egitimler/:trainingId" element={<ParticipantTrainingDetailPage />} />
+          <Route path="egitimler/:trainingId/icerik/:contentId" element={<ParticipantTrainingContentPage />} />
           <Route path="profil" element={<ParticipantProfilePage />} />
           <Route path="*" element={<Navigate to="/katilimci" replace />} />
         </Routes>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
+  Award,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -8,7 +9,7 @@ import {
   Lock,
   PlayCircle,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui'
@@ -22,6 +23,7 @@ import {
 import {
   getTrainingProgressPercentage,
   readParticipantProgress,
+  awardCertificate,
 } from '@/features/trainings/data/participantProgress'
 
 export function ParticipantTrainingDetailPage() {
@@ -49,6 +51,17 @@ export function ParticipantTrainingDetailPage() {
     if (!user || !training) return 0
     return getTrainingProgressPercentage(user.id, training.id, contents.map((c) => c.id))
   }, [user, training, contents])
+
+  const hasCertificate = Boolean(progress?.certificates.includes(training?.id ?? ''))
+
+  useEffect(() => {
+    if (user && training && percentage === 100 && !hasCertificate) {
+      awardCertificate(user.id, training.id)
+      toast.success('Tebrikler! Sertifikanız oluşturuldu.', {
+        description: 'Eğitimi başarıyla tamamladınız. +100 XP kazandınız.',
+      })
+    }
+  }, [user, training, percentage, hasCertificate])
 
   const firstIncompleteIndex = useMemo(() => {
     return contents.findIndex((c) => !progress?.contentCompletions[c.id])
@@ -78,9 +91,8 @@ export function ParticipantTrainingDetailPage() {
       })
       return
     }
-    toast.info('İçerik detayı Faz 3\'te geliyor', {
-      description: `${content.title} yakında oynatılabilir olacak.`,
-    })
+    if (!training) return
+    navigate(`/katilimci/egitimler/${training.id}/icerik/${content.id}`)
   }
 
   if (!user || !training) {
@@ -131,6 +143,25 @@ export function ParticipantTrainingDetailPage() {
             />
           </div>
         </div>
+
+        {percentage === 100 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="mt-5 flex items-center gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4"
+          >
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-emerald-100 text-emerald-600">
+              <Award className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="font-bold text-emerald-800">Tebrikler, eğitim tamamlandı!</p>
+              <p className="text-xs text-emerald-700">
+                Sertifikanız profil sayfanızda görünecek. +100 XP kazandınız.
+              </p>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Path map */}
