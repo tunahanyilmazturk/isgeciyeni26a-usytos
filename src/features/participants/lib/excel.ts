@@ -88,14 +88,13 @@ export function downloadParticipantLoginList(companyName: string, participantNam
  * Kullanıcı bu şablonu doldurup Excel'den kopyalayarak modal'a yapıştırabilir.
  * Şablon birkaç örnek satır ve açıklama içerir.
  */
-export function downloadBulkParticipantTemplate(companies: readonly string[]) {
-  const firstCompany = companies[0] ?? ''
+export function downloadBulkParticipantTemplate(_companies: readonly string[]) {
   const sampleRows = [
-    { 'Ad Soyad': 'Ahmet Yılmaz', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': 'Üretim operatörü' },
-    { 'Ad Soyad': 'Ayşe Demir', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': 'Kalite kontrol' },
-    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
-    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
-    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': '', 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': '', 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': '', 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': '', 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': '', 'Ünvan': '' },
   ]
   const worksheet = XLSX.utils.json_to_sheet(sampleRows)
   worksheet['!cols'] = [
