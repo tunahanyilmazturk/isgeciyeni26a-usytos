@@ -57,11 +57,4 @@ export function saveParticipants(participants: Participant[]): boolean {
   return writeStorage(PARTICIPANTS_STORAGE_KEY, participants)
 }
 
-export const initialParticipants: Participant[] = [
-  { id: 1, name: 'Demo Katılımcı 01', username: 'demo.katilimci01', email: '—', phone: '—', tcNumber: '—', companyId: 1, company: 'Örnek Firma 01', riskLevel: 'Tehlikeli', department: 'Üretim', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-  { id: 2, name: 'Demo Katılımcı 02', username: 'demo.katilimci02', email: '—', phone: '—', tcNumber: '—', companyId: 1, company: 'Örnek Firma 01', riskLevel: 'Tehlikeli', department: 'İnsan Kaynakları', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-  { id: 3, name: 'Demo Katılımcı 03', username: 'demo.katilimci03', email: '—', phone: '—', tcNumber: '—', companyId: 2, company: 'Örnek Firma 02', riskLevel: 'Az tehlikeli', department: 'Paketleme', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-  { id: 4, name: 'Demo Katılımcı 04', username: 'demo.katilimci04', email: '—', phone: '—', tcNumber: '—', companyId: 3, company: 'Örnek Firma 03', riskLevel: 'Tehlikeli', department: 'Laboratuvar', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-  { id: 5, name: 'Demo Katılımcı 05', username: 'demo.katilimci05', email: '—', phone: '—', tcNumber: '—', companyId: 4, company: 'Örnek Firma 04', riskLevel: 'Çok tehlikeli', department: 'Bakım', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-  { id: 6, name: 'Demo Katılımcı 06', username: 'demo.katilimci06', email: '—', phone: '—', tcNumber: '—', companyId: 5, company: 'Örnek Firma 05', riskLevel: 'Az tehlikeli', department: 'Depo', trainingMinutes: 0, progress: 0, trainingStatus: 'not_started', lastCompletion: '—', nextTraining: '—', status: 'active', lastLogin: 'Henüz giriş yapmadı', password: '123456' },
-]
+export const initialParticipants: Participant[] = []
