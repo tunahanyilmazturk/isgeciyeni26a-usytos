@@ -29,23 +29,39 @@ const initialForm: ParticipantForm = {
   company: '', name: '', jobTitle: '', username: '', tcNumber: '', status: 'active', password: DEFAULT_PASSWORD,
 }
 
-/** Tekil katılımcı ekleme modal'ı — tüm alanlar tek ekranda */
+function formFromParticipant(participant: Participant): ParticipantForm {
+  return {
+    company: participant.company,
+    name: participant.name,
+    jobTitle: participant.department,
+    username: participant.username,
+    tcNumber: participant.tcNumber === '—' ? '' : participant.tcNumber,
+    status: participant.status,
+    password: participant.password ?? DEFAULT_PASSWORD,
+  }
+}
+
+/** Tekil katılımcı ekleme/düzenleme modal'ı — tüm alanlar tek ekranda */
 export function SingleParticipantModal({
+  participant,
   onClose,
   onCreate,
+  onUpdate,
 }: {
+  participant?: Participant
   onClose: () => void
-  onCreate: (participant: Participant) => void
+  onCreate?: (participant: Participant) => void
+  onUpdate?: (participant: Participant) => void
 }) {
-  const [form, setForm] = useState<ParticipantForm>(initialForm)
+  const [form, setForm] = useState<ParticipantForm>(() => participant ? formFromParticipant(participant) : initialForm)
   const [error, setError] = useState('')
 
   const companies = useMemo(() => {
     const customers = readCustomers()
     return customers
-      .filter((c) => c.status === 'active')
+      .filter((c) => c.status === 'active' || c.name === participant?.company)
       .map((c) => ({ id: c.id, name: c.name, riskLevel: c.riskLevel }))
-  }, [])
+  }, [participant?.company])
 
   // ESC ile kapatma
   useEffect(() => {
@@ -60,6 +76,12 @@ export function SingleParticipantModal({
       window.removeEventListener('keydown', handleEsc)
     }
   }, [onClose])
+
+  useEffect(() => {
+    if (participant) setForm(formFromParticipant(participant))
+    else setForm(initialForm)
+    setError('')
+  }, [participant])
 
   // İlk firma otomatik seçili olsun
   useEffect(() => {
@@ -91,7 +113,29 @@ export function SingleParticipantModal({
       return
     }
     const selectedCompany = companies.find((company) => company.name === form.company) ?? companies[0]
-    const participant: Participant = {
+    if (!selectedCompany) {
+      setError('Aktif firma bulunamadı.')
+      return
+    }
+
+    if (participant) {
+      const updatedParticipant: Participant = {
+        ...participant,
+        name: form.name.trim(),
+        username: form.username.trim(),
+        tcNumber: form.tcNumber || '—',
+        companyId: selectedCompany.id,
+        company: selectedCompany.name,
+        riskLevel: selectedCompany.riskLevel,
+        department: form.jobTitle.trim(),
+        status: form.status,
+        password: import.meta.env.DEV ? form.password : participant.password,
+      }
+      onUpdate?.(updatedParticipant)
+      return
+    }
+
+    const newParticipant: Participant = {
       id: Date.now(),
       name: form.name.trim(),
       username: form.username.trim(),
@@ -109,10 +153,10 @@ export function SingleParticipantModal({
       nextTraining: '—',
       status: form.status,
       lastLogin: 'Henüz giriş yapmadı',
-      password: form.password,
+      password: import.meta.env.DEV ? form.password : undefined,
     }
-    saveParticipants([...readParticipants(), participant])
-    onCreate(participant)
+    saveParticipants([...readParticipants(), newParticipant])
+    onCreate?.(newParticipant)
   }
 
   return createPortal(
@@ -147,8 +191,8 @@ export function SingleParticipantModal({
                 <UserPlus className="h-6 w-6" strokeWidth={1.8} />
               </span>
               <div>
-                <h2 id="single-participant-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Yeni katılımcı ekle</h2>
-                <p id="single-participant-modal-description" className="mt-0.5 text-sm text-ink-500">Çalışan bilgilerini ve panel hesabını oluşturun.</p>
+                <h2 id="single-participant-modal-title" className="text-lg font-bold tracking-tight text-ink-900">{participant ? 'Katılımcıyı düzenle' : 'Yeni katılımcı ekle'}</h2>
+                <p id="single-participant-modal-description" className="mt-0.5 text-sm text-ink-500">Çalışan bilgilerini ve panel hesabını {participant ? 'güncelleyin.' : 'oluşturun.'}</p>
               </div>
             </div>
             <button type="button" onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700" aria-label="Kapat">
@@ -293,7 +337,7 @@ export function SingleParticipantModal({
             <div className="mx-auto flex max-w-xl items-center justify-end gap-2.5">
               <Button type="button" variant="outline" size="md" onClick={onClose}>İptal</Button>
               <Button type="submit" size="md" leftIcon={<UserPlus className="h-4 w-4" strokeWidth={1.7} />}>
-                Katılımcıyı oluştur
+                {participant ? 'Değişiklikleri kaydet' : 'Katılımcıyı oluştur'}
               </Button>
             </div>
           </div>
