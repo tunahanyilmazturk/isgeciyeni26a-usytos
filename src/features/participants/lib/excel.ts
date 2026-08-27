@@ -82,3 +82,33 @@ export function downloadParticipantLoginList(companyName: string, participantNam
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Giriş Listesi')
   XLSX.writeFile(workbook, `${companyName.replace(/[^a-z0-9ığüşöçİĞÜŞÖÇ]+/gi, '-').replace(/^-|-$/g, '')}-giris-listesi.xlsx`)
 }
+
+/**
+ * Toplu katılımcı ekleme için boş Excel şablonu indirir.
+ * Kullanıcı bu şablonu doldurup Excel'den kopyalayarak modal'a yapıştırabilir.
+ * Şablon birkaç örnek satır ve açıklama içerir.
+ */
+export function downloadBulkParticipantTemplate(companies: readonly string[]) {
+  const firstCompany = companies[0] ?? ''
+  const sampleRows = [
+    { 'Ad Soyad': 'Ahmet Yılmaz', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': 'Üretim operatörü' },
+    { 'Ad Soyad': 'Ayşe Demir', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': 'Kalite kontrol' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
+    { 'Ad Soyad': '', 'Kullanıcı adı': '', 'Şifre': '123456', 'TC Kimlik No': '', 'Firma': firstCompany, 'Ünvan': '' },
+  ]
+  const worksheet = XLSX.utils.json_to_sheet(sampleRows)
+  worksheet['!cols'] = [
+    { wch: 26 }, // Ad Soyad
+    { wch: 20 }, // Kullanıcı adı
+    { wch: 14 }, // Şifre
+    { wch: 16 }, // TC Kimlik No
+    { wch: 24 }, // Firma
+    { wch: 22 }, // Ünvan
+  ]
+  worksheet['!autofilter'] = { ref: `A1:F${sampleRows.length + 1}` }
+  worksheet['!freeze'] = { ySplit: 1 }
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Toplu Katılımcı')
+  XLSX.writeFile(workbook, `hantech-toplu-katilimci-sablonu-${new Date().toISOString().slice(0, 10)}.xlsx`)
+}

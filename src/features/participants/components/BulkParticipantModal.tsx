@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion'
-import { ClipboardPaste, Copy, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { ClipboardPaste, Copy, Download, Plus, Trash2, UserPlus, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { toast } from 'sonner'
 import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { readCustomers } from '@/features/customers/data/customers'
+import { downloadBulkParticipantTemplate } from '../lib/excel'
 import { readParticipants, type Participant } from '../data/participants'
 
 export interface BulkParticipantRow {
@@ -185,6 +187,17 @@ export function BulkParticipantModal({
     }
   }
 
+  const handleDownloadTemplate = useCallback(() => {
+    try {
+      downloadBulkParticipantTemplate(companies)
+      toast.success('Şablon indirildi', {
+        description: 'Excel dosyasını doldurun, hücreleri seçip kopyalayın ve "Excel\'den yapıştır" ile tabloya aktarın.',
+      })
+    } catch {
+      toast.error('Şablon indirilemedi', { description: 'Tarayıcı dosya indirmesini engelledi.' })
+    }
+  }, [companies])
+
   // Validasyon — Ad Soyad, Kullanıcı adı, Ünvan zorunlu
   const validRows = useMemo(
     () => rows.filter((r) => r.name.trim() && r.username.trim() && r.jobTitle.trim()),
@@ -301,7 +314,7 @@ export function BulkParticipantModal({
               <div>
                 <p className="text-xs font-semibold text-brand-800">Excel'den yapıştır</p>
                 <p className="mt-0.5 text-[11px] text-ink-500">
-                  Excel'den hücreleri kopyalayın ve aşağıdaki alana yapıştırın. Kolon sırası: Ad Soyad, Kullanıcı adı, Şifre, TC, Firma, Ünvan, E-posta
+                  Excel'den hücreleri kopyalayın ve aşağıdaki alana yapıştırın. Kolon sırası: Ad Soyad, Kullanıcı adı, Şifre, TC, Firma, Ünvan. Şablon için toolbar'daki "Şablon indir" butonunu kullanın.
                 </p>
               </div>
               <button type="button" onClick={() => setPasteMode(false)} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100" aria-label="Kapat">
@@ -311,7 +324,7 @@ export function BulkParticipantModal({
             <textarea
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Ahmet Yılmaz	ahmet.yilmaz	sifre123	12345678901	Demo OSGB	Üretim operatörü	ahmet@demo.com&#10;Ayşe Demir	ayse.demir	sifre456	09876543210	Demo OSGB	Kalite kontrol	ayse@demo.com"
+              placeholder="Ahmet Yılmaz	ahmet.yilmaz	123456	12345678901	Demo OSGB	Üretim operatörü&#10;Ayşe Demir	ayse.demir	123456	09876543210	Demo OSGB	Kalite kontrol"
               rows={5}
               className="mt-3 w-full rounded-lg border border-brand-200 bg-white p-3 font-mono text-xs text-ink-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
             />
@@ -356,6 +369,9 @@ export function BulkParticipantModal({
             <span className="h-5 w-px bg-ink-200" />
             <button type="button" onClick={pasteFromClipboard} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100">
               <ClipboardPaste className="h-3.5 w-3.5" /> Excel'den yapıştır
+            </button>
+            <button type="button" onClick={handleDownloadTemplate} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100" title="Boş şablon indir, doldur ve yapıştır">
+              <Download className="h-3.5 w-3.5" /> Şablon indir
             </button>
             <span className="h-5 w-px bg-ink-200" />
             <button type="button" onClick={() => addMultipleRows(5)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">
