@@ -88,7 +88,6 @@ export function BulkParticipantModal({
   const [rows, setRows] = useState<BulkParticipantRow[]>(() =>
     Array.from({ length: 5 }, (_, i) => emptyRow(`row-${Date.now()}-${i}`, defaultCompany)),
   )
-  const [bulkCompany, setBulkCompany] = useState('')
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteText, setPasteText] = useState('')
 
@@ -345,27 +344,17 @@ export function BulkParticipantModal({
             {invalidTcCount > 0 && <span className="text-amber-600"> · {invalidTcCount} hatalı TC</span>}
           </span>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            {/* Tüm satırlara firma uygula */}
-            <div className="flex items-center gap-1.5">
-              <SearchableSelect
-                size="sm"
-                options={companyOptions}
-                value={bulkCompany}
-                onChange={setBulkCompany}
-                placeholder="Tümüne firma…"
-                searchPlaceholder="Firma ara…"
-                emptyText="Firma bulunamadı."
-                className="w-40"
-              />
-              <button
-                type="button"
-                onClick={() => { if (bulkCompany) { applyCompanyToAll(bulkCompany); setBulkCompany('') } }}
-                disabled={!bulkCompany}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Uygula
-              </button>
-            </div>
+            {/* Tüm satırlara firma uygula — seçim anında uygulanır */}
+            <SearchableSelect
+              size="sm"
+              options={companyOptions}
+              value=""
+              onChange={(value) => applyCompanyToAll(value)}
+              placeholder="Tümüne firma…"
+              searchPlaceholder="Firma ara…"
+              emptyText="Firma bulunamadı."
+              className="w-44"
+            />
             <span className="h-5 w-px bg-ink-200" />
             <button type="button" onClick={pasteFromClipboard} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100">
               <ClipboardPaste className="h-3.5 w-3.5" /> Excel'den yapıştır
