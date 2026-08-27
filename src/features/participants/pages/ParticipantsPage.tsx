@@ -215,13 +215,23 @@ export function ParticipantsPage() {
   }
 
   function handleBulkCreateParticipants(newParticipants: Participant[]) {
-    setParticipants((current) => [...newParticipants, ...current])
+    setParticipants((current) => {
+      // StrictMode double-render'da duplicate eklemeyi önle —
+      // aynı ID'li katılımcı zaten varsa tekrar ekleme
+      const existingIds = new Set(current.map((p) => p.id))
+      const toAdd = newParticipants.filter((p) => !existingIds.has(p.id))
+      return toAdd.length > 0 ? [...toAdd, ...current] : current
+    })
     setShowBulkParticipantModal(false)
     toast.success(`${newParticipants.length} katılımcı eklendi`)
   }
 
   function handleCreateParticipant(participant: Participant) {
-    setParticipants((current) => [participant, ...current])
+    setParticipants((current) => {
+      // StrictMode double-render'da duplicate önle
+      if (current.some((p) => p.id === participant.id)) return current
+      return [participant, ...current]
+    })
     setShowSingleParticipantModal(false)
     toast.success('Katılımcı başarıyla oluşturuldu', {
       description: `${participant.name} — kullanıcı adı: ${participant.username}`,
