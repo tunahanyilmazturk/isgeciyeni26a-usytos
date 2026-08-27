@@ -23,7 +23,7 @@ type ParticipantForm = {
   password: string
 }
 
-const DEFAULT_PASSWORD = import.meta.env.DEV ? 'dev-demo-1234' : ''
+const DEFAULT_PASSWORD = '123456'
 
 const initialForm: ParticipantForm = {
   company: '', name: '', jobTitle: '', username: '', tcNumber: '', status: 'active', password: DEFAULT_PASSWORD,
@@ -131,7 +131,7 @@ export function SingleParticipantModal({
         riskLevel: selectedCompany.riskLevel,
         department: form.jobTitle.trim(),
         status: form.status,
-        password: import.meta.env.DEV ? form.password : participant.password,
+        password: form.password || participant.password,
       }
       onUpdate?.(updatedParticipant)
       return
@@ -155,7 +155,7 @@ export function SingleParticipantModal({
       nextTraining: '—',
       status: form.status,
       lastLogin: 'Henüz giriş yapmadı',
-      password: import.meta.env.DEV ? form.password : undefined,
+      password: form.password || DEFAULT_PASSWORD,
     }
     saveParticipants([...readParticipants(), newParticipant])
     onCreate?.(newParticipant)

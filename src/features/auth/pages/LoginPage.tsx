@@ -100,15 +100,6 @@ export function LoginPage() {
 
     const loginValue = data.login.trim()
 
-      // Backend yok: auth yalnızca development demo akışında kullanılabilir.
-      if (!import.meta.env.DEV) {
-        setSubmitting(false)
-        toast.error('Giriş servisi kullanıma hazır değil', {
-          description: 'Gerçek kullanıcı girişi için backend bağlantısı gereklidir.',
-        })
-        return
-      }
-
       // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı/e-posta/TC eşleşmesi)
       const participants = readParticipants()
       // Kullanıcı adları ASCII-only generateUsername ile oluşturulur.
@@ -163,8 +154,8 @@ export function LoginPage() {
         return
       }
 
-      // 2) Development-only demo yönetici hesabı.
-      if (import.meta.env.DEV && loginValue === 'demo@hantech.com') {
+      // 2) Demo yönetici hesabı.
+      if (loginValue === 'demo@hantech.com') {
         if (data.password !== 'demo1234') {
           setSubmitting(false)
           toast.error('Giriş başarısız', {
@@ -288,8 +279,7 @@ export function LoginPage() {
               </Button>
             </form>
 
-            {/* Demo erişimi — yalnızca geliştirme ortamında */}
-            {import.meta.env.DEV && (
+            {/* Demo erişimi */}
             <div className="mt-6 space-y-2.5">
               <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 px-4 py-3.5">
                 <div className="flex min-w-0 items-center gap-3">
@@ -329,7 +319,6 @@ export function LoginPage() {
                 </button>
               </div>
             </div>
-            )}
           </section>
 
           {/* Kayıt ve güvenlik */}
