@@ -21,10 +21,20 @@ export interface BulkParticipantRow {
 
 const DEFAULT_PASSWORD = '123456'
 
+const TR_TO_ASCII: Record<string, string> = {
+  ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u',
+  Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u',
+}
+
+/** Türkçe karakterleri ASCII'ye çevirip küçük harfe indirir.
+ *  Kullanıcı adı karşılaştırmalarında tutarlı normalizasyon sağlar. */
+function normalizeForCompare(value: string): string {
+  return value.replace(/[çğıöşüÇĞİÖŞÜ]/g, (ch) => TR_TO_ASCII[ch] ?? ch).toLocaleLowerCase('en-US')
+}
+
 /** Türkçe karakterleri ASCII'ye çevir ve ad.soyad formatında kullanıcı adı oluştur */
 function generateUsername(name: string): string {
-  const map: Record<string, string> = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u' }
-  const ascii = name.replace(/[çğıöşüÇĞİÖŞÜ]/g, (ch) => map[ch] ?? ch)
+  const ascii = name.replace(/[çğıöşüÇĞİÖŞÜ]/g, (ch) => TR_TO_ASCII[ch] ?? ch)
   const parts = ascii.trim().split(/\s+/)
   if (parts.length < 2) return ascii.trim().toLocaleLowerCase('en-US').replace(/[^a-z0-9]/g, '')
   const first = parts[0].toLocaleLowerCase('en-US').replace(/[^a-z0-9]/g, '')
@@ -208,20 +218,20 @@ export function BulkParticipantModal({
   // Duplicate username kontrolü — hem batch içi hem mevcut katılımcılarla
   const existingUsernames = useMemo(() => {
     const set = new Set<string>()
-    readParticipants().forEach((p) => set.add(p.username.toLocaleLowerCase('en-US')))
+    readParticipants().forEach((p) => set.add(normalizeForCompare(p.username)))
     return set
   }, [])
   const usernameCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     validRows.forEach((r) => {
-      const u = r.username.trim().toLocaleLowerCase('en-US')
+      const u = normalizeForCompare(r.username.trim())
       counts[u] = (counts[u] ?? 0) + 1
     })
     return counts
   }, [validRows])
   const duplicateUsernames = Object.entries(usernameCounts).filter(([, c]) => c > 1).map(([u]) => u)
   const conflictingUsernames = useMemo(
-    () => validRows.filter((r) => existingUsernames.has(r.username.trim().toLocaleLowerCase('en-US'))).map((r) => r.username.trim()),
+    () => validRows.filter((r) => existingUsernames.has(normalizeForCompare(r.username.trim()))).map((r) => r.username.trim()),
     [validRows, existingUsernames],
   )
 
@@ -398,8 +408,8 @@ export function BulkParticipantModal({
             <tbody className="divide-y divide-ink-100">
               {rows.map((row, idx) => {
                 const isValid = row.name.trim() && row.username.trim() && row.jobTitle.trim()
-                const isDuplicate = row.username.trim() && usernameCounts[row.username.trim().toLocaleLowerCase('en-US')] > 1
-                const isConflict = row.username.trim() && existingUsernames.has(row.username.trim().toLocaleLowerCase('en-US'))
+                const isDuplicate = row.username.trim() && usernameCounts[normalizeForCompare(row.username.trim())] > 1
+                const isConflict = row.username.trim() && existingUsernames.has(normalizeForCompare(row.username.trim()))
                 const isAutoUsername = row.username === generateUsername(row.name)
                 const isInvalidTc = row.tcNumber && row.tcNumber.length !== 11
                 return (

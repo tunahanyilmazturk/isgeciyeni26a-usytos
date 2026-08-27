@@ -28,7 +28,9 @@ const loginSchema = z.object({
     .refine((value) => {
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
       const isTc = /^\d{11}$/.test(value)
-      const isUsername = /^[a-zA-Z0-9._-]{3,}$/.test(value)
+      // Kullanıcı adları ASCII-only olduğu için Türkçe karakter içeren
+      // girişleri de kabul et (normalizasyon karşılaştırma sırasında yapılır)
+      const isUsername = /^[a-zA-Z0-9._ğıüşöçİĞÜŞÖÇ-]{3,}$/.test(value)
       return isEmail || isTc || isUsername
     }, 'Geçerli bir e-posta, 11 haneli TC veya kullanıcı adı girin.'),
   password: z
@@ -37,6 +39,18 @@ const loginSchema = z.object({
     .max(64, 'Şifre çok uzun.'),
   remember: z.boolean(),
 })
+
+/** Türkçe karakterleri ASCII karşılıklarına çevirir.
+ *  Kullanıcı adları generateUsername ile ASCII-only oluşturulur,
+ *  ama kullanıcı giriş yaparken Türkçe karakter kullanabilir
+ *  (örn: "ahmet.yılmaz" ı ile). Bu normalizasyon ile eşleşme sağlanır. */
+const TR_TO_ASCII: Record<string, string> = {
+  ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u',
+  Ç: 'c', Ğ: 'g', İ: 'i', Ö: 'o', Ş: 's', Ü: 'u',
+}
+function normalizeForCompare(value: string): string {
+  return value.replace(/[çğıöşüÇĞİÖŞÜ]/g, (ch) => TR_TO_ASCII[ch] ?? ch).toLocaleLowerCase('en-US')
+}
 
 type LoginForm = z.infer<typeof loginSchema>
 
@@ -97,12 +111,13 @@ export function LoginPage() {
 
       // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı/e-posta/TC eşleşmesi)
       const participants = readParticipants()
-      // Kullanıcı adları ASCII-only olduğu için en-US locale kullanıyoruz.
-      // tr-TR locale'inde 'I' → 'ı' dönüşümü yanlış eşleşmeye neden olur.
-      const normalizedLogin = loginValue.toLocaleLowerCase('en-US')
+      // Kullanıcı adları ASCII-only generateUsername ile oluşturulur.
+      // Kullanıcı Türkçe karakterlerle yazsa bile eşleşmesi için
+      // her iki tarafı da normalizeForCompare ile ASCII'ye çeviriyoruz.
+      const normalizedLogin = normalizeForCompare(loginValue)
       const foundParticipant = participants.find((p) =>
-        p.username.toLocaleLowerCase('en-US') === normalizedLogin
-        || (p.email !== '—' && p.email.toLocaleLowerCase('en-US') === normalizedLogin)
+        normalizeForCompare(p.username) === normalizedLogin
+        || (p.email !== '—' && normalizeForCompare(p.email) === normalizedLogin)
         || (p.tcNumber !== '—' && p.tcNumber === loginValue),
       )
 
