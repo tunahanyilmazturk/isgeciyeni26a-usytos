@@ -16,6 +16,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useParticipantAuth } from '../ParticipantAuthContext'
 import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readAssignments } from '@/features/assignments/data/assignments'
 
 type TrainingStatusKey = 'not_started' | 'in_progress' | 'successful' | 'failed'
 
@@ -26,18 +27,18 @@ const trainingStatusConfig: Record<TrainingStatusKey, { label: string; color: st
   failed: { label: 'Başarısız', color: 'bg-rose-50 text-rose-700', dot: 'bg-rose-500' },
 }
 
-function normalizeRisk(level: string): string {
-  return level.toLocaleLowerCase('tr-TR').trim()
-}
-
 export function ParticipantDashboardPage() {
   const navigate = useNavigate()
   const { user } = useParticipantAuth()
 
   const assignedTrainings = useMemo(() => {
     if (!user) return []
-    const userRisk = normalizeRisk(user.riskLevel)
-    return trainingCatalog.filter((t) => normalizeRisk(t.risk) === userRisk)
+    const assignedTrainingIds = new Set(
+      readAssignments()
+        .filter((assignment) => assignment.participantId === user.id)
+        .map((assignment) => assignment.trainingId),
+    )
+    return trainingCatalog.filter((training) => assignedTrainingIds.has(training.id))
   }, [user])
 
   if (!user) return null
@@ -166,7 +167,7 @@ export function ParticipantDashboardPage() {
               <BookOpen className="h-6 w-6" strokeWidth={1.5} />
             </span>
             <p className="mt-4 text-sm font-semibold text-ink-700">Atanan eğitim bulunamadı</p>
-            <p className="mt-1 text-xs text-ink-400">Risk seviyenize uygun eğitim henüz tanımlanmamış.</p>
+            <p className="mt-1 text-xs text-ink-400">Henüz hesabınıza atanmış bir eğitim bulunmuyor.</p>
           </div>
         ) : (
           <div className="divide-y divide-ink-100">
