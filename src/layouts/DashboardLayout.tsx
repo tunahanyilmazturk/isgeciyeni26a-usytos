@@ -2,7 +2,9 @@ import { useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
+  Award,
   BookOpen,
+  CalendarDays,
   Building2,
   ChevronDown,
   ClipboardCheck,
@@ -39,11 +41,13 @@ const mainNavigation: NavigationItem[] = [
   { label: 'Gösterge Paneli', to: '/dashboard', icon: <LayoutDashboard /> },
   { label: 'Firmalar', to: '/dashboard/firmalar', icon: <Building2 /> },
   { label: 'Katılımcılar', to: '/dashboard/katilimcilar', icon: <Users /> },
+  { label: 'Takvim', to: '/dashboard/takvim', icon: <CalendarDays /> },
   { label: 'Eğitim Atamaları', to: '/dashboard/egitim-atamalari', icon: <ClipboardCheck /> },
   { label: 'E-İmza Kuyruğu', to: '/dashboard/imza-kuyrugu', icon: <KeyRound /> },
   { label: 'Canlı Eğitim', to: '/dashboard/canli-egitim', icon: <Video /> },
   { label: 'Raporlar', to: '/dashboard/raporlar', icon: <Gauge /> },
   { label: 'Eğitimler', to: '/dashboard/egitimler', icon: <BookOpen /> },
+  { label: 'Sertifikalar', to: '/dashboard/sertifikalar', icon: <Award /> },
 ]
 
 const supportNavigation: NavigationItem[] = [
@@ -64,11 +68,13 @@ const mobileBarItems: BottomBarItem[] = [
   { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard', exact: true },
   { key: 'firmalar', label: 'Firmalar', icon: Building2, path: '/dashboard/firmalar' },
   { key: 'katilimcilar', label: 'Kişiler', icon: Users, path: '/dashboard/katilimcilar' },
+  { key: 'takvim', label: 'Takvim', icon: CalendarDays, path: '/dashboard/takvim' },
   { key: 'atamalar', label: 'Atamalar', icon: ClipboardCheck, path: '/dashboard/egitim-atamalari' },
   { key: 'imza', label: 'İmza', icon: KeyRound, path: '/dashboard/imza-kuyrugu' },
   { key: 'canli', label: 'Canlı', icon: Video, path: '/dashboard/canli-egitim' },
   { key: 'raporlar', label: 'Raporlar', icon: Gauge, path: '/dashboard/raporlar' },
   { key: 'egitimler', label: 'Eğitimler', icon: BookOpen, path: '/dashboard/egitimler' },
+  { key: 'sertifikalar', label: 'Sertifika', icon: Award, path: '/dashboard/sertifikalar' },
 ]
 
 const mobileBarMoreItems: BottomBarItem[] = [
@@ -340,7 +346,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 ring-2 ring-white" />
             </button>
             <div className="ml-1 h-7 w-px bg-ink-200" />
-            <button type="button" className="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-ink-50">
+            <button type="button" onClick={() => navigate('/dashboard/profil')} className="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-ink-50" aria-label="Profilimi aç">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-ink-200 text-[11px] font-bold text-ink-600">{user?.initials ?? 'K'}</span>
               <span className="hidden text-left md:block">
                 <span className="block text-xs font-semibold text-ink-800">{user?.name ?? 'Kullanıcı'}</span>

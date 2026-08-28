@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import {
+  CalendarDays,
   HardHat,
   LayoutDashboard,
   LogOut,
@@ -23,12 +24,14 @@ interface NavItem {
 const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/katilimci' },
   { key: 'trainings', label: 'Eğitimler', icon: BookOpen, path: '/katilimci/egitimler' },
+  { key: 'calendar', label: 'Takvim', icon: CalendarDays, path: '/katilimci/takvim' },
   { key: 'profile', label: 'Profil', icon: UserRound, path: '/katilimci/profil' },
 ]
 
 const mobileBarItems: BottomBarItem[] = [
   { key: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/katilimci', exact: true },
   { key: 'trainings', label: 'Eğitimler', icon: BookOpen, path: '/katilimci/egitimler' },
+  { key: 'calendar', label: 'Takvim', icon: CalendarDays, path: '/katilimci/takvim' },
   { key: 'profile', label: 'Profil', icon: UserRound, path: '/katilimci/profil' },
 ]
 
@@ -43,6 +46,7 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
       ? location.pathname === '/katilimci'
       : location.pathname.startsWith(item.path),
   )?.key ?? 'dashboard'
+  const isTrainingSession = location.pathname.startsWith('/katilimci/egitim/')
 
   function handleLogout() {
     logout()
@@ -189,7 +193,7 @@ export function ParticipantLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* İçerik */}
-        <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-12 lg:px-10 lg:py-12">
+        <main className={cn('mx-auto w-full px-4 py-6 pb-28 sm:px-6 sm:py-8 sm:pb-12 lg:px-10 lg:py-8', isTrainingSession ? 'max-w-[1600px]' : 'max-w-6xl')}>
           {children}
         </main>
       </div>

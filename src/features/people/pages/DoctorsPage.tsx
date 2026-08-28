@@ -22,6 +22,7 @@ import { z } from 'zod'
 import { Button, Input, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Doctor, type DoctorLevel, readDoctors, saveDoctors } from '../data/people'
+import { StampUploadField } from '../components/StampUploadField'
 
 const doctorSchema = z
   .object({
@@ -68,6 +69,8 @@ export function DoctorsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [view, setView] = useState<ViewMode>('table')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [stampDataUrl, setStampDataUrl] = useState('')
+  const [stampFileName, setStampFileName] = useState('')
 
   useEffect(() => { saveDoctors(doctors) }, [doctors])
 
@@ -125,12 +128,16 @@ export function DoctorsPage() {
 
   function openNewDoctorModal() {
     setEditingDoctorId(null)
+    setStampDataUrl('')
+    setStampFileName('')
     reset()
     setIsModalOpen(true)
   }
 
   function openEditDoctorModal(doctor: Doctor) {
     setEditingDoctorId(doctor.id)
+    setStampDataUrl(doctor.stampDataUrl ?? '')
+    setStampFileName(doctor.stampFileName ?? '')
     reset({
       doctorLevel: doctor.doctorLevel,
       firstName: doctor.firstName,
@@ -160,6 +167,8 @@ export function DoctorsPage() {
       usedServiceDuration: existing?.usedServiceDuration ?? 0,
       email: data.email || undefined,
       phone: data.phone || undefined,
+      stampDataUrl: stampDataUrl || undefined,
+      stampFileName: stampFileName || undefined,
       status: existing?.status ?? 'active',
     }
     setDoctors((current) => existing ? current.map((item) => item.id === existing.id ? doctor : item) : [doctor, ...current])
@@ -167,7 +176,7 @@ export function DoctorsPage() {
     setEditingDoctorId(null)
     setIsModalOpen(false)
     toast.success(existing ? 'Doktor bilgileri güncellendi' : 'Doktor başarıyla eklendi', {
-      description: `${doctor.firstName} ${doctor.lastName} doktor listesine ${existing ? 'kaydedildi' : 'eklendi'}.`,
+      description: `${doctor.firstName} ${doctor.lastName} doktor listesine ${existing ? 'kaydedildi' : 'eklendi'}${doctor.stampDataUrl ? '; onay kaşesi sertifikalara bağlandı.' : '.'}`,
     })
   }
 
@@ -276,6 +285,7 @@ export function DoctorsPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 px-6 py-6 sm:px-7" noValidate>
               <div><div className="mb-3 flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-brand-500" /><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Doktor bilgileri</h3></div><div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="doctor-level" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Doktor tipi</label><div className="relative"><select id="doctor-level" className={cn('h-12 w-full appearance-none rounded-xl border bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none transition-all focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10', errors.doctorLevel ? 'border-red-400' : 'border-ink-200 hover:border-ink-300')} {...register('doctorLevel')}><option value="">Tip seçiniz</option>{doctorLevels.map((level) => <option key={level} value={level}>{level}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div>{errors.doctorLevel && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.doctorLevel.message}</p>}</div><Input label="İsim" placeholder="Onur" error={errors.firstName?.message} {...register('firstName')} /><Input label="Soyisim" placeholder="Polat" error={errors.lastName?.message} {...register('lastName')} /><div><label htmlFor="doctor-title" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Unvan</label><div className="relative"><select id="doctor-title" className="h-12 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3.5 pr-10 text-sm text-ink-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" {...register('title')}><option value="İşyeri Hekimi">İşyeri Hekimi</option></select><ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /></div></div></div></div>
               <div className="grid gap-4 sm:grid-cols-2"><Input label="Sertifika numarası" placeholder="Örn. HEK-2024-0108" icon={<FileBadge2 className="h-[18px] w-[18px]" />} error={errors.certificateNumber?.message} {...register('certificateNumber')} /><Input label="Aylık hizmet süresi" type="number" min="1" max="99999" hint="Maksimum hizmet süresi, dakika cinsinden." error={errors.maxServiceDuration?.message} {...register('maxServiceDuration')} /></div>
+              <StampUploadField image={stampDataUrl} fileName={stampFileName} ownerLabel="Doktor" onChange={(image, fileName) => { setStampDataUrl(image); setStampFileName(fileName) }} />
               <div className="border-t border-ink-100 pt-5"><div className="mb-4 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-ink-400" strokeWidth={1.8} /><div><h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-600">Panel hesabı</h3><p className="mt-1 text-[11px] text-ink-400">İşyeri hekiminin sisteme giriş yapabilmesi için isteğe bağlıdır.</p></div></div><div className="grid gap-4 sm:grid-cols-2"><Input label="Kullanıcı adı" placeholder="Panel hesabı için" {...register('username')} /><Input label="E-posta" type="email" placeholder="doktor@ornek.com" icon={<Mail className="h-[18px] w-[18px]" />} error={errors.email?.message} {...register('email')} /><Input label="Telefon" type="tel" placeholder="+90 5xx xxx xx xx" icon={<Phone className="h-[18px] w-[18px]" />} {...register('phone')} /><Input label="Şifre" type="password" placeholder="Panel hesabı için" {...register('password')} /><Input label="Şifre tekrar" type="password" placeholder="Şifreyi tekrar girin" error={errors.passwordConfirmation?.message} {...register('passwordConfirmation')} /></div></div>
               <div className="flex flex-col-reverse gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:justify-end"><Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Vazgeç</Button><Button type="submit" loading={isSubmitting} leftIcon={!isSubmitting ? <Plus className="h-4 w-4" /> : undefined}>{editingDoctorId === null ? 'Doktoru kaydet' : 'Değişiklikleri kaydet'}</Button></div>
             </form>

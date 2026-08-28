@@ -22,7 +22,7 @@ import { readParticipants, saveParticipants, type Participant, type ParticipantS
 import { readCustomers } from '@/features/customers/data/customers'
 import { addAssignment, bulkAssign, removeAssignment, type AssignmentOptions } from '@/features/assignments/data/assignments'
 import { AssignmentModal, BulkAssignmentModal } from '@/features/assignments/components/AssignmentModals'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
 import { BulkParticipantModal } from '../components/BulkParticipantModal'
 import { SingleParticipantModal } from '../components/SingleParticipantModal'
 
@@ -183,7 +183,7 @@ export function ParticipantsPage() {
 
   function handleAddAssignment(participantId: number, trainingId: string, dueDate: string, options: AssignmentOptions) {
     addAssignment(participantId, trainingId, dueDate, options)
-    const training = trainingCatalog.find((t) => t.id === trainingId)
+    const training = readTrainings().find((t) => t.id === trainingId)
     toast.success('Eğitim atandı', { description: `${training?.name ?? 'Eğitim'} başarıyla atandı.` })
   }
 

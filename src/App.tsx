@@ -27,14 +27,23 @@ const CustomerDetailPage = lazy(() =>
 const ParticipantsPage = lazy(() =>
   import('./features/participants').then((m) => ({ default: m.ParticipantsPage })),
 )
+const AssignmentsCalendarPage = lazy(() =>
+  import('./features/assignments/pages/AssignmentsCalendarPage').then((m) => ({ default: m.AssignmentsCalendarPage })),
+)
 const ParticipantDetailPage = lazy(() =>
   import('./features/participants').then((m) => ({ default: m.ParticipantDetailPage })),
 )
 const TrainingsPage = lazy(() =>
   import('./features/trainings').then((m) => ({ default: m.TrainingsPage })),
 )
+const TrainingEditorPage = lazy(() =>
+  import('./features/trainings').then((m) => ({ default: m.TrainingEditorPage })),
+)
 const TrainingPreviewPage = lazy(() =>
   import('./features/trainings').then((m) => ({ default: m.TrainingPreviewPage })),
+)
+const CertificatesPage = lazy(() =>
+  import('./features/certificates').then((m) => ({ default: m.CertificatesPage })),
 )
 const ExpertsPage = lazy(() =>
   import('./features/people').then((m) => ({ default: m.ExpertsPage })),
@@ -48,8 +57,14 @@ const CompanyInfoPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('./features/settings').then((m) => ({ default: m.UsersPage })),
 )
+const AdminProfilePage = lazy(() =>
+  import('./features/settings').then((m) => ({ default: m.AdminProfilePage })),
+)
 const AssignmentsPage = lazy(() =>
   import('./features/assignments').then((m) => ({ default: m.AssignmentsPage })),
+)
+const TrainingApprovalQueuePage = lazy(() =>
+  import('./features/assignments').then((m) => ({ default: m.TrainingApprovalQueuePage })),
 )
 const SignatureQueuePage = lazy(() =>
   import('./features/signatures').then((m) => ({ default: m.SignatureQueuePage })),
@@ -84,29 +99,33 @@ const ParticipantDashboardPage = lazy(() =>
 const ParticipantTrainingsPage = lazy(() =>
   import('./features/auth/pages/ParticipantTrainingsPage').then((m) => ({ default: m.ParticipantTrainingsPage })),
 )
-const ParticipantTrainingDetailPage = lazy(() =>
-  import('./features/auth/pages/ParticipantTrainingDetailPage').then((m) => ({ default: m.ParticipantTrainingDetailPage })),
+const ParticipantCalendarPage = lazy(() =>
+  import('./features/auth/pages/ParticipantCalendarPage').then((m) => ({ default: m.ParticipantCalendarPage })),
 )
-const ParticipantTrainingContentPage = lazy(() =>
-  import('./features/auth/pages/ParticipantTrainingContentPage').then((m) => ({ default: m.ParticipantTrainingContentPage })),
+const TrainingSessionPage = lazy(() =>
+  import('./features/auth/pages/TrainingSessionPage').then((m) => ({ default: m.TrainingSessionPage })),
+)
+const ParticipantCertificatePage = lazy(() =>
+  import('./features/auth/pages/ParticipantCertificatePage').then((m) => ({ default: m.ParticipantCertificatePage })),
 )
 const ParticipantProfilePage = lazy(() =>
   import('./features/auth/pages/ParticipantProfilePage').then((m) => ({ default: m.ParticipantProfilePage })),
 )
 
-type AdminModule = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'signatures' | 'liveTraining' | 'reports' | 'trainings' | 'companyInfo' | 'support'
+type AdminModule = 'dashboard' | 'companies' | 'participants' | 'assignments' | 'signatures' | 'liveTraining' | 'reports' | 'trainings' | 'certificates' | 'companyInfo' | 'support'
 
 const roleModules: Record<string, AdminModule[]> = {
-  Yönetici: ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'companyInfo', 'support'],
-  'İSG Uzmanı': ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'support'],
-  'İşyeri Hekimi': ['dashboard', 'participants', 'assignments', 'signatures', 'trainings', 'support'],
-  Personel: ['dashboard', 'participants', 'trainings', 'support'],
+  Yönetici: ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'certificates', 'companyInfo', 'support'],
+  'İSG Uzmanı': ['dashboard', 'companies', 'participants', 'assignments', 'signatures', 'liveTraining', 'reports', 'trainings', 'certificates', 'support'],
+  'İşyeri Hekimi': ['dashboard', 'participants', 'assignments', 'signatures', 'trainings', 'certificates', 'support'],
+  Personel: ['dashboard', 'participants', 'trainings', 'certificates', 'support'],
 }
 
 function moduleForPath(pathname: string): AdminModule {
   if (pathname.startsWith('/dashboard/firmalar')) return 'companies'
   if (pathname.startsWith('/dashboard/katilimcilar')) return 'participants'
   if (pathname.startsWith('/dashboard/egitimler')) return 'trainings'
+  if (pathname.startsWith('/dashboard/sertifikalar')) return 'certificates'
   if (pathname.startsWith('/dashboard/egitim-atamalari')) return 'assignments'
   if (pathname.startsWith('/dashboard/imza-kuyrugu')) return 'signatures'
   if (pathname.startsWith('/dashboard/canli-egitim')) return 'liveTraining'
@@ -151,16 +170,21 @@ function ProtectedRoutes() {
           <Route path="katilimcilar" element={<ParticipantsPage />} />
           <Route path="katilimcilar/:participantId" element={<ParticipantDetailPage />} />
           <Route path="katilimcilar/yeni" element={<Navigate to="/dashboard/katilimcilar" replace />} />
+          <Route path="takvim" element={<AssignmentsCalendarPage />} />
           <Route path="egitimler" element={<TrainingsPage />} />
+          <Route path="egitimler/yeni" element={<TrainingEditorPage />} />
+          <Route path="egitimler/:trainingId/duzenle" element={<TrainingEditorPage />} />
           <Route path="egitimler/:trainingId/katilimci-onizleme" element={<TrainingPreviewPage />} />
+          <Route path="sertifikalar" element={<CertificatesPage />} />
           <Route path="osgb-bilgileri/firma-bilgileri" element={<CompanyInfoPage />} />
           <Route path="osgb-bilgileri/egiticiler" element={<ExpertsPage />} />
           <Route path="osgb-bilgileri/doktorlar" element={<DoctorsPage />} />
           <Route path="osgb-bilgileri/kullanicilar" element={<UsersPage />} />
+          <Route path="profil" element={<AdminProfilePage />} />
           <Route path="osgb-bilgileri/faturalar" element={<InvoicesPage />} />
           <Route path="egitim-atamalari" element={<AssignmentsPage />} />
-          <Route path="egitim-atamalari/onay-kuyrugu" element={<AssignmentsPage />} />
-          <Route path="egitim-atamalari/onay-kuyrugu/gecmis" element={<AssignmentsPage />} />
+          <Route path="egitim-atamalari/onay-kuyrugu" element={<TrainingApprovalQueuePage />} />
+          <Route path="egitim-atamalari/onay-kuyrugu/gecmis" element={<TrainingApprovalQueuePage history />} />
           <Route path="imza-kuyrugu" element={<SignatureQueuePage />} />
           <Route path="canli-egitim" element={<LiveTrainingPage />} />
           <Route path="raporlar" element={<ReportsPage />} />
@@ -201,8 +225,9 @@ function ParticipantRoutes() {
         <Routes>
           <Route index element={<ParticipantDashboardPage />} />
           <Route path="egitimler" element={<ParticipantTrainingsPage />} />
-          <Route path="egitimler/:trainingId" element={<ParticipantTrainingDetailPage />} />
-          <Route path="egitimler/:trainingId/icerik/:contentId" element={<ParticipantTrainingContentPage />} />
+          <Route path="takvim" element={<ParticipantCalendarPage />} />
+          <Route path="egitim/:assignmentId" element={<TrainingSessionPage />} />
+          <Route path="sertifika/:assignmentId" element={<ParticipantCertificatePage />} />
           <Route path="profil" element={<ParticipantProfilePage />} />
           <Route path="*" element={<Navigate to="/katilimci" replace />} />
         </Routes>

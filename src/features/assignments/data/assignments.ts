@@ -1,9 +1,29 @@
 import { z } from 'zod'
 import { readStorage, writeStorage } from '@/lib/storage'
 import { readParticipants, type Participant } from '@/features/participants/data/participants'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
 
 export type AssignmentStatus = 'active' | 'pending_approval' | 'completed' | 'expired'
+export type TrainingApprovalStatus = 'not_requested' | 'pending' | 'approved' | 'rejected'
+export type TrainingApprovalTarget = 'expert' | 'doctor'
+
+export interface TrainingApprovalEvent {
+  target: TrainingApprovalTarget
+  decision: 'approved' | 'rejected'
+  reviewerName: string
+  reviewerRole: string
+  at: string
+  note?: string
+}
+
+export interface QuizAnswerReview {
+  questionId: string
+  questionText: string
+  selectedIndex: number
+  selectedText: string
+  correctIndex: number
+  correctText: string
+}
 
 export interface TrainingAssignment {
   id: string
@@ -14,12 +34,27 @@ export interface TrainingAssignment {
   assignedDate: string
   dueDate: string
   progress: number
-  preTest: boolean
+  completedModuleIds: string[]
+  completedItemIds: string[]
+  moduleScores: Record<string, number>
+  quizReviews: Record<string, QuizAnswerReview[]>
+  approvalStatus: TrainingApprovalStatus
+  approvalRequestedTo?: TrainingApprovalTarget
+  approvalTargets?: TrainingApprovalTarget[]
+  approvalDecisions?: Partial<Record<TrainingApprovalTarget, 'approved' | 'rejected'>>
+  approvalHistory?: TrainingApprovalEvent[]
+  rejectionReason?: string
+  submittedAt?: string
+  approvedBy?: string
+  approvedAt?: string
+  certificateId?: string
+  lastModuleId?: string
+  lastItemId?: string
   requiresExpertApproval: boolean
   requiresDoctorApproval: boolean
 }
 
-const assignmentsSchema = z.array(z.object({
+const assignmentSchema = z.object({
   id: z.string(),
   participantId: z.number(),
   trainingId: z.string(),
@@ -28,10 +63,39 @@ const assignmentsSchema = z.array(z.object({
   assignedDate: z.string(),
   dueDate: z.string(),
   progress: z.number(),
-  preTest: z.boolean(),
+  completedModuleIds: z.array(z.string()),
+  completedItemIds: z.array(z.string()),
+  moduleScores: z.record(z.string(), z.number()),
+  quizReviews: z.record(z.string(), z.array(z.object({
+    questionId: z.string(), questionText: z.string(), selectedIndex: z.number(), selectedText: z.string(), correctIndex: z.number(), correctText: z.string(),
+  }))).default({}),
+  approvalStatus: z.enum(['not_requested', 'pending', 'approved', 'rejected']).default('not_requested'),
+  approvalRequestedTo: z.enum(['expert', 'doctor']).optional(),
+  approvalTargets: z.array(z.enum(['expert', 'doctor'])).optional(),
+  approvalDecisions: z.object({
+    expert: z.enum(['approved', 'rejected']).optional(),
+    doctor: z.enum(['approved', 'rejected']).optional(),
+  }).optional(),
+  approvalHistory: z.array(z.object({
+    target: z.enum(['expert', 'doctor']),
+    decision: z.enum(['approved', 'rejected']),
+    reviewerName: z.string(),
+    reviewerRole: z.string(),
+    at: z.string(),
+    note: z.string().optional(),
+  })).optional(),
+  rejectionReason: z.string().optional(),
+  submittedAt: z.string().optional(),
+  approvedBy: z.string().optional(),
+  approvedAt: z.string().optional(),
+  certificateId: z.string().optional(),
+  lastModuleId: z.string().optional(),
+  lastItemId: z.string().optional(),
   requiresExpertApproval: z.boolean(),
   requiresDoctorApproval: z.boolean(),
-}))
+})
+
+const assignmentsSchema = z.array(assignmentSchema)
 
 export interface ParticipantAssignmentSummary {
   participant: Participant
@@ -44,8 +108,7 @@ export interface ParticipantAssignmentSummary {
 const STORAGE_KEY = 'hantech-assignments'
 
 /** Atamalar yalnızca manuel olarak (addAssignment/bulkAssign) oluşturulur.
- *  Otomatik/demo atama üretimi kaldırıldı — yeni katılımcılara eğitim
- *  atanmadan eğitimler sayfasında görünmemeli. */
+ *  Otomatik/demo atama üretimi kaldırıldı. */
 function generateAssignments(): TrainingAssignment[] {
   return []
 }
@@ -60,9 +123,16 @@ export function saveAssignments(assignments: TrainingAssignment[]): boolean {
 
 /** Atama oluşturma seçenekleri */
 export interface AssignmentOptions {
-  preTest?: boolean
   requiresExpertApproval?: boolean
   requiresDoctorApproval?: boolean
+}
+
+function nextAssignmentId(assignments: TrainingAssignment[]): string {
+  const max = assignments.reduce((acc, a) => {
+    const n = Number.parseInt(a.id.replace(/^A-/, ''), 10)
+    return Number.isNaN(n) ? acc : Math.max(acc, n)
+  }, 1000)
+  return `A-${max + 1}`
 }
 
 /** Bir katılımcıya yeni eğitim ataması ekler */
@@ -73,18 +143,21 @@ export function addAssignment(
   options: AssignmentOptions = {},
 ): TrainingAssignment {
   const assignments = readAssignments()
-  const training = trainingCatalog.find((t) => t.id === trainingId)
-  const needsApproval = options.requiresExpertApproval || options.requiresDoctorApproval
+  const training = readTrainings().find((t) => t.id === trainingId)
   const newAssignment: TrainingAssignment = {
-    id: `A-${1000 + assignments.length + 1}`,
+    id: nextAssignmentId(assignments),
     participantId,
     trainingId,
     trainingName: training?.name ?? 'Bilinmeyen eğitim',
-    status: needsApproval ? 'pending_approval' : 'active',
+    status: 'active',
     assignedDate: new Date().toLocaleDateString('tr-TR'),
     dueDate,
     progress: 0,
-    preTest: options.preTest ?? false,
+    completedModuleIds: [],
+    completedItemIds: [],
+    moduleScores: {},
+    quizReviews: {},
+    approvalStatus: 'not_requested',
     requiresExpertApproval: options.requiresExpertApproval ?? false,
     requiresDoctorApproval: options.requiresDoctorApproval ?? false,
   }
@@ -100,6 +173,17 @@ export function removeAssignment(assignmentId: string): void {
   saveAssignments(updated)
 }
 
+/** Atamayı günceller */
+export function updateAssignment(assignmentId: string, patch: Partial<TrainingAssignment>): TrainingAssignment | null {
+  const assignments = readAssignments()
+  const index = assignments.findIndex((a) => a.id === assignmentId)
+  if (index === -1) return null
+  const updated = [...assignments]
+  updated[index] = { ...updated[index], ...patch }
+  saveAssignments(updated)
+  return updated[index]
+}
+
 /** Birden fazla katılımcıya birden fazla eğitim toplu atar
  *  Halihazırda atanmış (participantId+trainingId) çiftlerini atlar
  */
@@ -111,24 +195,27 @@ export function bulkAssign(
 ): { added: number; skipped: number } {
   const assignments = readAssignments()
   const existing = new Set(assignments.map((a) => `${a.participantId}:${a.trainingId}`))
-  const needsApproval = options.requiresExpertApproval || options.requiresDoctorApproval
-
+  const trainings = readTrainings()
   const newAssignments: TrainingAssignment[] = []
   for (const participantId of participantIds) {
     for (const trainingId of trainingIds) {
       const key = `${participantId}:${trainingId}`
       if (existing.has(key)) continue
-      const training = trainingCatalog.find((t) => t.id === trainingId)
+      const training = trainings.find((t) => t.id === trainingId)
       newAssignments.push({
-        id: `A-${1000 + assignments.length + newAssignments.length + 1}`,
+        id: nextAssignmentId([...assignments, ...newAssignments]),
         participantId,
         trainingId,
         trainingName: training?.name ?? 'Bilinmeyen eğitim',
-        status: needsApproval ? 'pending_approval' : 'active',
+        status: 'active',
         assignedDate: new Date().toLocaleDateString('tr-TR'),
         dueDate,
         progress: 0,
-        preTest: options.preTest ?? false,
+        completedModuleIds: [],
+        completedItemIds: [],
+        moduleScores: {},
+        quizReviews: {},
+        approvalStatus: 'not_requested',
         requiresExpertApproval: options.requiresExpertApproval ?? false,
         requiresDoctorApproval: options.requiresDoctorApproval ?? false,
       })

@@ -18,16 +18,17 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button, Pagination, paginate, getPaginationIndices } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Participant } from '@/features/participants/data/participants'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
+import { seedTrainingCatalog } from '@/features/trainings/data/seed'
 import {
   addAssignment,
   bulkAssign,
   getParticipantAssignmentSummaries,
-  getActiveTrainingCount,
   removeAssignment,
   type AssignmentOptions,
   type ParticipantAssignmentSummary,
@@ -43,6 +44,7 @@ function initials(name: string) {
 }
 
 export function AssignmentsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all')
   const [companyFilter, setCompanyFilter] = useState('all')
@@ -53,8 +55,9 @@ export function AssignmentsPage() {
   const [drawerParticipant, setDrawerParticipant] = useState<Participant | null | undefined>(undefined)
   const [showBulkModal, setShowBulkModal] = useState(false)
 
+  useEffect(() => { seedTrainingCatalog() }, [])
+
   const [allSummaries, setAllSummaries] = useState<ParticipantAssignmentSummary[]>(() => getParticipantAssignmentSummaries())
-  const [activeTrainingCount, setActiveTrainingCount] = useState(() => getActiveTrainingCount())
   const companies = useMemo(
     () => [...new Set(allSummaries.map((s) => s.participant.company))].sort((a, b) => a.localeCompare(b, 'tr')),
     [allSummaries],
@@ -111,7 +114,6 @@ export function AssignmentsPage() {
 
   function refreshData() {
     setAllSummaries(getParticipantAssignmentSummaries())
-    setActiveTrainingCount(getActiveTrainingCount())
   }
 
   const openDrawer = useCallback((participant: Participant | null) => {
@@ -129,7 +131,7 @@ export function AssignmentsPage() {
   function handleAddAssignment(participantId: number, trainingId: string, dueDate: string, options: AssignmentOptions) {
     addAssignment(participantId, trainingId, dueDate, options)
     refreshData()
-    const training = trainingCatalog.find((t) => t.id === trainingId)
+    const training = readTrainings().find((t) => t.id === trainingId)
     toast.success('Eğitim atandı', {
       description: `${training?.name ?? 'Eğitim'} başarıyla atandı.`,
     })
@@ -144,7 +146,7 @@ export function AssignmentsPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
@@ -166,31 +168,15 @@ export function AssignmentsPage() {
             </button>
             <button
               type="button"
-              onClick={() => setView('calendar')}
-              className={cn('inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors', view === 'calendar' ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-50')}
+              onClick={() => navigate('/dashboard/takvim')}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-50"
             >
-              <Calendar className="h-3.5 w-3.5" strokeWidth={1.8} /> Takvim
+              <Calendar className="h-3.5 w-3.5" strokeWidth={1.8} /> Takvime git
             </button>
           </div>
           <Button size="md" leftIcon={<Plus className="h-4 w-4" strokeWidth={1.7} />} onClick={() => openDrawer(null)}>Eğitim ata</Button>
           <Button variant="outline" size="md" leftIcon={<Users className="h-4 w-4" strokeWidth={1.7} />} onClick={handleBulkAssign}>Toplu atama</Button>
         </div>
-      </motion.div>
-
-      {/* Aktif eğitim banner'ı */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.05 }}
-        className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-gradient-to-r from-brand-50/80 via-white to-brand-50/40 px-5 py-3.5"
-      >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-          <Layers3 className="h-5 w-5" strokeWidth={1.8} />
-        </span>
-        <p className="text-sm text-ink-600">
-          Sistem genelindeki aktif eğitim sayısı:{' '}
-          <span className="bg-gradient-to-r from-brand-600 to-teal-600 bg-clip-text font-bold text-transparent">{activeTrainingCount}</span>
-        </p>
       </motion.div>
 
       {/* Filtre + tablo kartı */}
@@ -372,12 +358,6 @@ export function AssignmentsPage() {
         />
         )}
 
-        {/* Takvim görünümü */}
-        {view === 'calendar' && (
-          <AssignmentCalendar
-            summaries={filtered}
-          />
-        )}
       </motion.section>
 
       {/* Bireysel atama drawer'ı */}
@@ -438,6 +418,7 @@ const DAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
 /** "30.11.2026" formatını "2026-11-30" formatına çevirir (takvim için) */
 function parseDueDate(dueDate: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return dueDate
   const match = dueDate.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
   if (!match) return null
   const [, day, month, year] = match
@@ -445,15 +426,17 @@ function parseDueDate(dueDate: string): string | null {
 }
 
 /** Aylık takvim grid'i — atamaları son tarihlere göre gösterir */
-function AssignmentCalendar({
+export function AssignmentCalendar({
   summaries,
+  activeTrainingCount,
 }: {
   summaries: ParticipantAssignmentSummary[]
+  activeTrainingCount: number
 }) {
   const today = new Date()
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`)
 
   // Tüm atamaları topla — participant bilgisini ekle
   const allAssignments = useMemo(() => {
@@ -544,36 +527,38 @@ function AssignmentCalendar({
   }).length
 
   return (
-    <div className="p-5 sm:p-6">
-      {/* Takvim header — ay navigasyonu */}
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-3 sm:p-4">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.85fr)]">
+      <div className="min-w-0">
+      {/* Takvim içi ay navigasyonu */}
+      <div className="mb-3 flex flex-col gap-2 rounded-xl border border-ink-100 bg-ink-50/45 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-ink-900">{MONTH_NAMES[currentMonth]} {currentYear}</h3>
-          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[10px] font-bold text-brand-700">{monthAssignmentsCount} atama</span>
+          <h3 className="text-base font-bold tracking-tight text-ink-900">{MONTH_NAMES[currentMonth]} {currentYear}</h3>
+          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[9px] font-bold text-brand-700">{monthAssignmentsCount} atama</span>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={goToToday} className="inline-flex h-9 items-center rounded-xl border border-ink-200 px-3 text-xs font-semibold text-ink-600 transition-colors hover:bg-ink-50">Bugün</button>
-          <button type="button" onClick={prevMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Önceki ay">
+          <button type="button" onClick={goToToday} className="inline-flex h-8 items-center rounded-lg border border-ink-200 bg-white px-2.5 text-[11px] font-semibold text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-700">Bugün</button>
+          <button type="button" onClick={prevMonth} className="grid h-8 w-8 place-items-center rounded-lg border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label="Önceki ay">
             <ChevronLeft className="h-4 w-4" strokeWidth={1.8} />
           </button>
-          <button type="button" onClick={nextMonth} className="grid h-9 w-9 place-items-center rounded-xl border border-ink-200 text-ink-500 transition-colors hover:bg-ink-50" aria-label="Sonraki ay">
+          <button type="button" onClick={nextMonth} className="grid h-8 w-8 place-items-center rounded-lg border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-brand-50 hover:text-brand-700" aria-label="Sonraki ay">
             <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
           </button>
         </div>
       </div>
 
       {/* Gün başlıkları */}
-      <div className="mb-2 grid grid-cols-7 gap-1.5">
+      <div className="mb-1.5 grid grid-cols-7 gap-1">
         {DAY_LABELS.map((label) => (
-          <div key={label} className="pb-2 text-center text-[10px] font-bold uppercase tracking-wide text-ink-400">{label}</div>
+          <div key={label} className="pb-1 text-center text-[9px] font-bold uppercase tracking-wide text-ink-400">{label}</div>
         ))}
       </div>
 
       {/* Takvim grid'i */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((cell, idx) => {
           if (!cell.date) {
-            return <div key={idx} className="min-h-[88px] rounded-xl border border-dashed border-ink-100 bg-ink-50/20" />
+            return <div key={idx} className="min-h-[64px] rounded-lg border border-dashed border-ink-100 bg-ink-50/20" />
           }
           const dayAssignments = assignmentsByDate.get(cell.date) ?? []
           const isSelected = selectedDay === cell.date
@@ -583,13 +568,13 @@ function AssignmentCalendar({
               type="button"
               onClick={() => setSelectedDay(isSelected ? null : cell.date)}
               className={cn(
-                'min-h-[88px] rounded-xl border p-2 text-left transition-all',
+                'min-h-[64px] rounded-lg border p-1.5 text-left transition-all',
                 isSelected ? 'border-brand-400 bg-brand-50/50 ring-2 ring-brand-500/15' :
                 dayAssignments.length > 0 ? 'border-ink-200 bg-white hover:border-brand-300 hover:bg-brand-50/20' :
                 'border-ink-100 bg-ink-50/20 hover:border-ink-200',
               )}
             >
-              <div className="mb-1.5 flex items-center justify-between">
+              <div className="mb-1 flex items-center justify-between">
                 <span className={cn('text-xs font-bold tabular-nums', cell.isToday ? 'grid h-6 w-6 place-items-center rounded-full bg-brand-600 text-white' : 'text-ink-600')}>
                   {cell.day}
                 </span>
@@ -598,15 +583,15 @@ function AssignmentCalendar({
                 )}
               </div>
               {/* Atama noktaları (max 3 göster) */}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {dayAssignments.slice(0, 3).map((a) => (
                   <div key={a.id} className="flex items-center gap-1 truncate">
                     <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', assignmentStatusDot[a.status])} />
-                    <span className="truncate text-[10px] font-medium text-ink-600">{a.trainingName}</span>
+                    <span className="truncate text-[9px] font-medium text-ink-600">{a.trainingName}</span>
                   </div>
                 ))}
                 {dayAssignments.length > 3 && (
-                  <p className="text-[10px] font-semibold text-ink-400">+{dayAssignments.length - 3} daha</p>
+                  <p className="text-[9px] font-semibold text-ink-400">+{dayAssignments.length - 3} daha</p>
                 )}
               </div>
             </button>
@@ -615,6 +600,8 @@ function AssignmentCalendar({
       </div>
 
       {/* Seçili günün detayları */}
+      </div>
+      <aside className="space-y-4 lg:sticky lg:top-4">
       {selectedDay && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -656,6 +643,16 @@ function AssignmentCalendar({
         </motion.div>
       )}
 
+      <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/70 via-white to-white p-4 shadow-[0_6px_22px_-18px_rgba(17,24,39,0.3)]">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 text-white"><Layers3 className="h-5 w-5" strokeWidth={1.8} /></span>
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-700">Sistem özeti</p><p className="mt-1 text-xs text-ink-500">Aktif eğitim atamalarının genel görünümü</p></div>
+        </div>
+        <div className="mt-5 flex items-end justify-between gap-3"><div><p className="text-3xl font-bold tracking-tight text-ink-900">{activeTrainingCount}</p><p className="text-[11px] font-medium text-ink-500">aktif eğitim</p></div><span className="rounded-xl bg-white px-2.5 py-1.5 text-[10px] font-semibold text-brand-700 shadow-sm ring-1 ring-brand-100">Canlı takip</span></div>
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-brand-100"><div className="h-full w-full rounded-full bg-gradient-to-r from-brand-500 to-teal-400" /></div>
+        <p className="mt-3 text-[11px] leading-5 text-ink-500">Takvimden bir gün seçerek o tarihte sona eren eğitim atamalarını sağ panelde inceleyin.</p>
+      </div>
+
       {/* Lejant */}
       <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-ink-100 pt-4">
         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-400">Durum:</p>
@@ -665,6 +662,8 @@ function AssignmentCalendar({
             {assignmentStatusLabels[status]}
           </span>
         ))}
+      </div>
+      </aside>
       </div>
     </div>
   )

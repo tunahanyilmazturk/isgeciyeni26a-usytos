@@ -102,6 +102,10 @@ export function LoginPage() {
 
       // 1) Önce katılımcı olarak giriş yapmayı dene (kullanıcı adı/e-posta/TC eşleşmesi)
       const participants = readParticipants()
+      console.log('[LOGIN] participants count:', participants.length)
+      console.log('[LOGIN] loginValue:', JSON.stringify(loginValue))
+      console.log('[LOGIN] usernames:', participants.map(p => p.username))
+      console.log('[LOGIN] first 2:', participants.slice(0, 2).map(p => ({ username: p.username, password: p.password, status: p.status })))
       // Kullanıcı adları ASCII-only generateUsername ile oluşturulur.
       // Kullanıcı Türkçe karakterlerle yazsa bile eşleşmesi için
       // her iki tarafı da normalizeForCompare ile ASCII'ye çeviriyoruz.
@@ -111,6 +115,7 @@ export function LoginPage() {
         || (p.email !== '—' && normalizeForCompare(p.email) === normalizedLogin)
         || (p.tcNumber !== '—' && p.tcNumber === loginValue),
       )
+      console.log('[LOGIN] found:', foundParticipant ? { id: foundParticipant.id, username: foundParticipant.username, password: foundParticipant.password } : 'NOT FOUND')
 
       if (foundParticipant) {
         // Katılımcı bulundu — katılımcı girişi

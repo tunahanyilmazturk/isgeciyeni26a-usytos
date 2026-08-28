@@ -21,6 +21,7 @@ import { z } from 'zod'
 import { Button, Input, Pagination, paginate, getPaginationIndices, ViewToggle, type ViewMode, BulkActionBar } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { type Expert, type ExpertTitle, readExperts, saveExperts } from '../data/people'
+import { StampUploadField } from '../components/StampUploadField'
 
 const expertSchema = z
   .object({
@@ -70,6 +71,8 @@ export function ExpertsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [view, setView] = useState<ViewMode>('table')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [stampDataUrl, setStampDataUrl] = useState('')
+  const [stampFileName, setStampFileName] = useState('')
 
   useEffect(() => { saveExperts(experts) }, [experts])
 
@@ -127,12 +130,16 @@ export function ExpertsPage() {
 
   function openNewExpertModal() {
     setEditingExpertId(null)
+    setStampDataUrl('')
+    setStampFileName('')
     reset()
     setIsModalOpen(true)
   }
 
   function openEditExpertModal(expert: Expert) {
     setEditingExpertId(expert.id)
+    setStampDataUrl(expert.stampDataUrl ?? '')
+    setStampFileName(expert.stampFileName ?? '')
     reset({
       firstName: expert.firstName,
       lastName: expert.lastName,
@@ -160,6 +167,8 @@ export function ExpertsPage() {
       usedServiceDuration: existing?.usedServiceDuration ?? 0,
       email: data.email || undefined,
       phone: data.phone || undefined,
+      stampDataUrl: stampDataUrl || undefined,
+      stampFileName: stampFileName || undefined,
       status: existing?.status ?? 'active',
     }
     setExperts((current) => existing ? current.map((item) => item.id === existing.id ? expert : item) : [expert, ...current])
@@ -167,7 +176,7 @@ export function ExpertsPage() {
     setEditingExpertId(null)
     setIsModalOpen(false)
     toast.success(existing ? 'Uzman bilgileri güncellendi' : 'Uzman başarıyla eklendi', {
-      description: `${expert.firstName} ${expert.lastName} uzman listesine ${existing ? 'kaydedildi' : 'eklendi'}.`,
+      description: `${expert.firstName} ${expert.lastName} uzman listesine ${existing ? 'kaydedildi' : 'eklendi'}${expert.stampDataUrl ? '; onay kaşesi sertifikalara bağlandı.' : '.'}`,
     })
   }
 
@@ -377,6 +386,8 @@ export function ExpertsPage() {
               </div>
 
               <Input label="Aylık hizmet süresi" type="number" min="1" max="99999" hint="Maksimum hizmet süresi, dakika cinsinden." error={errors.maxServiceDuration?.message} {...register('maxServiceDuration')} />
+
+              <StampUploadField image={stampDataUrl} fileName={stampFileName} ownerLabel="Uzman" onChange={(image, fileName) => { setStampDataUrl(image); setStampFileName(fileName) }} />
 
               <div className="border-t border-ink-100 pt-5">
                 <div className="mb-4 flex items-center gap-2">

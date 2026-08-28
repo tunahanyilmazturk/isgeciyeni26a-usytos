@@ -15,6 +15,8 @@ export interface User {
   permissions?: string[]
   lastLogin: string
   status: UserStatus
+  stampDataUrl?: string
+  stampFileName?: string
 }
 
 const usersSchema = z.array(z.object({
@@ -29,6 +31,8 @@ const usersSchema = z.array(z.object({
   permissions: z.array(z.string()).optional(),
   lastLogin: z.string(),
   status: z.enum(['active', 'pending', 'inactive']),
+  stampDataUrl: z.string().optional(),
+  stampFileName: z.string().optional(),
 }))
 
 export const USERS_STORAGE_KEY = 'hantech-users'
@@ -39,6 +43,20 @@ export function readUsers(): User[] {
 
 export function saveUsers(users: User[]): boolean {
   return writeStorage(USERS_STORAGE_KEY, users)
+}
+
+export function findUserByName(name: string, users = readUsers()): User | undefined {
+  const key = name.trim().toLocaleLowerCase('tr-TR')
+  return users.find((user) => `${user.firstName} ${user.lastName}`.trim().toLocaleLowerCase('tr-TR') === key)
+}
+
+export function saveUserStamp(name: string, stampDataUrl: string, stampFileName: string): User | null {
+  const users = readUsers()
+  const matched = findUserByName(name, users)
+  if (!matched) return null
+  const updatedUser = { ...matched, stampDataUrl, stampFileName }
+  saveUsers(users.map((user) => user.id === matched.id ? updatedUser : user))
+  return updatedUser
 }
 
 export const initialUsers: User[] = [

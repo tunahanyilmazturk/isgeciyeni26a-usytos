@@ -13,6 +13,8 @@ export interface Expert {
   usedServiceDuration: number
   email?: string
   phone?: string
+  stampDataUrl?: string
+  stampFileName?: string
   status: 'active' | 'inactive'
 }
 
@@ -26,6 +28,8 @@ const expertSchema = z.object({
   usedServiceDuration: z.number(),
   email: z.string().optional(),
   phone: z.string().optional(),
+  stampDataUrl: z.string().optional(),
+  stampFileName: z.string().optional(),
   status: z.enum(['active', 'inactive']),
 })
 const expertsSchema = z.array(expertSchema)
@@ -43,6 +47,8 @@ export interface Doctor {
   usedServiceDuration: number
   email?: string
   phone?: string
+  stampDataUrl?: string
+  stampFileName?: string
   status: 'active' | 'inactive'
 }
 
@@ -57,6 +63,8 @@ const doctorSchema = z.object({
   usedServiceDuration: z.number(),
   email: z.string().optional(),
   phone: z.string().optional(),
+  stampDataUrl: z.string().optional(),
+  stampFileName: z.string().optional(),
   status: z.enum(['active', 'inactive']),
 })
 const doctorsSchema = z.array(doctorSchema)
@@ -78,6 +86,17 @@ export function readDoctors(): Doctor[] {
 
 export function saveDoctors(doctors: Doctor[]): boolean {
   return writeStorage(DOCTORS_STORAGE_KEY, doctors)
+}
+
+function personName(firstName: string, lastName: string) {
+  return `${firstName} ${lastName}`.trim().toLocaleLowerCase('tr-TR')
+}
+
+export function findPeopleStampByName(name: string): string {
+  const key = name.trim().toLocaleLowerCase('tr-TR')
+  const expert = readExperts().find((item) => personName(item.firstName, item.lastName) === key)
+  if (expert?.stampDataUrl) return expert.stampDataUrl
+  return readDoctors().find((item) => personName(item.firstName, item.lastName) === key)?.stampDataUrl ?? ''
 }
 
 export const initialExperts: Expert[] = [

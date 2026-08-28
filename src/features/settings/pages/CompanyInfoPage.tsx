@@ -13,6 +13,8 @@ import {
   Phone,
   Save,
   ShieldCheck,
+  Stamp,
+  Trash2,
   Upload,
   Users,
 } from 'lucide-react'
@@ -21,17 +23,20 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button, Checkbox, Input } from '@/components/ui'
-import { readStorage, writeStorage } from '@/lib/storage'
 import { cn } from '@/lib/utils'
+import { readCompanyProfile, saveCompanyProfile, type CompanyProfile } from '../data/companyProfile'
 
 const companySchema = z.object({
   name: z.string().trim().min(2, 'Firma unvanı gerekli.'),
   phone: z.string().trim(),
+  email: z.string().trim(),
+  website: z.string().trim(),
   taxOffice: z.string().trim(),
   taxNumber: z.string().trim(),
   registryNumber: z.string().trim(),
   authorizationCertificate: z.string().trim(),
   address: z.string().trim().min(5, 'Adres bilgisi gerekli.'),
+  certificateIssuerTitle: z.string().trim(),
   participantOtpEnabled: z.boolean(),
   participantOtpChannel: z.string(),
   staffOtpEnabled: z.boolean(),
@@ -41,24 +46,6 @@ const companySchema = z.object({
 })
 
 type CompanyForm = z.infer<typeof companySchema>
-
-const defaultValues: CompanyForm = {
-  name: 'Demo OSGB',
-  phone: '000 000 00 00',
-  taxOffice: 'Demo Vergi Dairesi',
-  taxNumber: 'DEMO-VKN-OSGB',
-  registryNumber: 'DEMO-OSGB-0001',
-  authorizationCertificate: 'DEMO-YETKI-0001',
-  address: 'Demo OSGB adresi',
-  participantOtpEnabled: false,
-  participantOtpChannel: 'email',
-  staffOtpEnabled: false,
-  staffOtpChannel: 'email',
-  notifyEmail: true,
-  notifySms: false,
-}
-
-const COMPANY_INFO_STORAGE_KEY = 'hantech-company-info'
 
 function SelectField({
   id,
@@ -116,38 +103,62 @@ function SettingCard({ icon, eyebrow, title, description, children }: SettingCar
 }
 
 export function CompanyInfoPage() {
-  const [logoName, setLogoName] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [profile, setProfile] = useState(() => readCompanyProfile())
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const sealInputRef = useRef<HTMLInputElement>(null)
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CompanyForm>({
     resolver: zodResolver(companySchema),
-    defaultValues: readStorage(COMPANY_INFO_STORAGE_KEY, defaultValues, companySchema),
+    defaultValues: profile,
   })
 
   function onSubmit(data: CompanyForm) {
-    const saved = writeStorage(COMPANY_INFO_STORAGE_KEY, data)
+    const next: CompanyProfile = { ...profile, ...data }
+    const saved = saveCompanyProfile(next)
     if (!saved) {
       toast.error('Kurum bilgileri kaydedilemedi', { description: 'Tarayıcı depolama alanına erişilemedi.' })
       return
     }
+    setProfile(next)
     toast.success('Kurum bilgileri kaydedildi', {
       description: 'Bilgiler bu tarayıcıda saklandı. Merkezi paylaşım için backend gereklidir.',
     })
   }
 
-  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>, kind: 'logo' | 'seal') {
     const file = event.target.files?.[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo dosyası 2 MB sınırını aşamaz.')
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Yalnızca JPG, PNG veya WEBP görselleri kullanılabilir.')
       event.target.value = ''
       return
     }
-    setLogoName(file.name)
-    toast.info('Logo seçildi', { description: 'Değişikliği kaydetmek için Kaydet butonuna basın.' })
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast.error('Görsel dosyası 1,5 MB sınırını aşamaz.')
+      event.target.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : ''
+      if (!dataUrl) return
+      setProfile((current) => {
+        if (kind === 'logo') return { ...current, logoDataUrl: dataUrl, logoFileName: file.name }
+        return { ...current, sealDataUrl: dataUrl, sealFileName: file.name }
+      })
+      toast.info('Görsel hazır', { description: 'Değişikliği kalıcı yapmak için Kaydet butonuna basın.' })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeImage(kind: 'logo' | 'seal') {
+    setProfile((current) => {
+      if (kind === 'logo') return { ...current, logoDataUrl: '', logoFileName: '' }
+      return { ...current, sealDataUrl: '', sealFileName: '' }
+    })
   }
 
   return (
@@ -190,23 +201,27 @@ export function CompanyInfoPage() {
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" strokeWidth={1.8} />
               <p><span className="font-semibold">Firma kimlik bilgileri sistem tarafından korunur.</span> Değişiklik gereken durumlarda sistem yöneticinizle iletişime geçin. Logo ve güvenlik tercihlerinizi bu sayfadan güncelleyebilirsiniz.</p>
             </div>
-            <fieldset disabled className="grid gap-4 opacity-80 md:grid-cols-2">
+            <fieldset className="grid gap-4 md:grid-cols-2">
               <Input label="Firma unvanı" icon={<Building2 className="h-[18px] w-[18px]" />} error={errors.name?.message} {...register('name')} />
               <Input label="Telefon" icon={<Phone className="h-[18px] w-[18px]" />} {...register('phone')} />
+              <Input label="Kurumsal e-posta" icon={<Mail className="h-[18px] w-[18px]" />} {...register('email')} />
+              <Input label="Web sitesi" placeholder="www.kurum.com.tr" {...register('website')} />
               <Input label="Vergi dairesi" {...register('taxOffice')} />
               <Input label="Vergi numarası" {...register('taxNumber')} />
               <Input label="İşyeri SGK no" icon={<FileBadge2 className="h-[18px] w-[18px]" />} {...register('registryNumber')} />
               <Input label="İşyeri yetki belgesi no" icon={<ShieldCheck className="h-[18px] w-[18px]" />} {...register('authorizationCertificate')} />
+              <Input label="Belgeyi düzenleyen birim" icon={<FileBadge2 className="h-[18px] w-[18px]" />} {...register('certificateIssuerTitle')} />
               <div className="md:col-span-2"><label htmlFor="company-address" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-500">Adres</label><textarea id="company-address" rows={3} className="w-full resize-none rounded-xl border border-ink-200 bg-white px-3.5 py-3 text-sm text-ink-900 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10" {...register('address')} />{errors.address && <p className="mt-1.5 text-xs font-medium text-red-500">{errors.address.message}</p>}</div>
             </fieldset>
 
             <div className="mt-6 border-t border-ink-100 pt-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl border border-dashed border-ink-300 bg-ink-50 text-ink-400"><Upload className="h-4 w-4" /></span><div><p className="text-sm font-semibold text-ink-800">Firma logosu</p><p className="mt-1 text-xs text-ink-400">JPG, PNG veya WEBP · Maksimum 2 MB</p></div></div>
-                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleLogoChange} className="hidden" />
-                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} leftIcon={<Upload className="h-4 w-4" />}>{logoName ? 'Logoyu değiştir' : 'Logo seç'}</Button>
+              <div className="mb-4"><p className="text-sm font-semibold text-ink-900">Sertifika görselleri</p><p className="mt-1 text-xs text-ink-400">Şeffaf arka planlı PNG kaşeler PDF üzerinde en temiz sonucu verir. Görseller yalnızca bu tarayıcıda saklanır.</p></div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <MediaUploadCard title="Kurum logosu" description="Sertifikanın üst kurum alanında kullanılır." image={profile.logoDataUrl} fileName={profile.logoFileName} icon={<Building2 />} onSelect={() => logoInputRef.current?.click()} onRemove={() => removeImage('logo')} />
+                <MediaUploadCard title="Kurum kaşesi" description="Belgeyi düzenleyen kurumun kaşe alanında kullanılır." image={profile.sealDataUrl} fileName={profile.sealFileName} icon={<Stamp />} onSelect={() => sealInputRef.current?.click()} onRemove={() => removeImage('seal')} />
               </div>
-              {logoName && <p className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700"><Check className="mr-1 inline h-3.5 w-3.5" />{logoName}</p>}
+              <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => handleImageChange(event, 'logo')} className="hidden" />
+              <input ref={sealInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => handleImageChange(event, 'seal')} className="hidden" />
             </div>
           </div>
         </motion.section>
@@ -245,4 +260,8 @@ export function CompanyInfoPage() {
 
 function UsersIcon() {
   return <span className="text-brand-700"><Users className="h-5 w-5" strokeWidth={1.7} /></span>
+}
+
+function MediaUploadCard({ title, description, image, fileName, icon, onSelect, onRemove }: { title: string; description: string; image: string; fileName: string; icon: React.ReactNode; onSelect: () => void; onRemove: () => void }) {
+  return <div className="rounded-2xl border border-ink-200 bg-ink-50/40 p-4"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-brand-700 ring-1 ring-ink-200 [&>svg]:h-5 [&>svg]:w-5">{icon}</span><div className="min-w-0"><p className="text-sm font-semibold text-ink-800">{title}</p><p className="mt-1 text-[11px] leading-4 text-ink-400">{description}</p></div></div><div className="mt-4 grid h-24 place-items-center overflow-hidden rounded-xl border border-dashed border-ink-300 bg-white">{image ? <img src={image} alt={`${title} önizlemesi`} className="max-h-20 max-w-[85%] object-contain" /> : <div className="text-center text-ink-300"><Upload className="mx-auto h-5 w-5" /><p className="mt-1 text-[10px]">PNG, JPG veya WEBP</p></div>}</div><div className="mt-3 flex items-center gap-2"><Button type="button" variant="outline" size="sm" className="flex-1" onClick={onSelect} leftIcon={image ? <Check className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}>{image ? 'Değiştir' : 'Görsel seç'}</Button>{image && <button type="button" onClick={onRemove} className="grid h-9 w-9 place-items-center rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50" aria-label={`${title} görselini kaldır`}><Trash2 className="h-4 w-4" /></button>}</div>{fileName && <p className="mt-2 truncate text-[10px] font-medium text-brand-700">{fileName}</p>}</div>
 }

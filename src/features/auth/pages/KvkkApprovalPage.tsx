@@ -123,9 +123,9 @@ export function KvkkApprovalPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ink-50 via-white to-brand-50/30 text-ink-900">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-br from-ink-50 via-white to-brand-50/30 text-ink-900">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-ink-200/70 bg-white/80 backdrop-blur-md">
+      <header className="z-30 shrink-0 border-b border-ink-200/70 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-[72px] sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-brand-600 text-white shadow-sm shadow-brand-600/20">
@@ -159,57 +159,58 @@ export function KvkkApprovalPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
+      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:px-10">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="flex min-h-0 flex-1 flex-col"
         >
           {/* Hero başlık */}
-          <div className="mb-6 overflow-hidden rounded-3xl border border-ink-200/80 bg-white shadow-[0_8px_30px_-16px_rgba(17,24,39,0.18)] sm:mb-8">
-            <div className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-brand-800 px-5 py-7 text-white sm:px-8 sm:py-9">
+          <div className="mb-4 shrink-0 overflow-hidden rounded-3xl border border-ink-200/80 bg-white shadow-[0_8px_30px_-16px_rgba(17,24,39,0.18)] sm:mb-5">
+            <div className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-brand-800 px-4 py-3 text-white sm:px-6 sm:py-3.5">
               {/* Dekoratif arka plan */}
               <div className="pointer-events-none absolute inset-0 opacity-[0.07]">
                 <ShieldCheck className="absolute -right-4 -top-4 h-32 w-32" strokeWidth={1} />
                 <FileText className="absolute -bottom-6 right-20 h-24 w-24" strokeWidth={1} />
               </div>
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm sm:h-14 sm:w-14">
-                    <ShieldCheck className="h-7 w-7" strokeWidth={1.6} />
+              <div className="relative flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm sm:h-11 sm:w-11">
+                    <ShieldCheck className="h-5 w-5" strokeWidth={1.6} />
                   </span>
-                  <div>
-                    <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-200">
+                  <div className="min-w-0">
+                    <div className="mb-0.5 flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-200">
                       <span className="h-1.5 w-1.5 rounded-full bg-brand-300" />
                       Yasal bilgilendirme
                     </div>
-                    <h1 className="text-xl font-bold tracking-[-0.035em] sm:text-2xl">
+                    <h1 className="truncate text-lg font-bold tracking-[-0.035em] sm:text-xl">
                       {KVKK_INTRO.title}
                     </h1>
-                    <p className="mt-1 text-sm text-brand-100/80">{KVKK_INTRO.subtitle}</p>
+                    <p className="truncate text-xs text-brand-100/80">{KVKK_INTRO.subtitle}</p>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2 rounded-xl bg-white/10 px-4 py-3 ring-1 ring-white/15 backdrop-blur-sm">
+                <div className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-2 ring-1 ring-white/15 backdrop-blur-sm sm:px-3">
                   <Clock className="h-4 w-4 text-brand-200" strokeWidth={1.8} />
-                  <div className="text-xs">
+                  <div className="text-[10px]">
                     <p className="font-semibold text-white">~2 dakika</p>
                     <p className="text-brand-200/80">okuma süresi</p>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="px-5 py-4 sm:px-8 sm:py-5">
-              <p className="text-sm leading-7 text-ink-600">
+            <div className="px-4 py-2.5 sm:px-6 sm:py-3">
+              <p className="text-xs leading-5 text-ink-600 sm:text-[13px]">
                 Merhaba <span className="font-semibold text-ink-900">{user.name}</span>, {KVKK_INTRO.summary}
               </p>
             </div>
           </div>
 
           {/* İçerik: TOC + metin */}
-          <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
+          <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[260px_1fr]">
             {/* İçindekiler (sidebar) */}
             <aside className="hidden lg:block">
-              <div className="sticky top-[88px] space-y-1 rounded-2xl border border-ink-200/80 bg-white p-4 shadow-[0_4px_20px_-12px_rgba(17,24,39,0.15)]">
+              <div className="sticky top-0 space-y-1 rounded-2xl border border-ink-200/80 bg-white p-4 shadow-[0_4px_20px_-12px_rgba(17,24,39,0.15)]">
                 <p className="mb-3 px-2 text-[10px] font-bold uppercase tracking-wider text-ink-400">
                   İçindekiler
                 </p>
@@ -260,7 +261,7 @@ export function KvkkApprovalPage() {
             </aside>
 
             {/* Metin alanı */}
-            <div className="relative overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-[0_8px_30px_-16px_rgba(17,24,39,0.18)]">
+            <div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-[0_8px_30px_-16px_rgba(17,24,39,0.18)]">
               {/* Üst bar — scroll durumu */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ink-100 bg-ink-50/40 px-4 py-3 sm:px-6 sm:py-3.5">
                 <div className="flex items-center gap-2">
@@ -291,7 +292,7 @@ export function KvkkApprovalPage() {
               <div
                 ref={scrollRef}
                 onScroll={() => { handleScroll(); updateActiveSection() }}
-                className="h-[58vh] min-h-[320px] overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-7"
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-7"
               >
                 <div className="space-y-8">
                   {KVKK_SECTIONS.map((section, idx) => {
@@ -355,96 +356,74 @@ export function KvkkApprovalPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          </div>
 
-          {/* Onay kartı */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.1 }}
-            className={cn(
-              'mt-6 overflow-hidden rounded-2xl border-2 transition-colors sm:mt-8',
-              hasScrolledToEnd
-                ? accepted
-                  ? 'border-brand-300 bg-brand-50/40'
-                  : 'border-ink-200 bg-white'
-                : 'border-ink-200 bg-white opacity-70',
-            )}
-          >
-            <label
-              className={cn(
-                'flex items-start gap-4 p-5 sm:p-6',
-                hasScrolledToEnd ? 'cursor-pointer' : 'cursor-not-allowed',
-              )}
-            >
-              <div className="relative mt-0.5 shrink-0">
-                <input
-                  type="checkbox"
-                  disabled={!hasScrolledToEnd}
-                  checked={accepted}
-                  onChange={(event) => setAccepted(event.target.checked)}
-                  className="peer sr-only"
-                />
-                <div className={cn(
-                  'grid h-6 w-6 place-items-center rounded-lg border-2 transition-all',
-                  accepted
-                    ? 'border-brand-600 bg-brand-600 text-white'
-                    : hasScrolledToEnd
-                      ? 'border-ink-300 bg-white peer-hover:border-brand-400'
-                      : 'border-ink-200 bg-ink-50',
-                )}>
-                  {accepted && <Check className="h-4 w-4" strokeWidth={3} />}
+              {/* Onay ve aksiyon alanı */}
+              <div className="shrink-0 border-t border-ink-100 bg-white p-3 sm:p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.1 }}
+                  className={cn(
+                    'min-w-0 flex-1 overflow-hidden rounded-2xl border-2 transition-colors',
+                    hasScrolledToEnd
+                      ? accepted
+                        ? 'border-brand-300 bg-brand-50/40'
+                        : 'border-ink-200 bg-white'
+                      : 'border-ink-200 bg-white opacity-70',
+                  )}
+                >
+                  <label
+                    className={cn(
+                      'flex items-start gap-2.5 p-2.5 sm:gap-3 sm:p-3',
+                      hasScrolledToEnd ? 'cursor-pointer' : 'cursor-not-allowed',
+                    )}
+                  >
+                    <div className="relative mt-0.5 shrink-0">
+                      <input
+                        type="checkbox"
+                        disabled={!hasScrolledToEnd}
+                        checked={accepted}
+                        onChange={(event) => setAccepted(event.target.checked)}
+                        className="peer sr-only"
+                      />
+                      <div className={cn(
+                        'grid h-6 w-6 place-items-center rounded-lg border-2 transition-all',
+                        accepted
+                          ? 'border-brand-600 bg-brand-600 text-white'
+                          : hasScrolledToEnd
+                            ? 'border-ink-300 bg-white peer-hover:border-brand-400'
+                            : 'border-ink-200 bg-ink-50',
+                      )}>
+                        {accepted && <Check className="h-4 w-4" strokeWidth={3} />}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-ink-900 sm:text-[13px]">KVKK Aydınlatma Metni'ni okudum, anladım ve kabul ediyorum.</p>
+                      <p className="mt-0.5 text-[11px] leading-4 text-ink-500 sm:text-xs">
+                        Kişisel verilerimin yukarıda belirtilen amaçlar kapsamında işlenmesini, saklanmasını ve gerekli hallerde aktarılmasını onaylıyorum.
+                      </p>
+                    </div>
+                    {accepted && hasScrolledToEnd && <CheckCircle2 className="h-6 w-6 shrink-0 text-brand-600" strokeWidth={1.8} />}
+                  </label>
+                  </motion.div>
+
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={handleReject} leftIcon={<X className="h-4 w-4" />}>
+                      Reddet ve çık
+                    </Button>
+                    <Button size="lg" className="w-full sm:w-auto" onClick={handleApprove} disabled={!hasScrolledToEnd || !accepted} rightIcon={hasScrolledToEnd && accepted ? <ArrowRight className="h-4 w-4" /> : undefined}>
+                      Onayla ve devam et
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-ink-50/60 p-3">
+                  <Scale className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" strokeWidth={1.8} />
+                  <p className="text-[11px] leading-5 text-ink-500">{KVKK_LEGAL_REFERENCE}</p>
                 </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-ink-900 sm:text-base">
-                  KVKK Aydınlatma Metni'ni okudum, anladım ve kabul ediyorum.
-                </p>
-                <p className="mt-1 text-xs leading-5 text-ink-500 sm:text-[13px]">
-                  Kişisel verilerimin yukarıda belirtilen amaçlar kapsamında işlenmesini, saklanmasını ve gerekli hallerde aktarılmasını onaylıyorum.
-                </p>
-              </div>
-              {accepted && hasScrolledToEnd && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                  <CheckCircle2 className="h-6 w-6 text-brand-600" strokeWidth={1.8} />
-                </motion.div>
-              )}
-            </label>
-          </motion.div>
-
-          {/* Aksiyon butonları */}
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={handleReject}
-              leftIcon={<X className="h-4 w-4" />}
-            >
-              Reddet ve çık
-            </Button>
-            <Button
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={handleApprove}
-              disabled={!hasScrolledToEnd || !accepted}
-              rightIcon={hasScrolledToEnd && accepted ? <ArrowRight className="h-4 w-4" /> : undefined}
-            >
-              Onayla ve devam et
-            </Button>
-          </div>
-
-          {/* Yasal alt bilgi */}
-          <div className="mt-6 flex items-start gap-2.5 rounded-xl bg-ink-50/60 p-4 sm:mt-8">
-            <Scale className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" strokeWidth={1.8} />
-            <p className="text-[11px] leading-5 text-ink-500">
-              {KVKK_LEGAL_REFERENCE}
-            </p>
+            </div>
           </div>
         </motion.div>
       </main>

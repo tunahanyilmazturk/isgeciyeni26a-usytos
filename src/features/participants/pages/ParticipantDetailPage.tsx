@@ -24,7 +24,7 @@ import { readAssignments, type TrainingAssignment } from '@/features/assignments
 import { readCustomers } from '@/features/customers/data/customers'
 import { SingleParticipantModal } from '../components/SingleParticipantModal'
 import { AssignmentModal } from '@/features/assignments/components/AssignmentModals'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
 
 const tabs = [
   { id: 'overview', label: 'Genel bakış' },
@@ -432,7 +432,7 @@ export function ParticipantDetailPage() {
               ) : (
                 <div className="divide-y divide-ink-100">
                   {participantAssignments.map((assignment) => {
-                    const training = trainingCatalog.find((t) => t.id === assignment.trainingId)
+                    const training = readTrainings().find((t) => t.id === assignment.trainingId)
                     return (
                       <div key={assignment.id} className="flex items-center gap-4 p-4 transition-colors hover:bg-ink-50/40 sm:p-5">
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
@@ -445,7 +445,7 @@ export function ParticipantDetailPage() {
                               <CalendarDays className="h-3 w-3" /> Bitiş: {assignment.dueDate}
                             </span>
                             <span>İlerleme: %{assignment.progress}</span>
-                            {training && <span>{training.chapters.length} bölüm</span>}
+                            {training && <span>{training.modules.length} bölüm</span>}
                           </div>
                         </div>
                         <span className={cn('inline-flex shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold', assignmentStatusClasses[assignment.status])}>
@@ -540,7 +540,7 @@ export function ParticipantDetailPage() {
             // addAssignment fonksiyonu localStorage'a kaydeder
             import('@/features/assignments/data/assignments').then(({ addAssignment }) => {
               addAssignment(participantId, trainingId, dueDate, options)
-              const training = trainingCatalog.find((t) => t.id === trainingId)
+              const training = readTrainings().find((t) => t.id === trainingId)
               toast.success('Eğitim atandı', { description: `${training?.name ?? 'Eğitim'} başarıyla atandı.` })
               setShowAssignModal(false)
               // Sayfayı yenile

@@ -14,7 +14,7 @@ import { Button, SearchableSelect } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { parseDateInput } from '@/lib/date'
 import { readParticipants, type Participant } from '@/features/participants/data/participants'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
 import {
   readAssignments,
   type AssignmentOptions,
@@ -23,6 +23,13 @@ import {
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('tr-TR')
+}
+
+function todayInputDate() {
+  const today = new Date()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${today.getFullYear()}-${month}-${day}`
 }
 
 const assignmentStatusLabels: Record<TrainingAssignment['status'], string> = {
@@ -55,7 +62,7 @@ export function AssignmentModal({
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(participant?.id ?? null)
   const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([])
   const [dueDate, setDueDate] = useState('')
-  const [preTest, setPreTest] = useState(false)
+  const [dueDateError, setDueDateError] = useState('')
   const [requiresExpertApproval, setRequiresExpertApproval] = useState(false)
   const [requiresDoctorApproval, setRequiresDoctorApproval] = useState(false)
 
@@ -63,7 +70,7 @@ export function AssignmentModal({
     setSelectedParticipantId(participant?.id ?? null)
     setSelectedTrainingIds([])
     setDueDate('')
-    setPreTest(false)
+    setDueDateError('')
     setRequiresExpertApproval(false)
     setRequiresDoctorApproval(false)
   }, [participant])
@@ -90,10 +97,13 @@ export function AssignmentModal({
   const ongoingAssignments = participantAssignments.filter((a) => a.status === 'active' || a.status === 'pending_approval')
   const completedAssignments = participantAssignments.filter((a) => a.status === 'completed' || a.status === 'expired')
   const assignedTrainingIds = new Set(participantAssignments.map((a) => a.trainingId))
-  const baseTrainings = trainingCatalog.filter((t) => t.package === 'Temel Paket' && !assignedTrainingIds.has(t.id))
-  const sectorTrainings = trainingCatalog.filter((t) => t.package === 'Sektör Paketi' && !assignedTrainingIds.has(t.id))
+  const baseTrainings = readTrainings().filter((t) => t.package === 'Temel Paket' && !assignedTrainingIds.has(t.id))
+  const sectorTrainings = readTrainings().filter((t) => t.package === 'Sektör Paketi' && !assignedTrainingIds.has(t.id))
 
-  const canSubmit = selectedParticipantId !== null && selectedTrainingIds.length > 0 && Boolean(parseDateInput(dueDate))
+  const canSubmit = selectedParticipantId !== null
+    && selectedTrainingIds.length > 0
+    && Boolean(parseDateInput(dueDate))
+    && dueDate >= todayInputDate()
 
   function toggleTraining(id: string) {
     setSelectedTrainingIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
@@ -101,14 +111,23 @@ export function AssignmentModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!canSubmit || !selectedParticipantId) return
-    const options: AssignmentOptions = { preTest, requiresExpertApproval, requiresDoctorApproval }
+    if (!selectedParticipantId || selectedTrainingIds.length === 0) return
+    if (!parseDateInput(dueDate)) {
+      setDueDateError('Geçerli bir son tarih seçin.')
+      return
+    }
+    if (dueDate < todayInputDate()) {
+      setDueDateError('Son tarih bugün veya daha ileri bir tarih olmalıdır.')
+      return
+    }
+    setDueDateError('')
+    if (!canSubmit) return
+    const options: AssignmentOptions = { requiresExpertApproval, requiresDoctorApproval }
     selectedTrainingIds.forEach((trainingId) => {
       onAddAssignment(selectedParticipantId, trainingId, dueDate, options)
     })
     setSelectedTrainingIds([])
     setDueDate('')
-    setPreTest(false)
     setRequiresExpertApproval(false)
     setRequiresDoctorApproval(false)
   }
@@ -135,15 +154,15 @@ export function AssignmentModal({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
         >
           <div role="dialog" aria-modal="true" aria-labelledby="assignment-modal-title" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl shadow-ink-900/15">
-            <div className="shrink-0 border-b border-ink-100 bg-gradient-to-br from-brand-50/60 via-white to-white px-6 py-5 sm:px-8">
+            <div className="shrink-0 border-b border-ink-100 bg-gradient-to-br from-brand-50/60 via-white to-white px-5 py-4 sm:px-7 sm:py-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-100 text-brand-700 ring-1 ring-brand-200">
-                    <ClipboardCheck className="h-6 w-6" strokeWidth={1.8} />
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-100 text-brand-700 ring-1 ring-brand-200">
+                    <ClipboardCheck className="h-5.5 w-5.5" strokeWidth={1.8} />
                   </span>
                   <div>
                     <h2 id="assignment-modal-title" className="text-lg font-bold tracking-tight text-ink-900">Eğitim ataması</h2>
-                    <p className="mt-0.5 text-sm text-ink-500">
+                    <p className="mt-1 text-xs text-ink-500 sm:text-sm">
                       {participant ? `${participant.name} için atama yönetin` : 'Katılımcı seçip eğitim atayın'}
                     </p>
                   </div>
@@ -154,8 +173,8 @@ export function AssignmentModal({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8">
-              <div className="mx-auto max-w-4xl space-y-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+              <div className="mx-auto max-w-4xl space-y-5">
                 <section>
                   <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-400">Katılımcı</h3>
                   {participant ? (
@@ -197,7 +216,6 @@ export function AssignmentModal({
                             <p className="text-sm font-semibold text-ink-900">{assignment.trainingName}</p>
                             <p className="mt-1 text-[11px] text-ink-400">
                               Atama: {assignment.assignedDate} · Son: {assignment.dueDate}
-                              {assignment.preTest && ' · Ön test: Açık'}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
@@ -252,9 +270,14 @@ export function AssignmentModal({
 
                 {selectedParticipant && (
                   <div className="space-y-6 border-t border-ink-100 pt-6">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-ink-900">Yeni eğitim ata</h3>
-                      {totalSelected > 0 && <span className="rounded-full bg-brand-600 px-2.5 py-0.5 text-[10px] font-bold text-white">{totalSelected} seçili</span>}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-ink-900">Yeni eğitim ata</h3>
+                        <p className="mt-1 text-xs text-ink-400">Bir veya daha fazla eğitim seçip son tarihi belirleyin.</p>
+                      </div>
+                      <span className={cn('rounded-full px-2.5 py-1 text-[10px] font-bold', totalSelected > 0 ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-500')}>
+                        {totalSelected > 0 ? `${totalSelected} eğitim seçildi` : 'Henüz seçim yok'}
+                      </span>
                     </div>
 
                     {baseTrainings.length === 0 && sectorTrainings.length === 0 ? (
@@ -332,23 +355,14 @@ export function AssignmentModal({
                               <input
                                 type="date"
                                 value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                className="h-12 w-full rounded-xl border border-ink-200 bg-white px-3.5 text-sm font-medium text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                                min={todayInputDate()}
+                                onChange={(e) => { setDueDate(e.target.value); setDueDateError('') }}
+                                onBlur={() => { if (dueDate && dueDate < todayInputDate()) setDueDateError('Son tarih bugün veya daha ileri bir tarih olmalıdır.') }}
+                                aria-invalid={Boolean(dueDateError)}
+                                className={cn('h-12 w-full rounded-xl border bg-white px-3.5 text-sm font-medium text-ink-800 outline-none transition-colors focus:ring-4 focus:ring-brand-500/10', dueDateError ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/10' : 'border-ink-200 focus:border-brand-500')}
                               />
+                              {dueDateError ? <p className="mt-1.5 text-[11px] font-medium text-rose-600">{dueDateError}</p> : <p className="mt-1.5 text-[11px] text-ink-400">Atamanın tamamlanması gereken son gün.</p>}
                             </div>
-
-                            <label className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all', preTest ? 'border-amber-300 bg-amber-50/50 ring-1 ring-amber-200' : 'border-ink-200 bg-white hover:border-amber-200')}>
-                              <input
-                                type="checkbox"
-                                checked={preTest}
-                                onChange={(e) => setPreTest(e.target.checked)}
-                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                              />
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-amber-800">Ön test uygula</p>
-                                <p className="mt-1 text-[11px] leading-relaxed text-amber-700">Videolardan önce eğitim sonu testini tanı olarak uygula (baraj/deneme yok; sertifikaya yazılmaz).</p>
-                              </div>
-                            </label>
 
                             <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
                               <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Onay gereksinimleri</p>
@@ -435,7 +449,6 @@ export function BulkAssignmentModal({
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>(preselectedParticipantIds ?? [])
   const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([])
   const [dueDate, setDueDate] = useState('')
-  const [preTest, setPreTest] = useState(false)
   const [requiresExpertApproval, setRequiresExpertApproval] = useState(false)
   const [requiresDoctorApproval, setRequiresDoctorApproval] = useState(false)
   const [companyFilter, setCompanyFilter] = useState('all')
@@ -501,7 +514,7 @@ export function BulkAssignmentModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
-    onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate, { preTest, requiresExpertApproval, requiresDoctorApproval })
+    onSubmit(selectedParticipantIds, selectedTrainingIds, dueDate, { requiresExpertApproval, requiresDoctorApproval })
   }
 
   return createPortal(
@@ -614,7 +627,7 @@ export function BulkAssignmentModal({
                   </div>
 
                   <div className="max-h-[260px] space-y-1.5 overflow-y-auto rounded-xl border border-ink-100 bg-ink-50/20 p-2">
-                    {trainingCatalog.map((t) => {
+                    {readTrainings().map((t) => {
                       const isSelected = selectedTrainingIds.includes(t.id)
                       return (
                         <button
@@ -644,19 +657,6 @@ export function BulkAssignmentModal({
                       className="h-11 w-full rounded-xl border border-ink-200 bg-white px-3 text-sm font-medium text-ink-800 outline-none focus:border-brand-500"
                     />
                   </div>
-
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-3">
-                    <input
-                      type="checkbox"
-                      checked={preTest}
-                      onChange={(e) => setPreTest(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-amber-800">Ön test uygula</p>
-                      <p className="mt-0.5 text-[11px] text-amber-700">Videolardan önce tanı testi.</p>
-                    </div>
-                  </label>
 
                   <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-3.5">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-indigo-700">Onay gereksinimleri</p>

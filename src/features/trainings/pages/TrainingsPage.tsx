@@ -1,360 +1,124 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import {
-  BookOpen,
-  ChevronDown,
-  Eye,
-  FileText,
-  Layers3,
-  ListCollapse,
-  Maximize2,
-  Minimize2,
-  Search,
-  Settings2,
-  SlidersHorizontal,
-  Sparkles,
-  X,
-  Zap,
-} from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { BookOpen, CheckCircle2, ChevronRight, CircleGauge, Eye, FileQuestion, GraduationCap, Image as ImageIcon, Layers3, PlayCircle, Plus, Search, SlidersHorizontal, Trash2, Users, Video, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Button, Pagination, ViewToggle, type ViewMode, paginate, getPaginationIndices } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { trainingCatalog, type Training, type TrainingPackage, type TrainingRisk } from '../data/trainings'
+import { readAssignments } from '@/features/assignments/data/assignments'
+import { readTrainings, removeTraining, type Training } from '../data/trainings'
+import { seedTrainingCatalog } from '../data/seed'
 
-const riskClasses: Record<TrainingRisk, string> = {
+function moduleCount(training: Training) { return training.modules.length }
+function contentCount(training: Training) { return training.modules.reduce((sum, module) => sum + module.items.length, 0) }
+function questionCount(training: Training) { return training.modules.reduce((sum, module) => sum + (module.quiz?.questions.length ?? 0), 0) }
+function slideCount(training: Training) { return training.modules.reduce((sum, module) => sum + module.items.reduce((itemSum, item) => itemSum + (item.slides?.length ?? 0), 0), 0) }
+function coverImage(training: Training) {
+  for (const module of training.modules) for (const item of module.items) for (const slide of item.slides ?? []) if (slide.mediaUrl) return slide.mediaUrl
+  return undefined
+}
+
+const packageClasses: Record<Training['package'], string> = {
+  'Temel Paket': 'border-brand-200 bg-brand-50 text-brand-700',
+  'Sektör Paketi': 'border-violet-200 bg-violet-50 text-violet-700',
+}
+const riskClasses: Record<Training['risk'], string> = {
   'Az Tehlikeli': 'border-emerald-200 bg-emerald-50 text-emerald-700',
   Tehlikeli: 'border-amber-200 bg-amber-50 text-amber-700',
   'Çok Tehlikeli': 'border-rose-200 bg-rose-50 text-rose-700',
 }
 
-const packageClasses: Record<TrainingPackage, string> = {
-  'Temel Paket': 'border-brand-200 bg-brand-50 text-brand-700',
-  'Sektör Paketi': 'border-violet-200 bg-violet-50 text-violet-700',
-}
-
-function getTopicCount(training: Training) {
-  return training.chapters.reduce((sum, chapter) => sum + chapter.topics.length, 0)
-}
-
-function getChapterCount(training: Training) {
-  return training.chapters.length
-}
-
-/** Arama terimini metin içinde vurgular */
-function highlightText(text: string, query: string) {
-  if (!query.trim()) return text
-  const normalized = text.toLocaleLowerCase('tr-TR')
-  const q = query.trim().toLocaleLowerCase('tr-TR')
-  const idx = normalized.indexOf(q)
-  if (idx === -1) return text
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="rounded bg-brand-100 px-0.5 font-semibold text-brand-800">{text.slice(idx, idx + q.length)}</mark>
-      {text.slice(idx + q.length)}
-    </>
-  )
-}
-
 export function TrainingsPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [packageFilter, setPackageFilter] = useState<'all' | TrainingPackage>('all')
-  const [riskFilter, setRiskFilter] = useState<'all' | TrainingRisk>('all')
-  const [showFilters, setShowFilters] = useState(false)
-  const [expanded, setExpanded] = useState<string[]>([])
-  const [view, setView] = useState<ViewMode>('table')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [packageFilter, setPackageFilter] = useState<'Tümü' | Training['package']>('Tümü')
+  const [riskFilter, setRiskFilter] = useState<'Tümü' | Training['risk']>('Tümü')
+  const [trainings, setTrainings] = useState<Training[]>(() => readTrainings())
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const assignments = useMemo(() => readAssignments(), [])
+
+  useEffect(() => { seedTrainingCatalog(); setTrainings(readTrainings()) }, [])
 
   const filteredTrainings = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('tr-TR')
-    return trainingCatalog.filter((training) => {
-      const haystack = `${training.name} ${training.description} ${training.risk} ${training.chapters.map((chapter) => `${chapter.title} ${chapter.topics.join(' ')}`).join(' ')}`.toLocaleLowerCase('tr-TR')
-      return (!query || haystack.includes(query)) && (packageFilter === 'all' || training.package === packageFilter) && (riskFilter === 'all' || training.risk === riskFilter)
+    return trainings.filter((training) => {
+      const matchesSearch = !query || `${training.name} ${training.description} ${training.risk} ${training.package}`.toLocaleLowerCase('tr-TR').includes(query)
+      return matchesSearch && (packageFilter === 'Tümü' || training.package === packageFilter) && (riskFilter === 'Tümü' || training.risk === riskFilter)
     })
-  }, [search, packageFilter, riskFilter])
+  }, [packageFilter, riskFilter, search, trainings])
 
-  const totalPages = Math.max(1, Math.ceil(filteredTrainings.length / pageSize))
-  const paginatedTrainings = paginate(filteredTrainings, currentPage, pageSize)
-  const { startIndex, endIndex } = getPaginationIndices(currentPage, pageSize, filteredTrainings.length)
+  const selectedTraining = trainings.find((training) => training.id === selectedId) ?? null
+  const activeFilterCount = Number(packageFilter !== 'Tümü') + Number(riskFilter !== 'Tümü')
 
-  const baseCount = trainingCatalog.filter((t) => t.package === 'Temel Paket').length
-  const sectorCount = trainingCatalog.filter((t) => t.package === 'Sektör Paketi').length
-  const chapterCount = trainingCatalog.reduce((sum, t) => sum + getChapterCount(t), 0)
-  const topicCount = trainingCatalog.reduce((sum, t) => sum + getTopicCount(t), 0)
-
-  const filterCount = (packageFilter !== 'all' ? 1 : 0) + (riskFilter !== 'all' ? 1 : 0)
-  const hasActiveFilters = search || packageFilter !== 'all' || riskFilter !== 'all'
-  const allExpanded = expanded.length === paginatedTrainings.length && paginatedTrainings.length > 0
-
-  const toggleTraining = useCallback((id: string) => {
-    setExpanded((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-  }, [])
-
-  const expandAll = useCallback(() => setExpanded(paginatedTrainings.map((t) => t.id)), [paginatedTrainings])
-  const collapseAll = useCallback(() => setExpanded([]), [])
-
-  function clearFilters() {
-    setSearch('')
-    setPackageFilter('all')
-    setRiskFilter('all')
+  function handleRemove(id: string, name: string) {
+    const usedCount = assignments.filter((assignment) => assignment.trainingId === id).length
+    const message = usedCount ? `“${name}” ${usedCount} atamada kullanılıyor. Yine de silmek istiyor musunuz?` : `“${name}” eğitimini silmek istediğinize emin misiniz?`
+    if (!confirm(message)) return
+    setTrainings(removeTraining(id)); setSelectedId(null)
+    toast.success('Eğitim katalogdan kaldırıldı', { description: `“${name}” silindi.` })
   }
 
-  const handlePreview = useCallback((training: Training) => {
-    navigate(`/dashboard/egitimler/${training.id}/katilimci-onizleme`)
-  }, [navigate])
+  return <div className="space-y-5">
+    <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+      <div><div className="mb-1.5 text-xs font-medium text-ink-400">Ana menü / <span className="text-ink-600">Eğitimler</span></div><h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[28px]">Eğitim kataloğu</h1><p className="mt-1 max-w-2xl text-sm text-ink-500">Eğitim kapsamını tek ekrandan inceleyin; modül, içerik ve sınavları yönetin.</p></div>
+      <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => navigate('/dashboard/egitimler/yeni')}>Yeni eğitim oluştur</Button>
+    </motion.header>
 
-  return (
-    <div className="space-y-7">
-      {/* Header — standart proje pattern'i */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-400">
-            <span>Ana menü</span><span>/</span><span className="text-ink-600">Eğitimler</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink-900 sm:text-[30px]">Eğitim kataloğu</h1>
-          <p className="mt-1.5 max-w-2xl text-sm text-ink-500">Temel ve sektöre özel İSG eğitim içeriklerini keşfedin, konu hiyerarşisini inceleyin.</p>
+    <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .05 }} className="rounded-2xl border border-ink-200/80 bg-white p-3.5 shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="relative min-w-0 flex-1 xl:max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Eğitim adı veya içerik ara..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/60 pl-9 pr-4 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10" /></div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex gap-1 rounded-xl bg-ink-50 p-1">{(['Tümü', 'Temel Paket', 'Sektör Paketi'] as const).map((item) => <button key={item} onClick={() => setPackageFilter(item)} className={cn('rounded-lg px-3 py-2 text-[11px] font-semibold transition', packageFilter === item ? 'bg-white text-brand-700 shadow-sm' : 'text-ink-500 hover:text-ink-800')}>{item}</button>)}</div>
+          <label className="relative"><SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400" /><select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as typeof riskFilter)} className="h-10 w-full appearance-none rounded-xl border border-ink-200 bg-white pl-9 pr-8 text-xs font-semibold text-ink-600 outline-none focus:border-brand-500 sm:w-44"><option>Tümü</option><option>Az Tehlikeli</option><option>Tehlikeli</option><option>Çok Tehlikeli</option></select></label>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" leftIcon={<Settings2 className="h-4 w-4" />} onClick={() => toast.info('Katalog ayarları hazırlanacak.')}>Katalog ayarları</Button>
-          <Button size="md" leftIcon={<Sparkles className="h-4 w-4" />} onClick={() => toast.info('Yeni eğitim oluşturma ekranı hazırlanacak.')}>Yeni eğitim</Button>
-        </div>
-      </motion.div>
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-ink-100 pt-3 text-[11px] text-ink-400"><span><b className="text-ink-700">{filteredTrainings.length}</b> eğitim gösteriliyor</span>{activeFilterCount > 0 && <button onClick={() => { setPackageFilter('Tümü'); setRiskFilter('Tümü') }} className="font-semibold text-brand-700 hover:text-brand-800">{activeFilterCount} filtreyi temizle</button>}</div>
+    </motion.section>
 
-      {/* Stats — brand-900 hero (Diğer sayfalarla aynı hero pattern) */}
-      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.04 }} className="relative overflow-hidden rounded-2xl bg-brand-900 p-5 text-white shadow-[0_12px_32px_-18px_rgba(18,70,65,0.5)] sm:p-6">
-        <div className="absolute -right-12 -top-20 h-56 w-56 rounded-full border-[26px] border-brand-800/50" aria-hidden />
-        <div className="absolute -bottom-24 right-40 h-44 w-44 rounded-full border-[18px] border-brand-800/40" aria-hidden />
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-200">
-              <BookOpen className="h-3.5 w-3.5" /> İçerik merkezi
+    {filteredTrainings.length ? <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4 xl:grid-cols-2">
+      {filteredTrainings.map((training, index) => {
+        const cover = coverImage(training)
+        const assigned = assignments.filter((assignment) => assignment.trainingId === training.id).length
+        return <motion.article key={training.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * .025, .15) }} className="group overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-[0_8px_24px_-20px_rgba(15,23,42,.32)] transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-[0_14px_32px_-22px_rgba(13,148,136,.35)]">
+          <div className="flex min-h-[224px] flex-col sm:flex-row">
+            <div className="relative w-full shrink-0 overflow-hidden bg-gradient-to-br from-[#07182d] to-brand-800 sm:w-44" style={{ minHeight: 160 }}>
+              {cover ? <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" /> : <div className="absolute inset-0 grid place-items-center"><GraduationCap className="h-12 w-12 text-white/30" /></div>}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061326]/85 via-transparent to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3"><span className="inline-flex rounded-md bg-white/90 px-2 py-1 text-[9px] font-bold text-ink-800 backdrop-blur">{training.id}</span><p className="mt-2 text-[10px] font-semibold text-white/80">İçerik sürümü v{training.contentVersion ?? 1}</p></div>
             </div>
-            <h2 className="text-lg font-semibold tracking-[-0.02em] sm:text-xl">Doğru eğitim, doğru risk seviyesinde.</h2>
-            <p className="mt-1.5 max-w-xl text-sm leading-6 text-brand-100/75">Katılımcılarınıza atayacağınız eğitimleri paket, tehlike sınıfı ve içerik yapısına göre hızlıca bulun.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
-              <p className="text-2xl font-bold tabular-nums">{baseCount}</p>
-              <p className="mt-1 text-[10px] text-brand-100/70">temel eğitim</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
-              <p className="text-2xl font-bold tabular-nums">{sectorCount}</p>
-              <p className="mt-1 text-[10px] text-brand-100/70">sektör eğitimi</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
-              <p className="text-2xl font-bold tabular-nums">{chapterCount}</p>
-              <p className="mt-1 text-[10px] text-brand-100/70">alt başlık</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3">
-              <p className="text-2xl font-bold tabular-nums">{topicCount}</p>
-              <p className="mt-1 text-[10px] text-brand-100/70">konu</p>
+            <div className="flex min-w-0 flex-col p-4">
+              <div className="flex flex-wrap gap-1.5"><span className={cn('rounded-md border px-2 py-0.5 text-[9px] font-bold', packageClasses[training.package])}>{training.package}</span><span className={cn('rounded-md border px-2 py-0.5 text-[9px] font-bold', riskClasses[training.risk])}>{training.risk}</span></div>
+              <h2 className="mt-2.5 line-clamp-2 text-[15px] font-bold leading-5 text-ink-900">{training.name}</h2>
+              <p className="mt-1.5 line-clamp-2 text-[11px] leading-4.5 text-ink-500">{training.description}</p>
+              <div className="mt-3 flex gap-1.5"><CardStat icon={<Layers3 />} value={moduleCount(training)} label="Modül" /><CardStat icon={<PlayCircle />} value={contentCount(training)} label="İçerik" /><CardStat icon={<FileQuestion />} value={questionCount(training)} label="Soru" /><CardStat icon={<Users />} value={assigned} label="Atama" /></div>
+              <div className="mt-auto flex items-center justify-between gap-2 border-t border-ink-100 pt-3"><span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-ink-500"><CircleGauge className="h-3.5 w-3.5 text-brand-600" /> Başarı barajı %{training.passingScore}</span><div className="flex gap-1.5"><Button size="sm" variant="outline" onClick={() => setSelectedId(training.id)}><Eye className="h-3.5 w-3.5" /> İncele</Button><Button size="sm" onClick={() => navigate(`/dashboard/egitimler/${training.id}/duzenle`)}>İçeriği yönet</Button></div></div>
             </div>
           </div>
-        </div>
-      </motion.section>
+        </motion.article>
+      })}
+    </motion.section> : <section className="rounded-2xl border border-dashed border-ink-200 bg-white px-6 py-20 text-center"><BookOpen className="mx-auto h-9 w-9 text-ink-300" /><p className="mt-3 text-sm font-semibold text-ink-700">Eğitim bulunamadı</p><p className="mt-1 text-xs text-ink-400">Arama metnini veya filtreleri değiştirerek tekrar deneyin.</p><Button className="mt-4" size="sm" variant="outline" onClick={() => { setSearch(''); setPackageFilter('Tümü'); setRiskFilter('Tümü') }}>Filtreleri temizle</Button></section>}
 
-      {/* Ana içerik kartı — standart wrapper */}
-      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.08 }} className="min-w-0 rounded-2xl border border-ink-200/80 bg-white shadow-[0_4px_18px_-14px_rgba(17,24,39,0.22)]">
-        {/* Filtre header — diğer sayfalarla aynı yapı */}
-        <div className="border-b border-ink-100 p-5 sm:p-6">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-ink-900">Eğitim listesi</h2>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700">{filteredTrainings.length} kayıt</span>
-              </div>
-              <p className="mt-1 text-xs text-ink-400">Paket, tehlike sınıfı ve içerik yapısına göre filtreleyin.</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Eğitim, başlık veya konu ara..." className="h-10 w-full rounded-xl border border-ink-200 bg-ink-50/50 pl-9 pr-9 text-sm text-ink-800 outline-none transition-all placeholder:text-ink-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 sm:w-64" />
-                {search && <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-0.5 text-ink-400 hover:bg-ink-100 hover:text-ink-600" aria-label="Temizle"><X className="h-3.5 w-3.5" /></button>}
-              </div>
-              <button type="button" onClick={() => setShowFilters((c) => !c)} className={cn('inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition-colors', showFilters || filterCount ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-ink-200 text-ink-600 hover:bg-ink-50')}>
-                <SlidersHorizontal className="h-4 w-4" /> Filtreler {filterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] text-white">{filterCount}</span>}
-              </button>
-              <ViewToggle view={view} onChange={setView} />
-            </div>
-          </div>
-
-          {showFilters && (
-            <div className="mt-5 grid gap-3 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <label>
-                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Paket</span>
-                <div className="relative">
-                  <select value={packageFilter} onChange={(event) => setPackageFilter(event.target.value as 'all' | TrainingPackage)} className="h-10 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3 pr-8 text-xs font-medium text-ink-700 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10">
-                    <option value="all">Tüm paketler</option>
-                    <option value="Temel Paket">Temel Paket</option>
-                    <option value="Sektör Paketi">Sektör Paketi</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                </div>
-              </label>
-              <label>
-                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-ink-400">Tehlike sınıfı</span>
-                <div className="relative">
-                  <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as 'all' | TrainingRisk)} className="h-10 w-full appearance-none rounded-xl border border-ink-200 bg-white px-3 pr-8 text-xs font-medium text-ink-700 outline-none transition-colors focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10">
-                    <option value="all">Tüm sınıflar</option>
-                    <option value="Az Tehlikeli">Az Tehlikeli</option>
-                    <option value="Tehlikeli">Tehlikeli</option>
-                    <option value="Çok Tehlikeli">Çok Tehlikeli</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                </div>
-              </label>
-              <div className="flex items-end">
-                <button type="button" onClick={clearFilters} disabled={!hasActiveFilters} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 disabled:opacity-40">
-                  <X className="h-3.5 w-3.5" /> Filtreleri temizle
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Tümünü aç/kapat barı */}
-        {view === 'table' && paginatedTrainings.length > 0 && (
-          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-2.5 sm:px-6">
-            <span className="text-[11px] font-medium text-ink-400">{expanded.length} / {paginatedTrainings.length} eğitim açık</span>
-            <button type="button" onClick={allExpanded ? collapseAll : expandAll} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-50">
-              {allExpanded ? <><Minimize2 className="h-3.5 w-3.5" /> Tümünü kapat</> : <><Maximize2 className="h-3.5 w-3.5" /> Tümünü aç</>}
-            </button>
-          </div>
-        )}
-
-        {/* Liste görünümü — accordion */}
-        {view === 'table' && (
-          <div className="divide-y divide-ink-100">
-            {paginatedTrainings.map((training) => {
-              const isExpanded = expanded.includes(training.id)
-              const topicCount = getTopicCount(training)
-              const chapterCount = getChapterCount(training)
-              const isBase = training.package === 'Temel Paket'
-
-              return (
-                <article key={training.id} className={cn('transition-colors', isExpanded ? 'bg-brand-50/30' : 'hover:bg-ink-50/40')}>
-                  {/* Summary satırı */}
-                  <div className="flex cursor-pointer items-center gap-3 px-5 py-4 sm:px-6" onClick={() => toggleTraining(training.id)}>
-                    <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-xl', isBase ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-violet-700')}>
-                      {isBase ? <Layers3 className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink-800">{highlightText(training.name, search)}</p>
-                      <p className="mt-0.5 truncate text-[11px] text-ink-400">{training.description}</p>
-                    </div>
-                    <span className="hidden items-center gap-2 sm:flex">
-                      <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', packageClasses[training.package])}>{training.package}</span>
-                      <span className={cn('rounded-lg border px-2.5 py-1 text-[10px] font-semibold', riskClasses[training.risk])}>{training.risk}</span>
-                      <span className="rounded-lg bg-ink-50 px-2.5 py-1 text-[10px] font-medium text-ink-500">{chapterCount} başlık · {topicCount} konu</span>
-                    </span>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); handlePreview(training) }} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-ink-900 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-brand-700">
-                      <Eye className="h-3.5 w-3.5" /><span className="hidden sm:inline">Önizle</span>
-                    </button>
-                    <ChevronDown className={cn('h-4 w-4 shrink-0 text-ink-400 transition-transform', isExpanded && 'rotate-180')} />
-                  </div>
-
-                  {/* Açılır içerik */}
-                  <AnimatePresence initial={false}>
-                    {isExpanded && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
-                        <div className="px-5 pb-5 sm:px-6">
-                          <div className="mb-3 flex items-center gap-2">
-                            <span className={cn('text-[10px] font-bold uppercase tracking-[0.14em]', isBase ? 'text-brand-700' : 'text-violet-700')}>İçerik yapısı</span>
-                            <span className="h-px flex-1 bg-ink-200" />
-                            <span className="text-[10px] text-ink-400">{chapterCount} alt başlık · {topicCount} konu</span>
-                          </div>
-                          <div className="space-y-2">
-                            {training.chapters.map((chapter, index) => (
-                              <div key={chapter.id} className="overflow-hidden rounded-xl border border-ink-200/80 bg-white">
-                                <div className="flex items-center gap-3 bg-ink-50/80 px-4 py-2.5">
-                                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-ink-100 text-[10px] font-bold text-brand-700">{index + 1}</span>
-                                  <span className="min-w-0 flex-1 text-xs font-semibold text-ink-700">{highlightText(chapter.title, search)}</span>
-                                  <span className="text-[10px] text-ink-400">{chapter.topics.length} konu</span>
-                                </div>
-                                <ul className="divide-y divide-ink-100 px-4">
-                                  {chapter.topics.map((topic) => (
-                                    <li key={topic} className="flex items-center gap-2.5 py-2 text-xs leading-5 text-ink-500">
-                                      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', isBase ? 'bg-brand-500' : 'bg-violet-500')} />
-                                      <span className="min-w-0 flex-1">{highlightText(topic, search)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </article>
-              )
-            })}
-
-            {filteredTrainings.length === 0 && (
-              <div className="px-6 py-16 text-center">
-                <Search className="mx-auto h-8 w-8 text-ink-300" />
-                <p className="mt-3 text-sm font-semibold text-ink-700">Eğitim bulunamadı</p>
-                <p className="mt-1 text-xs text-ink-400">Arama veya filtre kriterlerini değiştirerek tekrar deneyin.</p>
-                {hasActiveFilters && <button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-brand-700 hover:text-brand-800">Filtreleri temizle</button>}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Kart görünümü — grid */}
-        {view === 'card' && (
-          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
-            {paginatedTrainings.map((training) => {
-              const isBase = training.package === 'Temel Paket'
-              return (
-                <div key={training.id} className="cursor-pointer rounded-2xl border border-ink-200/80 bg-white p-5 transition-all hover:border-brand-300 hover:shadow-[0_8px_24px_-12px_rgba(17,24,39,0.18)]" onClick={() => handlePreview(training)}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl', isBase ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-violet-700')}>
-                        {isBase ? <Layers3 className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-ink-800">{highlightText(training.name, search)}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-ink-400">{training.package}</p>
-                      </div>
-                    </div>
-                    <span className={cn('shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-semibold', riskClasses[training.risk])}>{training.risk}</span>
-                  </div>
-                  <div className="mt-4 space-y-2 border-t border-ink-100 pt-3">
-                    <p className="line-clamp-2 text-[11px] leading-relaxed text-ink-500">{training.description}</p>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-ink-600"><ListCollapse className="h-3.5 w-3.5 text-ink-400" />{getChapterCount(training)} başlık</span>
-                      <span className="inline-flex items-center gap-1.5 font-medium text-ink-600"><FileText className="h-3.5 w-3.5 text-ink-400" />{getTopicCount(training)} konu</span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            {filteredTrainings.length === 0 && (
-              <div className="col-span-full py-16 text-center">
-                <Search className="mx-auto h-8 w-8 text-ink-300" />
-                <p className="mt-3 text-sm font-semibold text-ink-700">Eğitim bulunamadı</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Pagination — diğer sayfalarla aynı */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredTrainings.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1) }}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          itemName="eğitim"
-        />
-      </motion.section>
-    </div>
-  )
+    {selectedTraining && <TrainingDrawer training={selectedTraining} assignmentCount={assignments.filter((assignment) => assignment.trainingId === selectedTraining.id).length} onClose={() => setSelectedId(null)} onEdit={() => navigate(`/dashboard/egitimler/${selectedTraining.id}/duzenle`)} onRemove={() => handleRemove(selectedTraining.id, selectedTraining.name)} />}
+  </div>
 }
+
+function CardStat({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return <div className="min-w-0 flex-1 rounded-lg bg-ink-50 px-2 py-2 text-center"><span className="mx-auto flex w-fit text-ink-400 [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span><p className="mt-1 text-xs font-bold text-ink-800">{value}</p><p className="text-[8px] font-medium uppercase tracking-wide text-ink-400">{label}</p></div>
+}
+
+function TrainingDrawer({ training, assignmentCount, onClose, onEdit, onRemove }: { training: Training; assignmentCount: number; onClose: () => void; onEdit: () => void; onRemove: () => void }) {
+  const cover = coverImage(training)
+  return <div className="fixed inset-0 z-50 flex justify-end bg-ink-950/35 backdrop-blur-[2px]" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><motion.aside initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl">
+    <div className="relative h-48 shrink-0 overflow-hidden bg-gradient-to-br from-[#07182d] to-brand-800">{cover && <img src={cover} alt="" className="h-full w-full object-cover" />}<div className="absolute inset-0 bg-gradient-to-t from-[#061326]/90 via-[#061326]/20 to-transparent" /><button onClick={onClose} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-xl bg-white/90 text-ink-700 shadow" aria-label="Kapat"><X className="h-4 w-4" /></button><div className="absolute bottom-4 left-5 right-5"><div className="flex gap-1.5"><span className="rounded-md bg-white/90 px-2 py-1 text-[9px] font-bold text-ink-800">{training.package}</span><span className="rounded-md bg-white/90 px-2 py-1 text-[9px] font-bold text-ink-800">{training.risk}</span></div><h2 className="mt-2 text-xl font-bold leading-6 text-white">{training.name}</h2></div></div>
+    <div className="flex-1 space-y-5 overflow-y-auto p-5">
+      <p className="text-sm leading-6 text-ink-600">{training.description}</p>
+      <section className="flex gap-2"><DrawerMetric value={moduleCount(training)} label="Modül" /><DrawerMetric value={slideCount(training)} label="Slayt" /><DrawerMetric value={questionCount(training)} label="Soru" /><DrawerMetric value={assignmentCount} label="Atama" /></section>
+      <section><div className="flex items-center justify-between"><h3 className="text-sm font-bold text-ink-900">Eğitim akışı</h3><span className="text-[10px] font-semibold text-ink-400">%{training.passingScore} başarı barajı</span></div><div className="mt-2 space-y-2">{training.modules.map((module, index) => <div key={module.id} className="rounded-xl border border-ink-200 p-3"><div className="flex items-start gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-700">{index + 1}</span><div className="min-w-0 flex-1"><p className="text-xs font-bold text-ink-800">{module.title}</p><div className="mt-1.5 flex flex-wrap gap-2 text-[10px] text-ink-400"><span className="inline-flex items-center gap-1"><BookOpen className="h-3 w-3" /> {module.items.length} içerik</span><span className="inline-flex items-center gap-1"><FileQuestion className="h-3 w-3" /> {module.quiz?.questions.length ?? 0} soru</span></div><div className="mt-2 flex flex-wrap gap-1">{module.items.map((item) => <span key={item.id} className="inline-flex items-center gap-1 rounded-md bg-ink-50 px-2 py-1 text-[9px] font-medium text-ink-500">{item.type === 'video' ? <Video className="h-2.5 w-2.5" /> : <ImageIcon className="h-2.5 w-2.5" />}{item.title}</span>)}</div></div><ChevronRight className="h-4 w-4 text-ink-300" /></div></div>)}</div></section>
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3"><div className="flex gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /><div><p className="text-xs font-bold text-emerald-800">Eğitim yayına hazır</p><p className="mt-1 text-[10px] leading-4 text-emerald-700">Modül, içerik ve test yapısı katılımcı atamalarında kullanılabilir.</p></div></div></div>
+    </div>
+    <footer className="flex items-center justify-between gap-3 border-t border-ink-100 bg-ink-50/80 p-4"><button onClick={onRemove} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50"><Trash2 className="h-3.5 w-3.5" /> Eğitimi sil</button><Button size="sm" onClick={onEdit}>İçeriği düzenle <ChevronRight className="h-3.5 w-3.5" /></Button></footer>
+  </motion.aside></div>
+}
+
+function DrawerMetric({ value, label }: { value: number; label: string }) { return <div className="min-w-0 flex-1 rounded-xl border border-ink-200 bg-ink-50 p-3 text-center"><p className="text-lg font-bold text-ink-800">{value}</p><p className="text-[9px] font-semibold uppercase tracking-wide text-ink-400">{label}</p></div> }

@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useParticipantAuth } from '../ParticipantAuthContext'
-import { trainingCatalog } from '@/features/trainings/data/trainings'
+import { readTrainings } from '@/features/trainings/data/trainings'
 import { readAssignments } from '@/features/assignments/data/assignments'
 
 type TrainingStatusKey = 'not_started' | 'in_progress' | 'successful' | 'failed'
@@ -38,7 +38,7 @@ export function ParticipantDashboardPage() {
         .filter((assignment) => assignment.participantId === user.id)
         .map((assignment) => assignment.trainingId),
     )
-    return trainingCatalog.filter((training) => assignedTrainingIds.has(training.id))
+    return readTrainings().filter((training) => assignedTrainingIds.has(training.id))
   }, [user])
 
   if (!user) return null
@@ -174,7 +174,7 @@ export function ParticipantDashboardPage() {
             {previewTrainings.map((training, index) => {
               const trainingStatus = index === 0 ? userStatus : 'not_started'
               const tStatus = trainingStatusConfig[trainingStatus]
-              const topicCount = training.chapters.reduce((sum, ch) => sum + ch.topics.length, 0)
+              const itemCount = training.modules.reduce((sum, module) => sum + module.items.length, 0)
 
               return (
                 <motion.div
@@ -197,7 +197,7 @@ export function ParticipantDashboardPage() {
                       <p className="truncate text-sm font-semibold text-ink-800">{training.name}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-ink-400">
                         <span className="inline-flex items-center gap-1">
-                          <TrendingUp className="h-3.5 w-3.5" /> {topicCount} konu
+                          <TrendingUp className="h-3.5 w-3.5" /> {itemCount} konu
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-2 py-0.5 font-medium text-ink-500">
                           {training.package}
